@@ -9,6 +9,9 @@
 - Correct decimal point-KPT parsing and tolerate absent Fermi levels.
 - Normalize Cartesian log coordinates by the lattice constant when matching
   SCF frames to STRU, for both output readers.
+- Convert latest-format native MD `MD_dump` lattice vectors from alat units to
+  Angstrom and mark those ASE frames periodic; dump-reader dictionaries and
+  their already-Angstrom Cartesian positions retain their existing units.
 - Keep the upstream read-only `eig_occ.txt` behavior: repeated collection no
   longer consumes the input file. This intentionally differs from old ATST.
 - Isolate each calculator's output-format selection; compatibility switch

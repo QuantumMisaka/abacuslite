@@ -28,6 +28,17 @@ The independent package additionally isolates calculator reader selection
 from the compatibility global default. Behavioral changes and validation
 are recorded in CHANGELOG.md and the implementation plan.
 
+## Independent maintenance after the source import
+
+The latest-format native MD cell conversion in `src/abacuslite/io/latestio.py`
+is an independent abacuslite correction made after the attributed ABACUS
+snapshot and ATST adaptations. The real two-frame
+`tests/fixtures/multiframe_md_latest` regression checks the dump-reader
+dictionary contract and the assembled ASE cell, positions, volume and energies.
+Only the latest-format native MD frames are additionally marked periodic.
+The legacy running-log reader already converts its cell to Angstrom and is
+unchanged by this correction.
+
 Additional generic fixed-density, native version-probe and backup-suffix
 regressions are adapted from ATST `tests/unit/test_abacuslite_profile.py` at
 the same revision. The [integration audit](docs/upstream-integration.md) maps

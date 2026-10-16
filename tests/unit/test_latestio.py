@@ -66,7 +66,43 @@ class TestLatestIO(unittest.TestCase):
                 atoms = read_abacus_out(running_log, sort_atoms_with=[0, 2, 1])[0]
 
         self.assertEqual(atoms.get_chemical_symbols(), ['Na', 'Cl', 'Na'])
+        self.assertTrue(np.allclose(atoms.cell.array, np.eye(3)))
+        self.assertFalse(np.any(atoms.pbc))
         self.assertTrue(np.allclose(atoms.calc.results['magmoms'], [10.0, 30.0, 20.0]))
+
+    def test_native_md_dump_cell_units_at_atoms_boundary(self):
+        """MD_dump vectors are in alat; positions and energies are already physical."""
+        fixture = Path(__file__).resolve().parents[1] / 'fixtures' / 'multiframe_md_latest'
+        dump = fixture / 'MD_dump'
+        log = fixture / 'running_md.log'
+        before = {path.name: path.read_bytes() for path in fixture.iterdir()}
+
+        raw = read_traj_from_md_dump(dump)
+        self.assertEqual(len(raw), 2)
+        self.assertEqual(raw[0]['alat_in_angstrom'], 0.529177)
+        self.assertEqual(raw[0]['coordinate'], 'Cartesian')
+        self.assertTrue(np.allclose(raw[0]['cell'][0], [5.34197, 5.34197, 0.0], atol=1e-12))
+        self.assertTrue(np.allclose(raw[0]['coords'][0],
+                                    [1.413423737926] * 3, atol=1e-12))
+
+        frames = read_abacus_out(log)
+        self.assertEqual(len(frames), 2)
+        expected_cell = np.array([[2.82684765869, 2.82684765869, 0.0],
+                                  [0.0, 2.82684765869, 2.82684765869],
+                                  [2.82684765869, 0.0, 2.82684765869]])
+        expected_positions = [
+            [[1.413423737926] * 3, [0.0, 0.0, 0.0]],
+            [[1.413423737926] * 3,
+             [0.025620321279, 2.822443204757, 2.834296002714]],
+        ]
+        expected_energies = [-1940.6273962477, -1940.6311063727]
+        for atoms, positions, energy in zip(frames, expected_positions, expected_energies):
+            self.assertTrue(np.all(atoms.pbc))
+            self.assertTrue(np.allclose(atoms.cell.array, expected_cell, atol=1e-10))
+            self.assertAlmostEqual(atoms.get_volume(), 45.1791, delta=1e-4)
+            self.assertTrue(np.allclose(atoms.positions, positions, atol=1e-12))
+            self.assertAlmostEqual(atoms.get_potential_energy(), energy, delta=1e-9)
+        self.assertEqual(before, {path.name: path.read_bytes() for path in fixture.iterdir()})
 
     def test_read_esolver_type_from_running_log(self):
         self.assertEqual(
