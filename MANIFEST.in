@@ -1,0 +1,6 @@
+include LICENSE UPSTREAM.md CHANGELOG.md DEVELOP.md
+recursive-include tests *.py
+recursive-include tests/fixtures *
+recursive-include examples *.py
+recursive-include docs *.md
+global-exclude __pycache__ *.py[cod]

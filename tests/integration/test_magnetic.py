@@ -3,19 +3,20 @@ test if ABACUS can perform the calculation on the anti-ferromagnetic
 and ferromagnetic phases calculation on the BCC Fe
 '''
 import unittest
+import os
 import numpy as np
 from pathlib import Path
 here = Path(__file__).parent
 from ase.atoms import Atoms
 from abacuslite import AbacusProfile, Abacus
-from common import preserved_tmpdir
+from .common import preserved_tmpdir
 
 class TestMagneticSCF(unittest.TestCase):
 
     def setUp(self):
-        pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+        pporb = Path(os.environ['ABACUS_PP_ORB'])
         self.aprof = AbacusProfile(
-            command='mpirun -np 2 abacus',
+            command=os.environ.get('ABACUS_COMMAND', 'abacus'),
             pseudo_dir=pporb,
             orbital_dir=pporb,
             omp_num_threads=1,

@@ -63,26 +63,28 @@ from abacuslite.io.generalio import (
 )
 
 __LEGACYIO__ = True
+def _uses_legacy_io(version: str) -> bool:
+    """Resolve a format without mutating another calculator's reader."""
+    match = re.match(
+        r'^v(\d+)\.(\d+)\.(\d+)(\.\d+|-(alpha|beta|rc)\.?\d+)?(?:\+[A-Za-z0-9.-]+)?$',
+        version,
+    )
+    assert match, f'Invalid ABACUS version: {version}'
+    assert int(match.group(1)) >= 3, 'ABACUS v2.x is not supported'
+    minor = int(match.group(2))
+    return not (minor >= 11 or (minor == 9 and match.group(4) is not None))
+
+
 def switch_io_backend_version(version: str) -> bool:
-    '''determine if the i/o is in legacy format by the version number,
-    for detailed discussion, see issue #7260
-    '''
+    """Set the compatibility default for subsequently created templates.
+
+    Existing calculators retain the format selected from their own profile.
+    Explicit io.legacyio/io.latestio functions are unaffected by this helper.
+    """
     global __LEGACYIO__
-    m = re.match(r'^v(\d+)\.(\d+)\.(\d+)(\.\d+|\-(alpha|beta|rc)\.\d+|\-(alpha|beta|rc)\d+)?$', version)
-    assert m, f'Invalid format of version number, please check file version.h'
-    assert int(m.group(1)) >= 3, f'ABACUS v2.x is not supported'
-    if int(m.group(2)) >= 11:
-        __LEGACYIO__ = False
-    elif int(m.group(2)) == 9:
-        if m.group(4) is not None:
-            # it is also possible to divide the version more carefully,
-            # but because 3.9.0.x are all on the develop branch, up to
-            # now, there is no user submit issue to request such a careful
-            # division
-            __LEGACYIO__ = False
-    else:
-        __LEGACYIO__ = True
+    __LEGACYIO__ = _uses_legacy_io(version)
     return __LEGACYIO__
+
 
 class AbacusProfile(BaseProfile):
     '''AbacusProfile for interacting the ASE with ABACUS that installed in
@@ -160,6 +162,376 @@ class AbacusProfile(BaseProfile):
         cmd_ = [*self._split_command, '--version']
         return AbacusProfile.parse_version(read_stdout(cmd_))
 
+def _validate_atomorder(atomorder, natoms, stru_path):
+    """Validate the species-to-ASE permutation before handing it to a parser."""
+    if atomorder is None:
+        return list(range(natoms))
+
+    try:
+        values = list(atomorder)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            f"scf atomorder 无法解析（STRU: {stru_path}；期望 {natoms} 个整数索引；"
+            f"fail-closed）"
+        ) from exc
+
+    valid_integer = all(
+        isinstance(value, (int, np.integer)) and not isinstance(value, (bool, np.bool_))
+        for value in values
+    )
+    if (
+        len(values) != natoms
+        or not valid_integer
+        or sorted(values) != list(range(natoms))
+    ):
+        raise RuntimeError(
+            f"scf atomorder 非法（STRU: {stru_path}；收到 {values!r}，"
+            f"期望 {natoms} 个从 0 到 {max(natoms - 1, 0)} 的唯一索引；fail-closed）"
+        )
+    return [int(value) for value in values]
+
+
+def _invert_cell(cell, context):
+    """Return a cell inverse or raise a diagnostic validation error."""
+    try:
+        return np.linalg.solve(cell, np.eye(3, dtype=float))
+    except np.linalg.LinAlgError as exc:
+        raise ValueError(f"singular cell in {context}") from exc
+
+
+def _read_stru_reference(directory, stru_file, atomorder, log_path=None):
+    """Normalize STRU coordinates, cell, symbols, and mapping for SCF matching."""
+    from ase.units import Bohr
+    from .io.generalio import read_stru
+
+    stru_path = Path(directory) / (stru_file or 'STRU')
+    try:
+        stru = read_stru(stru_path)
+        species = stru['species']
+        lat = stru['lat']
+        coord_type = str(stru['coord_type']).lower()
+        raw_symbols = []
+        raw_coords = []
+        for species_entry in species:
+            symbol = species_entry['symbol']
+            atoms = species_entry['atom']
+            declared_natoms = species_entry['natom']
+            if declared_natoms != len(atoms):
+                raise ValueError(
+                    f"STRU species {symbol!r} declared natom={declared_natoms}, "
+                    f"but contains {len(atoms)} atom records"
+                )
+            for atom in atoms:
+                raw_symbols.append(str(symbol))
+                raw_coords.append(atom['coord'])
+
+        natoms = len(raw_symbols)
+        mapping = _validate_atomorder(atomorder, natoms, stru_path)
+        coordinates = np.asarray(raw_coords, dtype=float)
+        if coordinates.shape != (natoms, 3):
+            raise ValueError(
+                f"STRU positions shape {coordinates.shape}, expected ({natoms}, 3)"
+            )
+        if not np.isfinite(coordinates).all():
+            raise ValueError("non-finite STRU positions")
+
+        lattice_vectors = np.asarray(lat['vec'], dtype=float)
+        if lattice_vectors.shape != (3, 3):
+            raise ValueError(
+                f"STRU cell shape {lattice_vectors.shape}, expected (3, 3)"
+            )
+        lattice_constant = float(lat['const'])
+        cell = lattice_vectors * lattice_constant * Bohr
+        if not np.isfinite(cell).all():
+            raise ValueError("non-finite STRU cell")
+        cell_inverse = _invert_cell(cell, f"STRU {stru_path}")
+
+        if coord_type.startswith('d'):
+            positions_species = coordinates @ cell
+        elif coord_type.startswith('c'):
+            positions_species = coordinates * lattice_constant * Bohr
+        else:
+            raise ValueError(f"unsupported STRU coordinate type {stru['coord_type']!r}")
+        if not np.isfinite(positions_species).all():
+            raise ValueError("non-finite normalized STRU positions")
+    except RuntimeError:
+        raise
+    except (
+        AssertionError,
+        KeyError,
+        OSError,
+        TypeError,
+        ValueError,
+        IndexError,
+        np.linalg.LinAlgError,
+    ) as exc:
+        suffix = f"；log: {log_path}" if log_path is not None else ""
+        raise RuntimeError(
+            f"scf STRU 身份信息无效（STRU: {stru_path}{suffix}；{exc}；fail-closed）"
+        ) from exc
+
+    return {
+        'path': stru_path,
+        'positions': np.asarray(positions_species, dtype=float)[mapping].copy(),
+        'cell': np.asarray(cell, dtype=float).copy(),
+        'cell_inverse': np.asarray(cell_inverse, dtype=float).copy(),
+        'symbols': [raw_symbols[index] for index in mapping],
+        'atomorder': mapping,
+    }
+
+
+def _stru_positions_in_ase_order(directory, stru_file, atomorder):
+    """Return normalized STRU positions for compatibility with existing callers."""
+    return _read_stru_reference(directory, stru_file, atomorder)['positions']
+
+
+def _frame_coordinate_metadata(log_path, *, legacyio=None):
+    """从 running log 的实际坐标头推导帧侧坐标系，不依赖 STRU 的 coord_type。
+
+    read_abacus_out 对 DIRECT 日志返回分数坐标、对 CARTESIAN 日志返回 Cartesian（原样），
+    因此帧侧换算必须以日志实际坐标系为准（spec P3 ③）。STRU 的 coord_type 可能与日志不一致
+    （如 write_stru 默认写 Cartesian STRU 而 ABACUS 打印坐标可仍为 DIRECT），不能作为
+    帧侧坐标系依据（fix round 1 F1）。坐标头格式两后端一致，取 backend 的
+    read_traj_from_running_log 的 `coordinate` 字段（与 read_abacus_out 同解析器，单一事实源）。
+    """
+    use_legacy = __LEGACYIO__ if legacyio is None else legacyio
+    if use_legacy:
+        from .io.legacyio import read_traj_from_running_log
+    else:
+        from .io.latestio import read_traj_from_running_log
+    traj = read_traj_from_running_log(log_path)
+    direct = str(traj[0]['coordinate']).lower().startswith('d')
+    scale = float(traj[0]['alat_in_angstrom'])
+    if not np.isfinite(scale) or scale <= 0:
+        raise ValueError(f"Invalid lattice constant in Angstrom: {scale!r}")
+    return direct, scale
+
+
+def _frame_coordinate_is_direct(log_path, *, legacyio=None):
+    """Return the coordinate convention exposed by the selected log reader."""
+    return _frame_coordinate_metadata(log_path, legacyio=legacyio)[0]
+
+
+def _validate_raw_scf_trajectory(log_path, expected, *, legacyio=None):
+    """Check raw trajectory cardinality before parser atom reordering."""
+    use_legacy = __LEGACYIO__ if legacyio is None else legacyio
+    if use_legacy:
+        from .io.legacyio import read_traj_from_running_log
+    else:
+        from .io.latestio import read_traj_from_running_log
+
+    try:
+        trajectory = read_traj_from_running_log(log_path)
+        if not trajectory:
+            raise ValueError("no raw trajectory frames")
+        expected_shape = expected['positions'].shape
+        expected_natoms = len(expected['symbols'])
+        for frame_index, frame in enumerate(trajectory):
+            coords = np.asarray(frame['coords'], dtype=float)
+            if coords.shape != expected_shape:
+                mismatch = (
+                    f"atom count {coords.shape[0]}, expected {expected_shape[0]}; "
+                    if coords.ndim >= 1 and coords.shape[0] != expected_shape[0]
+                    else ""
+                )
+                raise ValueError(
+                    f"frame {frame_index} {mismatch}positions shape {coords.shape}, "
+                    f"expected {expected_shape}"
+                )
+            if not np.isfinite(coords).all():
+                raise ValueError(f"frame {frame_index} positions are non-finite")
+            elements = np.asarray(frame['elem'])
+            if elements.ndim != 1 or len(elements) != expected_natoms:
+                raise ValueError(
+                    f"frame {frame_index} atom count {len(elements)}, "
+                    f"expected {expected_natoms}"
+                )
+            cell = np.asarray(frame['cell'], dtype=float)
+            if cell.shape != (3, 3):
+                raise ValueError(
+                    f"frame {frame_index} cell shape {cell.shape}, expected (3, 3)"
+                )
+            if not np.isfinite(cell).all():
+                raise ValueError(f"frame {frame_index} cell is non-finite")
+            _invert_cell(cell, f"frame {frame_index}")
+    except RuntimeError:
+        raise
+    except (AssertionError, KeyError, OSError, TypeError, ValueError, IndexError) as exc:
+        raise RuntimeError(
+            f"scf running log 原始帧校验失败：{log_path}（{exc}；fail-closed）"
+        ) from exc
+    return trajectory
+
+
+def _normalize_scf_frame(frame, frame_index, expected, frame_is_direct, atol,
+                         cartesian_scale=1.0):
+    """Normalize one parser frame and return match diagnostics.
+
+    A finite, well-shaped frame with a different position or cell is a valid
+    candidate mismatch. Malformed data is represented as ``ValueError`` so the
+    caller can validate every frame before selecting any one of them.
+    """
+    context = f"frame {frame_index}"
+    try:
+        symbols = list(frame.get_chemical_symbols())
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError(f"{context} symbols are unavailable") from exc
+    if len(symbols) != len(expected['symbols']):
+        raise ValueError(
+            f"{context} atom count {len(symbols)}, expected {len(expected['symbols'])}"
+        )
+    if symbols != expected['symbols']:
+        raise ValueError(
+            f"{context} symbols {symbols!r} do not match STRU symbols "
+            f"{expected['symbols']!r}"
+        )
+
+    try:
+        positions = np.asarray(frame.positions, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{context} positions cannot be converted to float") from exc
+    if positions.shape != expected['positions'].shape:
+        raise ValueError(
+            f"{context} positions shape {positions.shape}, expected "
+            f"{expected['positions'].shape}"
+        )
+    if not np.isfinite(positions).all():
+        raise ValueError(f"{context} positions are non-finite")
+
+    try:
+        cell = np.asarray(frame.cell, dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{context} cell cannot be converted to float") from exc
+    if cell.shape != (3, 3):
+        raise ValueError(f"{context} cell shape {cell.shape}, expected (3, 3)")
+    if not np.isfinite(cell).all():
+        raise ValueError(f"{context} cell is non-finite")
+    cell_inverse = _invert_cell(cell, context)
+
+    # ABACUS prints Cartesian tau in units of alat, while cell is already in Å.
+    frame_cart = positions @ cell if frame_is_direct else positions * cartesian_scale
+    if not np.isfinite(frame_cart).all():
+        raise ValueError(f"{context} normalized Cartesian positions are non-finite")
+    cell_delta = cell - expected['cell']
+    cell_diff = float(np.max(np.abs(cell_delta)))
+    same_cell = bool(np.allclose(cell, expected['cell'], atol=atol, rtol=0.0))
+    if not same_cell:
+        return {
+            'frame': frame,
+            'frame_index': frame_index,
+            'frame_cart': frame_cart,
+            'cell_diff': cell_diff,
+            'periodic_residual': None,
+            'matches': False,
+        }
+
+    delta_frac = (frame_cart - expected['positions']) @ cell_inverse
+    periodic_cart = (delta_frac - np.rint(delta_frac)) @ cell
+    if not np.isfinite(periodic_cart).all():
+        raise ValueError(f"{context} periodic residual is non-finite")
+    periodic_residual = float(np.max(np.abs(periodic_cart)))
+    return {
+        'frame': frame,
+        'frame_index': frame_index,
+        'frame_cart': frame_cart,
+        'cell_diff': cell_diff,
+        'periodic_residual': periodic_residual,
+        'matches': periodic_residual <= atol,
+    }
+
+
+def _select_scf_frame_for_structure(
+    frames, log_path, directory, atomorder, atol=1e-4, stru_file='STRU', _reference=None,
+    *, legacyio=None
+):
+    """Return the latest periodic-equivalent frame; malformed SCF data fails closed.
+
+    Parameters
+    ----------
+    frames : list of Atoms
+        按 atomorder 重排后的 running log 帧（read_abacus_out 返回）。
+    log_path : Path
+        running log 路径，用于 fail-closed 异常诊断。
+    directory : Path
+        工作目录（含本次 write_input 落盘的 STRU）。
+    atomorder : list of int
+        species 序位置 -> ASE 序原子的 revmap（spec P3 ①）。
+    stru_file : str or Path
+        The STRU filename recorded by ``write_input``; defaults to ``STRU``.
+    atol : float
+        绝对 Å 容差（spec P3 ③，按坐标打印精度取 ~1e-4 Å 量级）。
+
+    Raises
+    ------
+    RuntimeError
+        无与当前 STRU 坐标匹配的帧（异常含 log 路径、帧数与坐标差异摘要）。
+    """
+    try:
+        nframes = len(frames)
+    except TypeError as exc:
+        raise RuntimeError(
+            f"scf running log 帧集合无效：{log_path}（无法读取帧数；fail-closed）"
+        ) from exc
+    if nframes == 0:
+        raise RuntimeError(
+            f"scf running log 无帧：{log_path}（共 0 帧；atol={atol}；fail-closed）"
+        )
+    if not np.isfinite(atol) or atol < 0:
+        raise RuntimeError(f"scf 帧匹配 atol 无效：{atol!r}（fail-closed）")
+
+    expected = _reference or _read_stru_reference(
+        directory, stru_file, atomorder, log_path=log_path
+    )
+    try:
+        frame_is_direct, cartesian_scale = _frame_coordinate_metadata(
+            log_path, legacyio=legacyio
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"scf running log 坐标头无法解析：{log_path}（{exc}；fail-closed）"
+        ) from exc
+
+    normalized = []
+    invalid = []
+    for frame_index, frame in enumerate(frames):
+        try:
+            normalized.append(
+                _normalize_scf_frame(
+                    frame, frame_index, expected, frame_is_direct, atol,
+                    cartesian_scale=cartesian_scale
+                )
+            )
+        except (AttributeError, TypeError, ValueError, IndexError) as exc:
+            invalid.append(f"frame {frame_index}: {exc}")
+
+    if invalid:
+        details = "; ".join(invalid)
+        raise RuntimeError(
+            f"scf running log 含损坏帧：{log_path}（共 {nframes} 帧；{details}；"
+            f"atol={atol}；fail-closed）"
+        )
+
+    for info in reversed(normalized):
+        if info['matches']:
+            return info['frame']
+
+    last = normalized[-1]
+    raw_diff = float(
+        np.max(np.abs(last['frame_cart'] - expected['positions']))
+    )
+    periodic = (
+        f"{last['periodic_residual']:.6g} Å"
+        if last['periodic_residual'] is not None
+        else "n/a (cell mismatch)"
+    )
+    raise RuntimeError(
+        f"scf running log 无与当前结构匹配的帧：{log_path}（共 {nframes} 帧；"
+        f"末帧 raw Cartesian Å 最大差异 {raw_diff:.6g}；"
+        f"periodic residual={periodic}；cell 最大差异={last['cell_diff']:.6g} Å；"
+        f"atol={atol}；fail-closed）"
+    )
+
+
 class AbacusTemplate(CalculatorTemplate):
     
     implemented_properties = [
@@ -168,6 +540,7 @@ class AbacusTemplate(CalculatorTemplate):
     _label = 'abacus'
 
     def __init__(self):
+        self._legacyio = __LEGACYIO__
         super().__init__(
             'abacus',
             self.implemented_properties
@@ -287,19 +660,20 @@ class AbacusTemplate(CalculatorTemplate):
 
         # copy the `parameters` because later we will modify it
         parameters = parameters.copy()
+        self.stru_file = parameters.get('stru_file', 'STRU') or 'STRU'
 
         # STRU
-        _ = file_safe_backup(directory / parameters.get('stru_file', 'STRU'))
-        # group atoms by first-occurrence species order. Keep the reverse map
-        # so that we will recover the order in function read_results()
+        _ = file_safe_backup(directory / self.stru_file)
+        # group atoms by first-occurrence species order. Keep the reverse map so
+        # that we will recover the order in function read_results()
         ind = species_group_indices(atoms.get_chemical_symbols())
         self.atomorder = sorted(range(len(atoms)), key=lambda i: ind[i]) # revmap
         # then we write
         _ = write_stru(atoms[ind], 
-                       outdir=directory, 
+                       outdir=directory,
                        pp_file=parameters.get('pseudopotentials'),
                        orb_file=parameters.get('basissets'),
-                       fname=parameters.get('stru_file', 'STRU'))
+                       fname=self.stru_file)
 
         # KPT, if needed
         if 'kpts' in parameters:
@@ -404,21 +778,72 @@ class AbacusTemplate(CalculatorTemplate):
 
     def read_results(self, directory) -> Dict:
         '''the function that returns the desired properties in dict'''
-        read_abacus_out = lambda fn: None
-        global __LEGACYIO__
-        if __LEGACYIO__:
-            from abacuslite.io.legacyio import read_abacus_out
+        if self._legacyio:
+            from .io.legacyio import read_abacus_out
         else:
-            from abacuslite.io.latestio import read_abacus_out
+            from .io.latestio import read_abacus_out
 
+        directory = Path(directory)
         outdir = directory / f'OUT.{self.suffix}'
-        # only the last frame
-        atoms: Optional[Atoms] = read_abacus_out(
-            outdir / f'running_{self.calculation}.log',
-            sort_atoms_with=self.atomorder)[-1]
+        log = outdir / f'running_{self.calculation}.log'
+        stru_file = getattr(self, 'stru_file', 'STRU') or 'STRU'
+        reference = None
+        parser_atomorder = self.atomorder
+        if self.calculation == 'scf':
+            # Read and validate STRU/mapping before passing sort_atoms_with to
+            # the parser; otherwise a malformed mapping leaks a bare IndexError.
+            reference = _read_stru_reference(
+                directory, stru_file, self.atomorder, log_path=log
+            )
+            # Validate raw parser cardinality before sort_atoms_with can slice
+            # away an extra/missing atom and make a corrupt frame look valid.
+            _validate_raw_scf_trajectory(log, reference, legacyio=self._legacyio)
+            parser_atomorder = None if self.atomorder is None else reference['atomorder']
+
+        # 读取全部帧；scf 下按坐标选择当前结构帧，非 scf（relax/md）保持末帧语义（spec R1/R2）
+        try:
+            frames = read_abacus_out(log, sort_atoms_with=parser_atomorder)
+        except (IndexError, AssertionError, KeyError, TypeError, ValueError) as exc:
+            if self.calculation != 'scf':
+                raise
+            raise RuntimeError(
+                f"scf running log parser failed：{log}（atomorder/帧结构解析错误："
+                f"{exc}；fail-closed）"
+            ) from exc
+        if not frames:
+            raise RuntimeError(f"no ABACUS running-log frames in {log}")
+        if self.calculation != 'scf':
+            atoms: Optional[Atoms] = frames[-1]  # 原生 relax/md：既有末帧语义（spec R2/P2）
+        else:
+            atoms = _select_scf_frame_for_structure(
+                frames,
+                log,
+                directory,
+                reference['atomorder'],
+                stru_file=stru_file,
+                _reference=reference,
+                legacyio=self._legacyio,
+            )
         assert atoms is not None
 
-        return dict(atoms.calc.properties())
+        # ``SinglePointDFTCalculator.properties()`` exposes the Fermi level
+        # under ASE's ``fermi_level`` property, while the CP adapter consumes
+        # the backend-neutral ``efermi`` fact.  Keep both names in the result
+        # mapping so file-backed ABACUS evaluations do not lose this value at
+        # the GenericFileIOCalculator boundary.  Older ASE snapshots store it
+        # on ``eFermi``; tolerate that spelling as well.
+        results = dict(atoms.calc.properties())
+        efermi = results.get("efermi", results.get("fermi_level"))
+        if efermi is None:
+            for attribute in ("efermi", "eFermi", "fermi_level"):
+                candidate = getattr(atoms.calc, attribute, None)
+                if candidate is not None:
+                    efermi = candidate
+                    break
+        if efermi is not None:
+            results["efermi"] = efermi
+            results.setdefault("fermi_level", efermi)
+        return results
 
     def load_profile(self, cfg, **kwargs):
         return AbacusProfile.from_config(cfg, self.name, **kwargs)
@@ -472,7 +897,8 @@ class Abacus(GenericFileIOCalculator):
 
         # to be compatible with both the legacy and latest format of i/o, the
         # switch is needed. 
-        _ = switch_io_backend_version(profile.version())
+        template = AbacusTemplate()
+        template._legacyio = _uses_legacy_io(profile.version())
 
         # because ABACUS run job in folders, based on the assumption that
         # there is only one job in the folder. Therefore once there are already
@@ -480,7 +906,7 @@ class Abacus(GenericFileIOCalculator):
         inp = kwargs.pop('inp', {})
 
         super().__init__(
-            template=AbacusTemplate(),
+            template=template,
             profile=profile,
             parameters=kwargs | inp,
             directory=directory,
@@ -955,308 +1381,3 @@ class AbacusSocketIO(SocketIOCalculator):
         for sorted_index, original_index in enumerate(order):
             reordered[original_index] = forces[sorted_index]
         return reordered
-
-
-class TestAbacusCalculator(unittest.TestCase):
-
-    here = Path(__file__).parent
-    pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
-
-    def test_socketio_species_order_mapping(self):
-        atoms = Atoms(symbols=['Si', 'O', 'C', 'Si', 'O', 'C'])
-        order = AbacusSocketIO._socket_sort_indices(atoms)
-        self.assertEqual(order, [0, 3, 1, 4, 2, 5])
-
-        socket_forces = np.arange(18).reshape(6, 3)
-        input_forces = AbacusSocketIO._forces_to_input_order(
-            socket_forces, order)
-
-        expected = np.empty_like(socket_forces)
-        for sorted_index, original_index in enumerate(order):
-            expected[original_index] = socket_forces[sorted_index]
-        np.testing.assert_array_equal(input_forces, expected)
-
-    def test_socketio_rejects_parameter_changes(self):
-        calc = object.__new__(AbacusSocketIO)
-        with self.assertRaisesRegex(ValueError, 'fixed after construction'):
-            calc.set(kpts={'mode': 'mp-sampling', 'nk': [2, 2, 2]})
-
-    def test_socketio_rejects_cell_changes(self):
-        from ase.calculators.calculator import PropertyNotImplementedError
-
-        calc = object.__new__(AbacusSocketIO)
-        calc.atoms = Atoms('Si', cell=[5.0, 5.0, 5.0], pbc=True)
-        calc._reference_cell = calc.atoms.cell.array.copy()
-
-        changed = calc.atoms.copy()
-        changed.cell[0, 0] = 5.1
-        with self.assertRaisesRegex(PropertyNotImplementedError, 'fixed-cell'):
-            calc._check_fixed_cell(changed)
-
-    def test_socketio_input_keeps_independent_property_switches(self):
-        self.assertEqual(
-            AbacusSocketIO._socket_inp({'cal_force': 0, 'cal_stress': 1}),
-            {'calculation': 'scf', 'socket_driver': 1,
-             'cal_force': 0, 'cal_stress': 1})
-
-    def test_socketio_boolean_parser_rejects_ambiguous_values(self):
-        for value in ('yes', 'no', 'on', 'off', ''):
-            with self.assertRaisesRegex(ValueError, 'cal_force'):
-                AbacusSocketIO._input_bool(value, 'cal_force')
-
-    def test_socketio_metadata_rejects_unknown_property(self):
-        metadata = json.dumps({
-            'schema': 'abacus.socket.properties.v1',
-            'present': ['energy', 'charges'],
-            'scf_converged': True,
-        }).encode('utf-8')
-        with self.assertRaisesRegex(ValueError, 'unknown property'):
-            AbacusSocketIO._decode_socket_metadata(
-                np.frombuffer(metadata, dtype=np.int8))
-
-    def test_socketio_metadata_marks_padding_absent(self):
-        metadata = json.dumps({
-            'schema': 'abacus.socket.properties.v1',
-            'present': ['energy'],
-            'scf_converged': False,
-        }).encode('utf-8')
-        decoded = AbacusSocketIO._decode_socket_metadata(
-            np.frombuffer(metadata, dtype=np.int8))
-        self.assertEqual(decoded['present'], ('energy',))
-        self.assertFalse(decoded['scf_converged'])
-
-    def test_socketio_legacy_response_cannot_infer_force_from_padding(self):
-        class LegacyServer:
-            def calculate(self, atoms):
-                return {
-                    'energy': 1.0,
-                    'forces': np.zeros((len(atoms), 3)),
-                    'virial': np.zeros((3, 3)),
-                    'morebytes': b'',
-                }
-
-        calc = object.__new__(AbacusSocketIO)
-        calc.variable_cell = False
-        calc._property_constraints = {}
-        calc._active_properties = ('energy', 'forces')
-        calc._reference_cell = None
-        calc.atoms = None
-        calc.server = LegacyServer()
-        atoms = Atoms('Si')
-        with self.assertRaisesRegex(ValueError, 'refusing to infer forces'):
-            calc.calculate(atoms=atoms, properties=('forces',), system_changes=())
-
-    def test_socketio_failed_response_clears_previous_frame(self):
-        class BrokenServer:
-            def calculate(self, atoms):
-                raise EOFError('incomplete frame')
-
-        calc = object.__new__(AbacusSocketIO)
-        calc._property_constraints = {}
-        calc._active_properties = ('energy',)
-        calc._reference_cell = None
-        calc.atoms = None
-        calc.results = {'energy': 123.0}
-        calc.last_scf_converged = True
-        calc._last_socket_metadata = {'scf_converged': True}
-        calc.server = BrokenServer()
-        with self.assertRaises(EOFError):
-            calc.calculate(Atoms('Si'), properties=('energy',), system_changes=())
-        self.assertEqual(calc.results, {})
-        self.assertIsNone(calc.last_scf_converged)
-        self.assertIsNone(calc._last_socket_metadata)
-
-    def test_socketio_requested_disabled_property_is_rejected(self):
-        calc = object.__new__(AbacusSocketIO)
-        calc._property_constraints = {'forces': False, 'stress': False}
-        from ase.calculators.calculator import PropertyNotImplementedError
-        with self.assertRaises(PropertyNotImplementedError):
-            calc._check_requested_properties(('forces',))
-
-    def test_parse_version_allows_launcher_noise(self):
-        stdout = 'launcher info\nABACUS version v3.11.0-beta6\n'
-        self.assertEqual(AbacusProfile.parse_version(stdout), 'v3.11.0-beta6')
-
-    def test_parse_version_rejects_missing_version(self):
-        with self.assertRaisesRegex(RuntimeError, 'ABACUS version'):
-            AbacusProfile.parse_version('launcher failed before abacus started')
-
-    def test_calculator_results(self):
-        from ase.build.bulk import bulk
-        silicon = bulk('Si', crystalstructure='diamond', a=5.43)
-        aprof = AbacusProfile(
-            command='mpirun -np 2 abacus',
-            pseudo_dir=self.pporb,
-            orbital_dir=self.pporb,
-            omp_num_threads=1
-        )
-        with tempfile.TemporaryDirectory() as tmpdir:
-            calculator = Abacus(aprof,
-                                directory=tmpdir,
-                                pseudopotentials={'Si': 'Si_ONCV_PBE-1.0.upf'},
-                                basissets={'Si': 'Si_gga_6au_100Ry_2s2p1d.orb'},
-                                inp={'calculation': 'scf',
-                                    'basis_type': 'lcao',
-                                    'ks_solver': 'genelpa',
-                                    'ecutwfc': 40,
-                                    'symmetry': 1,
-                                    'nspin': 1,
-                                    'gamma_only': True,
-                                    'cal_force': 1,
-                                    'cal_stress': 1})
-            silicon.calc = calculator
-            e = silicon.get_potential_energy()
-        
-        # check!
-        self.assertAlmostEqual(e, -194.953050937)
-        self.assertIsNotNone(calculator.results)
-        self.assertIsInstance(calculator.results, dict)
-        for k in ['nspins', 'nkpts', 'nbands', 'eigenvalues', 'occupations',
-                  'fermi_level', 'kpoint_weights', 'ibz_kpoints', 'energy', 
-                  'free_energy', 'natoms', 'forces', 'stress', 'magmoms']:
-            self.assertIn(k, calculator.results)
-        self.assertEqual(calculator.results['nspins'], 1)
-        self.assertEqual(calculator.results['nkpts'], 1)
-        self.assertEqual(calculator.results['nbands'], 14)
-        self.assertEqual(calculator.results['energy'], e)
-        self.assertEqual(calculator.results['free_energy'], e)
-        self.assertEqual(calculator.results['natoms'], 2)
-        
-        for k in ['eigenvalues', 'occupations', 'ibz_kpoints', 'forces', 'stress', 'magmoms']:
-            self.assertIsInstance(calculator.results[k], np.ndarray)
-
-        self.assertEqual(calculator.results['eigenvalues'].shape, (1, 1, 14))
-        ekb = [-4.82194,  7.62727,  7.62727,  7.62737, 10.2436 , 10.2436 ,
-                10.2436 , 10.9884 , 16.057  , 16.057  , 23.8353 , 25.421  ,
-                25.421  , 25.4212 ]
-        self.assertTrue(np.allclose(calculator.results['eigenvalues'][0, 0, :], np.array(ekb)))
-
-        self.assertEqual(calculator.results['occupations'].shape, (1, 1, 14))
-        occ = [2., 2., 2., 2., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        self.assertTrue(np.allclose(calculator.results['occupations'][0, 0, :], np.array(occ)))
-        
-        self.assertEqual(calculator.results['ibz_kpoints'].shape, (1, 3))
-        self.assertTrue(np.allclose(calculator.results['ibz_kpoints'][0, :], np.array([0,0,0])))
-
-        self.assertEqual(calculator.results['forces'].shape, (2, 3))
-        self.assertTrue(np.allclose(calculator.results['forces'], np.zeros((2, 3))))
-
-        self.assertEqual(calculator.results['stress'].shape, (6,))
-        stress = [-0.19327923, -0.19327923, -0.19327923, -0.        ,  0.        ,   0.        ]
-        self.assertTrue(np.allclose(calculator.results['stress'], np.array(stress)))
-        
-        self.assertEqual(calculator.results['magmoms'].shape, (2,))
-        self.assertTrue(np.allclose(calculator.results['magmoms'], np.zeros(2)))
-
-    def test_restart(self):
-        from ase.build.bulk import bulk
-        silicon = bulk('Si', crystalstructure='diamond', a=5.43)
-        aprof = AbacusProfile(
-            command='mpirun -np 2 abacus',
-            pseudo_dir=self.pporb,
-            orbital_dir=self.pporb,
-            omp_num_threads=1
-        )
-        with tempfile.TemporaryDirectory() as tmpdir:
-            calculator = Abacus(aprof,
-                                directory=tmpdir,
-                                pseudopotentials={'Si': 'Si_ONCV_PBE-1.0.upf'},
-                                basissets={'Si': 'Si_gga_6au_100Ry_2s2p1d.orb'},
-                                inp={'calculation': 'scf',
-                                    'basis_type': 'lcao',
-                                    'ks_solver': 'genelpa',
-                                    'ecutwfc': 40,
-                                    'symmetry': 1,
-                                    'nspin': 1,
-                                    'gamma_only': True,
-                                    'cal_force': 1,
-                                    'cal_stress': 1})
-            silicon.calc = calculator
-            e = silicon.get_potential_energy()
-        
-            # restart
-            silicon.calc = Abacus.restart(aprof, directory=tmpdir)
-            e2 = silicon.get_potential_energy()
-            self.assertAlmostEqual(e2, e)
-
-    def test_version_number_check(self):
-        # not a version number
-        with self.assertRaises(AssertionError):
-            switch_io_backend_version('not-a-version-number')
-        # too old version
-        with self.assertRaises(AssertionError):
-            switch_io_backend_version('v2.2.2')
-        self.assertTrue(switch_io_backend_version('v3.8.4'))
-        self.assertFalse(switch_io_backend_version('v3.9.0.25'))
-        self.assertTrue(switch_io_backend_version('v3.10.0'))
-        self.assertFalse(switch_io_backend_version('v3.11.0-beta.2'))
-        self.assertFalse(switch_io_backend_version('v3.11.0'))
-
-    def test_property_keywords_reject_conflicting_user_parameters(self):
-        template = AbacusTemplate()
-        with self.assertRaises(ValueError):
-            template.get_property_keywords({'nspin': 1}, ['magmom'])
-
-        parameters = template.get_property_keywords({'nspin': 2}, ['magmom'])
-        self.assertEqual(str(parameters['nspin']), '2')
-
-    def test_property_keywords_accept_equivalent_boolean_user_parameters(self):
-        template = AbacusTemplate()
-
-        parameters = template.get_property_keywords(
-            {'cal_force': True, 'cal_stress': True},
-            ['forces', 'stress']
-        )
-
-        self.assertEqual(str(parameters['cal_force']), '1')
-        self.assertEqual(str(parameters['cal_stress']), '1')
-
-    def test_property_keywords_reject_conflicting_boolean_user_parameters(self):
-        template = AbacusTemplate()
-
-        with self.assertRaises(ValueError):
-            template.get_property_keywords({'cal_force': False}, ['forces'])
-
-        with self.assertRaises(ValueError):
-            template.get_property_keywords({'cal_stress': False}, ['stress'])
-
-    def test_property_keywords_treat_string_values_as_scalars(self):
-        template = AbacusTemplate()
-        template.implemented_properties = ['probe']
-        template.get_probe_keywords = lambda parameters: {'custom_switch': 'true'}
-
-        parameters = template.get_property_keywords(
-            {'custom_switch': 'true'}, ['probe']
-        )
-
-        self.assertEqual(parameters['custom_switch'], 'true')
-
-    def test_property_keywords_compare_iterables_like_input_writer(self):
-        template = AbacusTemplate()
-        template.implemented_properties = ['probe']
-        template.get_probe_keywords = lambda parameters: {
-            'custom_vector': [1, 'true']
-        }
-
-        with self.assertRaises(ValueError):
-            template.get_property_keywords(
-                {'custom_vector': [True, 'true']}, ['probe']
-            )
-
-    def test_property_keywords_reject_conflicting_properties(self):
-        template = AbacusTemplate()
-        template.implemented_properties = ['prop_a', 'prop_b']
-        template.get_prop_a_keywords = lambda parameters: {'calculation': 'scf'}
-        template.get_prop_b_keywords = lambda parameters: {'calculation': 'md'}
-
-        with self.assertRaises(ValueError):
-            template.get_property_keywords({}, ['prop_a', 'prop_b'])
-
-    def test_dipole_property_is_not_implemented(self):
-        template = AbacusTemplate()
-        self.assertNotIn('dipole', template.implemented_properties)
-        with self.assertRaises(AssertionError):
-            template.get_property_keywords({}, ['dipole'])
-
-if __name__ == '__main__':
-    unittest.main()

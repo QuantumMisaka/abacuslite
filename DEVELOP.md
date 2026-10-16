@@ -1,5 +1,11 @@
 # Developer Guide
 
+Runtime modules now live under `src/abacuslite`; tests and fixtures live under
+`tests`. The module map below describes the runtime package. Install the package
+before running tests; `python -m pytest` exercises the installed implementation.
+See [README.md](README.md) for offline/engine test separation and
+[docs/design.md](docs/design.md) for package boundaries.
+
 Abacuslite has the following file structure:
 ```
 .
@@ -10,7 +16,6 @@ Abacuslite has the following file structure:
 │   ├── generalio.py
 │   ├── latestio.py
 │   ├── legacyio.py
-│   └── testfiles
 ├── utils
 │   ├── __init__.py
 │   └── ksampling.py

@@ -1,4 +1,5 @@
 import unittest
+import os
 from pathlib import Path
 here = Path(__file__).parent
 from ase.build import bulk
@@ -7,16 +8,16 @@ from ase.md import Langevin
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from abacuslite.io.generalio import load_pseudo, load_orbital
 from abacuslite import AbacusProfile, Abacus
-from common import preserved_tmpdir
+from .common import preserved_tmpdir
 
 class TestLangevinMolecularDynamics(unittest.TestCase):
 
     def test(self):
-        pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+        pporb = Path(os.environ['ABACUS_PP_ORB'])
 
         silicon = bulk('Si', 'diamond', a=5.43)
         aprof = AbacusProfile(
-            command='mpirun -np 2 abacus',
+            command=os.environ.get('ABACUS_COMMAND', 'abacus'),
             pseudo_dir=pporb,
             orbital_dir=pporb,
             omp_num_threads=1,
