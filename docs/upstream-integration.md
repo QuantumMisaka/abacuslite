@@ -60,3 +60,20 @@ a linked plugin compatibility change. ATST owns workflow and launcher policy.
 While upstream migration is pending, record necessary backports by source
 commit and behavior; neither automatically overwrite another repository nor
 maintain an untracked alternative implementation.
+
+## Architecture and portability follow-up
+
+The source/API comparison and caller migration steps are recorded in
+[the migration guide](migration.md). The 2026-10-17 follow-up retained all
+runtime modules and public signatures. It corrected the examples' inherited
+ABACUS-relative asset paths: all 11 now accept an explicit asset directory
+and engine command. The new startup regression failed on all 11 originals
+and passed after the correction, without executing a calculation.
+
+Validation for this follow-up used installed wheels outside the checkout:
+Python 3.10 / ASE 3.28 and Python 3.12 / ASE 3.29 each passed 112 tests with
+15 skips. Rebuilding from the sdist, reinstalling that wheel and running the
+sdist's tests/examples also passed 112 tests with 15 skips on the minimum
+environment. Both distributions passed strict Twine metadata checks. The skips
+cover nine opt-in engine tests, four separately run consumer tests and two
+retained upstream placeholders. Independent review found no blocking issue.

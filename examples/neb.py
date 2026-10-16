@@ -4,6 +4,7 @@ PbTiO3 ferroelectric inversion energy barrier
 Learn how to use the NEB module in ASE, please refer to the online manual at:
 https://ase-lib.org/examples_generated/tutorials/neb_idpp.html
 '''
+import os
 from pathlib import Path
 here = Path(__file__).parent
 
@@ -15,7 +16,7 @@ from ase.mep import NEB
 import matplotlib.pyplot as plt
 from abacuslite import Abacus, AbacusProfile
 
-pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+pporb = Path(os.environ['ABACUS_PP_ORB']).expanduser().resolve()
 
 elem = ['Ti', 'Pb', 'O', 'O', 'O']
 taud = np.array([
@@ -45,7 +46,7 @@ taud = np.array([
 dw = Atoms(elem, cell=cell, scaled_positions=taud)
 
 aprof = AbacusProfile(
-    command='mpirun -np 8 abacus_2p',
+    command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 8 abacus_2p'),
     pseudo_dir=pporb,
     orbital_dir=pporb,
     omp_num_threads=1

@@ -6,7 +6,7 @@ before running tests; `python -m pytest` exercises the installed implementation.
 See [README.md](README.md) for offline/engine test separation and
 [docs/design.md](docs/design.md) for package boundaries.
 
-Abacuslite has the following file structure:
+Within `src/abacuslite`, the inherited module structure is:
 ```
 .
 ├── __init__.py
@@ -92,4 +92,7 @@ This module contains the wrapper of k-point sampling functions and helper functi
 
 ## xtest.sh
 
-This script can run all the unittests that programmed in all Python source files.
+This compatibility launcher runs the extracted offline tests. From the repository
+root use `bash src/abacuslite/xtest.sh`, or use `python -m pytest tests/unit -q`
+directly. Tests are no longer embedded in the runtime source files. The launcher
+is a source-checkout convenience, not an installed console entry point.

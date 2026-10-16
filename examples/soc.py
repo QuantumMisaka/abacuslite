@@ -1,10 +1,11 @@
 '''this example shows how to perform the noncolinear
 spin-orbit coupling calculation'''
+import os
 import shutil
 from pathlib import Path
 here = Path(__file__).parent
 
-pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+pporb = Path(os.environ['ABACUS_PP_ORB']).expanduser().resolve()
 
 import numpy as np
 from ase.atoms import Atoms
@@ -27,7 +28,7 @@ fe = Atoms(symbols=['Fe'] * 2,
            pbc=True)
 
 aprof = AbacusProfile(
-        command='mpirun -np 2 abacus',
+        command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 2 abacus'),
         pseudo_dir=pporb,
         orbital_dir=pporb,
         omp_num_threads=1

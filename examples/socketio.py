@@ -23,7 +23,7 @@ from ase import Atoms
 from abacuslite import Abacus, AbacusProfile, AbacusSocketIO
 
 here = Path(__file__).parent
-pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+pporb = Path(os.environ['ABACUS_PP_ORB']).expanduser().resolve()
 
 aprof = AbacusProfile(
     command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 4 abacus'),

@@ -1,4 +1,4 @@
-'''
+r'''
 To run the metadynamics, you need to configure the plumed correctly:
 
 conda install -c conda-forge plumed=2.8.2=mpi_openmpi_hb0545ae_0
@@ -36,13 +36,13 @@ H-C bond length and the C-F bond length.
 CSVR thermostat is used to maintain the temperature during the simulation.
 '''
 
+import os
 import shutil
 import tempfile
 from pathlib import Path # a more Pythonic alternative to the os.path
 here = Path(__file__).parent
-# to the directory where the pseudopotential and orbital files are stored
-# In your case you change to the appropriate one
-pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+# Set ABACUS_PP_ORB to your pseudopotential and orbital asset directory.
+pporb = Path(os.environ['ABACUS_PP_ORB']).expanduser().resolve()
 
 from ase.io import read
 from ase.md import Bussi
@@ -58,7 +58,7 @@ from ase.calculators.plumed import Plumed
 from abacuslite import AbacusProfile, Abacus
 
 aprof = AbacusProfile(
-    command='mpirun -np 16 abacus',
+    command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 16 abacus'),
     pseudo_dir=pporb,
     orbital_dir=pporb,
     omp_num_threads=1,

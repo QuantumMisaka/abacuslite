@@ -12,15 +12,56 @@ abacuslite is a lightweight plugin for ABACUS (Atomic-orbital Based Ab-initio Co
 - **Function Support**: Provides SCF-based energy, force, and stress evaluations through ASE. ASE can use these evaluations for relaxation, molecular dynamics, NEB, band-structure, and density-of-states workflows.
 - **Socket Support**: `AbacusSocketIO` provides fixed-cell i-PI socket calculations, with energy always available and forces/stress enabled independently when requested.
 
+## Architecture and source continuity
+
+The package follows the original ABACUS ASE interface design. It combines the
+current ABACUS implementation with ATST's general-purpose fixes while keeping
+the same calculator classes and I/O module paths:
+
+| Module | Responsibility |
+| --- | --- |
+| `core.py` | `AbacusProfile`, `AbacusTemplate`, ASE `Abacus` calculator and `AbacusSocketIO` |
+| `io/generalio.py` | INPUT, STRU and KPT reading/writing |
+| `io/legacyio.py`, `io/latestio.py` | Readers for the two existing ABACUS output formats |
+| `utils/ksampling.py` | K-point paths and sampling helpers |
+
+```text
+src/abacuslite/         # original runtime modules, now in a src layout
+examples/              # ASE usage examples, with external engine/assets
+tests/                 # offline, engine and installed-consumer tests + fixtures
+```
+
+Moving the source under `src/` changes packaging, not `import abacuslite`.
+Tests formerly embedded in production modules now live under `tests/`.
+ASE still owns optimization/MD/NEB algorithms; ATST owns its workflow and
+launcher policy. Neither ATST nor Forge is a runtime dependency of this plugin.
+See [DEVELOP.md](DEVELOP.md) for the module reference and
+[the integration audit](docs/upstream-integration.md) for the preserved ABACUS
+features and integrated ATST fixes.
+
 ## Installation
 
-This repository is the independent source package. `1.1.0rc1` is an unreleased
-candidate; a successful source installation does not imply a PyPI release.
-Install from this repository root:
+Requires **Python 3.10+**. `1.1.0rc1` is an unreleased candidate; install from
+this repository until an indexed release is available. From a fresh checkout:
 
 ```bash
+git clone https://github.com/QuantumMisaka/abacuslite.git
+cd abacuslite
+python3 -m venv .venv
+source .venv/bin/activate
 python -m pip install .
+python -m pip check
+python -c "import abacuslite; print(abacuslite.__file__)"
 ```
+
+The activation command above is for POSIX shells. If you already have a suitable
+Python environment, use it directly. Runtime dependencies are ASE, NumPy and
+seekpath; the currently tested combinations use Python 3.10 / ASE 3.28 and
+Python 3.12 / ASE 3.29. The declared dependency range is not a promise that every
+future combination is validated.
+
+For development, use `python -m pip install -e '.[dev]'`. Wheel and sdist builds
+are supported; downstream CI should record the exact candidate commit or wheel used for verification.
 
 ABACUS itself and the pseudopotential/orbital assets are supplied separately.
 Pure input/output functions do not require an ABACUS executable:
@@ -33,10 +74,41 @@ parameters = read_input("INPUT")
 structure = read_stru("STRU")
 ```
 
-Calculator imports remain `from abacuslite import Abacus, AbacusProfile,
-AbacusSocketIO`. Choose the executable and assets explicitly as shown in the
-examples. ATST workflow orchestration and consumer-specific result schemas
-are outside this package.
+The public calculator imports are unchanged:
+
+```python
+from abacuslite import Abacus, AbacusProfile, AbacusSocketIO
+```
+
+To run the SCF example, supply an installed ABACUS executable and matching assets:
+
+```bash
+export ABACUS_COMMAND='mpirun -np 2 abacus'
+export ABACUS_PP_ORB=/absolute/path/to/ABACUS/tests/PP_ORB
+export OMP_NUM_THREADS=1
+python examples/scf.py
+```
+
+`ABACUS_PP_ORB` can instead point to your own asset directory. `scf.py` requires
+`Si_ONCV_PBE-1.0.upf` and `Si_gga_8au_100Ry_2s2p1d.orb`; other examples name their
+own assets. Set engine parameters, including the eigensolver, to match your
+ABACUS build. The example scripts read these environment variables explicitly;
+the library itself continues to take command/asset settings through
+`AbacusProfile`. There is no automatic ASE installation patch or engine download.
+
+## Migrating existing callers
+
+Normal callers retain `from abacuslite import ...` and `abacuslite.io.*` imports.
+The installation source changes from `interfaces/ASE_interface` to this package.
+ATST workflow callers continue using ATST; maintainers must route direct
+vendored calculator imports through its backend adapter and pure I/O imports
+through `abacuslite.io` before removing the bundled copy.
+
+Migration differences are explicit: the ASE floor is now 3.28, `eig_occ.txt` is
+not deleted when read, and the compatibility reader switch only affects newly
+created bare templates. A calculator with a profile keeps its own reader.
+See [the migration guide](docs/migration.md) for installation-path checks,
+consumer-specific steps and remaining engine validation.
 
 ## Validation and development
 
@@ -61,7 +133,8 @@ include engine-specific numerical references. Do not interpret fixture tests
 as validation of arbitrary engine versions. Package CI tests installed wheels
 on Python 3.10 with minimum dependencies and Python 3.12 with current dependencies.
 See [the implementation record](docs/superpowers/plans/2026-10-16-standalone-bootstrap.md)
-for actual verification and remaining release work.
+for the initial extraction, and [the CI record](docs/superpowers/plans/2026-10-16-cross-repository-regressions.md)
+for subsequent installed-consumer verification.
 
 Each calculator retains its own output-reader selection. Parsing existing
 output, including `eig_occ.txt`, is repeatable and does not consume source
@@ -75,7 +148,13 @@ to their regression coverage and explains reader instance isolation. See the
 
 ## Usage Examples
 
-Please refer to the example scripts in the `examples` folder. Recommended learning path:
+The scripts in `examples/` preserve the upstream ASE usage patterns. All accept
+`ABACUS_PP_ORB` and `ABACUS_COMMAND`; the latter overrides their original launcher
+default. Some examples remove their calculation directories on completion, so
+use a dedicated checkout or copy when adapting them for retained results.
+Metadynamics additionally needs a working PLUMED installation. These are usage
+examples; offline startup checks do not certify their full scientific workflows.
+Recommended learning path:
 
 1. **scf.py** - Basic SCF calculation example
 2. **relax.py** - Atomic position relaxation calculation

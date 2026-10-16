@@ -1,10 +1,10 @@
+import os
 import shutil
 import tempfile
 from pathlib import Path # a more Pythonic alternative to the os.path
 here = Path(__file__).parent
-# to the directory where the pseudopotential and orbital files are stored
-# In your case you change to the appropriate one
-pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+# Set ABACUS_PP_ORB to your pseudopotential and orbital asset directory.
+pporb = Path(os.environ['ABACUS_PP_ORB']).expanduser().resolve()
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ from ase.constraints import FixCartesian
 from abacuslite import AbacusProfile, Abacus
 
 aprof = AbacusProfile(
-    command='mpirun -np 16 abacus',
+    command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 16 abacus'),
     pseudo_dir=pporb,
     orbital_dir=pporb,
     omp_num_threads=1,

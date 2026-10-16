@@ -9,12 +9,12 @@ pip install seekpath
 . The SeeK-path package recommands you cite by the way posted here:
 https://seekpath.materialscloud.io/
 '''
+import os
 import shutil
 from pathlib import Path # a more Pythonic alternative to the os.path
 here = Path(__file__).parent
-# to the directory where the pseudopotential and orbital files are stored
-# In your case you change to the appropriate one
-pporb = here.parent.parent.parent / 'tests' / 'PP_ORB'
+# Set ABACUS_PP_ORB to your pseudopotential and orbital asset directory.
+pporb = Path(os.environ['ABACUS_PP_ORB']).expanduser().resolve()
 
 from ase.build import bulk
 from abacuslite import Abacus, AbacusProfile
@@ -23,7 +23,7 @@ from abacuslite.utils.ksampling import kpathgen
 # AbacusProfile: the interface connecting the Abacus calculator instance
 # with the file system and the enviroment
 aprof = AbacusProfile(
-    command='mpirun -np 4 abacus',
+    command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 4 abacus'),
     pseudo_dir=pporb,
     orbital_dir=pporb,
     omp_num_threads=1,

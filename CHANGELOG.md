@@ -15,6 +15,8 @@
   calls affect new bare templates only, not existing calculator instances.
 - Add persistent installed ATST/Forge consumer CI, bidirectional reader
   isolation regressions and a cross-repository compatibility guide.
+- Make all examples accept explicit engine/asset environment settings and
+  document source layout, installation and consumer migration.
 - Separate offline tests from opt-in engine tests and package source fixtures.
 - Raise the ASE dependency floor to 3.28 for the supported candidate matrix;
   this release does not claim the old unverified `ase>=3.22` range.
