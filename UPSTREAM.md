@@ -9,8 +9,7 @@ Original history: https://github.com/deepmodeling/abacus-develop/commits/4b92455
 
 This is a snapshot import; the original Git history is linked, not rewritten
 or claimed as newly authored. Original author notices are retained. The root
-LICENSE is copied from the same ABACUS commit. Subsequent ATST adaptations
-will be recorded here with their source and regression evidence.
+LICENSE is copied from the same ABACUS commit. ATST adaptations are recorded below with their source and regression evidence.
 
 ## Integrated ATST adaptations
 
@@ -28,3 +27,8 @@ retained, and its repeatability is tested.
 The independent package additionally isolates calculator reader selection
 from the compatibility global default. Behavioral changes and validation
 are recorded in CHANGELOG.md and the implementation plan.
+
+Additional generic fixed-density, native version-probe and backup-suffix
+regressions are adapted from ATST `tests/unit/test_abacuslite_profile.py` at
+the same revision. The [integration audit](docs/upstream-integration.md) maps
+all substantive source differences to retained behavior and test ownership.

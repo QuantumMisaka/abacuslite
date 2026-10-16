@@ -68,6 +68,11 @@ output, including `eig_occ.txt`, is repeatable and does not consume source
 files. The old compatibility switch only sets the default for new bare
 templates. See [CHANGELOG.md](CHANGELOG.md) for migration differences.
 
+The [integration audit](docs/upstream-integration.md) maps ABACUS and ATST fixes
+to their regression coverage and explains reader instance isolation. See the
+[cross-repository CI guide](docs/compatibility-ci.md) and
+[contributor guide](CONTRIBUTING.md) for PR and coordinated-change checks.
+
 ## Usage Examples
 
 Please refer to the example scripts in the `examples` folder. Recommended learning path:

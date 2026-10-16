@@ -4,6 +4,17 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      atst_ref:
+        description: ATST commit or refs/pull/N/merge for coordinated candidates
+        default: '45d8c78de8a605c127cd4c36742d0c9525a0a6b6'
+        type: string
+      forge_ref:
+        description: Forge commit or refs/pull/N/merge for coordinated candidates
+        default: '43f5d4a274bb7106f1572dcaab122f7f29c7456b'
+        type: string
+  schedule:
+    - cron: '17 3 * * 1'
 
 permissions:
   contents: read
@@ -50,3 +61,60 @@ jobs:
         with:
           name: distributions-${{ matrix.python }}
           path: dist/*
+
+  installed-consumers:
+    name: installed-consumers
+    runs-on: ubuntu-latest
+    needs: installed-package
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions-3.12
+          path: candidate-dist
+      - name: Checkout ATST consumer
+        uses: actions/checkout@v4
+        with:
+          repository: QuantumMisaka/atst-tools
+          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '45d8c78de8a605c127cd4c36742d0c9525a0a6b6' }}
+          path: consumer-sources/atst
+          persist-credentials: false
+      - name: Checkout Forge consumer
+        uses: actions/checkout@v4
+        with:
+          repository: QuantumMisaka/abacus-forge
+          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.forge_ref || '43f5d4a274bb7106f1572dcaab122f7f29c7456b' }}
+          path: consumer-sources/forge
+          persist-credentials: false
+      - name: Install consumers and candidate wheel
+        run: |
+          python -m pip install 'pytest>=8,<10' ./consumer-sources/atst ./consumer-sources/forge candidate-dist/*.whl
+          python -m pip check
+          git -C consumer-sources/atst rev-parse HEAD
+          git -C consumer-sources/forge rev-parse HEAD
+      - name: Run consumer contracts outside checkouts
+        run: |
+          mkdir -p "$RUNNER_TEMP/abacuslite-consumers"
+          cp -R tests "$RUNNER_TEMP/abacuslite-consumers/tests"
+          cp pyproject.toml "$RUNNER_TEMP/abacuslite-consumers/pyproject.toml"
+          cd "$RUNNER_TEMP/abacuslite-consumers"
+          python -m pytest tests/consumers --run-consumers -q -s
+
+  compatibility-gate:
+    name: compatibility-gate
+    if: always()
+    needs: [installed-package, installed-consumers]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every compatibility job to succeed
+        env:
+          PACKAGE_RESULT: ${{ needs.installed-package.result }}
+          CONSUMER_RESULT: ${{ needs.installed-consumers.result }}
+        run: |
+          test "$PACKAGE_RESULT" = success
+          test "$CONSUMER_RESULT" = success

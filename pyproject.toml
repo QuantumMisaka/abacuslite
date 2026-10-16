@@ -37,4 +37,7 @@ include = ["abacuslite*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
-markers = ["engine: requires explicitly supplied ABACUS executable and assets"]
+markers = [
+    "engine: requires explicitly supplied ABACUS executable and assets",
+    "consumer: requires explicitly installed external consumer packages"
+]

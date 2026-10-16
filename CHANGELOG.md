@@ -13,6 +13,8 @@
   longer consumes the input file. This intentionally differs from old ATST.
 - Isolate each calculator's output-format selection; compatibility switch
   calls affect new bare templates only, not existing calculator instances.
+- Add persistent installed ATST/Forge consumer CI, bidirectional reader
+  isolation regressions and a cross-repository compatibility guide.
 - Separate offline tests from opt-in engine tests and package source fixtures.
 - Raise the ASE dependency floor to 3.28 for the supported candidate matrix;
   this release does not claim the old unverified `ase>=3.22` range.
