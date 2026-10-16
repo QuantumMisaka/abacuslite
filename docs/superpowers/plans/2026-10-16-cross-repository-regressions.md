@@ -18,7 +18,7 @@ Design: [Independent ASE plugin](../../design.md).
   Keep consumer dependencies outside the runtime package requirements.
 - [x] Document the actual CI state, per-repository PR/candidate/scheduled test
   responsibilities, engine evidence, and the required-check adoption boundary.
-- [ ] Validate built distributions, independent review, commit and deliver the
+- [x] Validate built distributions, independent review, commit and deliver the
   source changes with revision-bound local and GitHub evidence.
 
 ## Rulings
@@ -63,10 +63,22 @@ Local validation of the final implementation on 2026-10-16:
 - Executed aggregate-gate shell logic with successful, failed, skipped and
   cancelled dependency results; only success/success returned zero.
 - Independent reviewer inspected the whole change and mutation evidence;
-  no blocking issue remained. New CI still requires verification on GitHub.
+  no blocking issue remained. GitHub verification is recorded below.
 
 The first draft of the consumer tests used the calculator energy convention
 for Forge and list equality for KPT `nk`. Baseline failures were test errors:
 Forge intentionally projects `E_KS(sigma->0)` when present, and `nk` is a tuple.
 Expectations were corrected from the owning contract and raw fixture values;
 no production behavior or numerical tolerance was weakened.
+
+
+GitHub Actions [run 38857989244](https://github.com/QuantumMisaka/abacuslite/actions/runs/38857989244)
+passed on implementation commit `82e40823f35773aef39a6a422307ee874c66d7ae`:
+both package matrix jobs (including sdist-derived wheels), installed consumers
+at the reviewed public refs, and `compatibility-gate` all succeeded. Source
+handoff targets `main`; the accompanying evidence-only update changes no tested
+implementation. The independent worktree is retained for subsequent iteration.
+
+Remaining adoption: main's required-check setting, ABACUS's real engine plus
+independent-plugin job, ATST's own PR external-backend gate, real-engine
+acceptance and PyPI publication. This delivery does not claim these are deployed.
