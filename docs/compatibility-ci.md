@@ -51,6 +51,21 @@ introduced, add the `merge_group` trigger before requiring the gate there.
 ## Recommended adoption by ABACUS and ATST
 
 These rows are the proposed target, not CI already installed in those repos.
+The [ABACUS/ATST acceptance plan](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md)
+records refreshed source baselines, remaining migration work and the order of
+engine, workflow and release verification before returning to Forge.
+
+Local integration candidates now implement those consumer lanes: ABACUS
+`bca8164` tests installed bundled/external packages, including native MD and
+socket; ATST `53d6b7c` uses one external-backend decision and tests the installed
+consumer wheel. Both pin plugin `dc02043`. The final ABACUS CPU comparison
+passes nine cases in each lane; ATST offline and installed-consumer checks
+pass. Trusted GPU workflow acceptance passes, including native MD, restart,
+serial/image-parallel NEB, CP and a separately identified LTS reader check.
+The final CP marker repair has targeted real-run evidence and a wheel diff
+proving the other workflow paths unchanged. These are local
+candidate results: neither consumer PR has been created and GitHub Actions
+has not run on these changes. See the plan for exact artifacts and evidence.
 
 | Changed repository | Required PR verification | Coordinated candidate check | Scheduled compatibility |
 | --- | --- | --- | --- |
@@ -59,7 +74,7 @@ These rows are the proposed target, not CI already installed in those repos.
 | ATST | Install this PR's ATST and supported plugin version(s); run external-backend tests and affected workflows | Candidate ATST plus candidate plugin, assert both imports are installed | Main ATST against latest plugin candidate/release |
 | Forge | Candidate Forge plus optional installed plugin; retain native/parser projection and readonly regressions | Candidate plugin extra with candidate Forge | Main Forge with current plugin |
 
-At this audit, ABACUS `.github/workflows/ase_plugin_test.yml` builds its PR
+On the refreshed upstream baselines, ABACUS `.github/workflows/ase_plugin_test.yml` builds its PR
 engine but installs `interfaces/ASE_interface` from the same tree. ATST's
 interface workflow validates a pinned vendored snapshot; ordinary tests do
 not install the independent plugin. Those jobs remain useful, but neither
