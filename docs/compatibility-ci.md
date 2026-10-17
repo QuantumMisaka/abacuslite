@@ -79,9 +79,13 @@ NEB, CP and a separately identified LTS reader check; its final CP marker
 repair had targeted real-run evidence and an unchanged-path wheel diff.
 
 The current ATST `87caeedb` and plugin `06f97b1` tuple has passed the full
-offline installed-wheel vendored/external consumer comparison. Its new GPU
-attempt (job `1827672`) is pending; the earlier GPU result does not establish
-acceptance for this tuple. These are local candidate results: neither consumer
+offline installed-wheel vendored/external consumer comparison. Its paired GPU
+job `1827672` also passed ten cases per backend, followed by explicit numeric
+and artifact comparisons; these results bind the current production files
+(`a56732c` ATST and `06f97b1` plugin) rather than reuse the earlier GPU tuple.
+MD/NEB trajectories and vibration caches were audited, and external repeated
+reads preserved the original files. These are bounded interface checks, not
+scientific convergence certification for all workflows. These are local candidate results: neither consumer
 PR has been created and GitHub Actions has not run on these changes. See the
 plan for exact artifacts and evidence.
 

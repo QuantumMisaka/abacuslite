@@ -13,7 +13,7 @@ Its checkboxes distinguish preparation from implementation and acceptance.
 PyPI publication still requires the maintainer's release authorization after
 the concrete candidate and evidence are ready. No Forge changes are included.
 
-**Local acceptance passed on 2026-10-17.** Package installation, both ABACUS
+**Earlier local acceptance passed for the 2.2.8 tuple on 2026-10-17.** Package installation, both ABACUS
 CPU lanes, ATST offline/installed checks and the scoped trusted GPU workflows
 have verified evidence. Remote CI, PR delivery, publication and production
 dependency cutover remain pending. The maintainer's local-validation-first
@@ -427,3 +427,196 @@ with **9 bundled + 9 external** cases passed.
 The selected local phase is complete. No PR/push, indexed publication,
 production dependency cutover or Forge change has occurred. Remote CI and PR
 delivery remain the next integration phase before the agreed return to Forge.
+
+
+## ATST 2.2.9 paired-installation follow-up (2026-10-17)
+
+Workflow: L3, continuing the approved integration plan. The maintainer asked
+for dedicated environments proving installed abacuslite behaves at least as
+well as vendored ATST, plus candidate-sensitive upstream/downstream CI in both
+repositories. Local validation precedes PR delivery; no push, publication or
+Forge change is part of this follow-up.
+
+Ruling: refresh ATST to current `origin/main` `1081b9d1fed06842ee1d95dfbeb542ed81c57d49`
+(version 2.2.9) before acceptance — prior 2.2.8 evidence does not cover new
+scientific contracts — ignoring the update could conceal a consumer regression.
+ATST integration merge `a56732c` retains the local backend/MD/CP fixes. The
+independent plugin receives the new default SCF identity tolerance `1e-5 Å`;
+its boundary regression fails on the previous default (4 failed, 2 passed).
+The unrelated dirty `atst229-alignment` worktree is preserved untouched.
+
+Acceptance sequence:
+
+- [x] Build wheels, create two clean Python environments with identical
+  dependencies and the same ATST wheel; install abacuslite only in the external
+  lane using pip. Record wheel/source identities, package locations, dependency
+  sets, full offline results and skip reasons.
+- [x] Exercise actual consumer paths in fresh processes, prevent silent backend
+  mixing and compare numeric fixtures against independent expectations. Keep
+  explicit vendored maintenance tests distinguishable from consumer coverage.
+- [x] Run paired real GPU cases with the same engine/inputs, independently check
+  raw outputs, record state/artifact differences and precise numerical bounds.
+  This establishes interface handoff, not scientific convergence for every
+  transition-state algorithm or optional unrelated calculator backend.
+- [x] Both repositories test their own candidate wheel against the counterpart;
+  reuse one ATST-owned installed-consumer runner, retain pinned acceptance plus
+  scheduled/main and manual coordinated-reference checks. Demonstrate meaningful
+  mutations fail, and distinguish committed configuration from activated remote CI.
+- [x] Independently review the final changes/evidence and document any remaining
+  coverage limits before reporting this follow-up complete.
+
+Raw local evidence: `~/scratch/abacuslite-atst229-parity/`; paired real-runtime
+harness/results: `~/scratch/abacuslite-atst229-paired-runtime/`.
+
+
+### Paired installed-wheel evidence
+
+The accepted ATST code/test revision is `87caeedbca5ed7104316bfc6130fd2598b6c5e4b`;
+its production Python files exactly match the `a56732c` wheel. Plugin CI configuration
+is recorded at `c2fc8f1f209fa3f055f14ad5fdfdbff45ea5bffa`; production files match
+`06f97b1bda59f3d29e93dd5c7a4bf598808b89b8`. The latter applies the ATST 2.2.9
+SCF identity tolerance. Plugin installed unit tests pass 119 / 4 skips.
+
+| Installed comparison | Vendored | External plugin | Comparison |
+| --- | --- | --- | --- |
+| Python 3.12.3, ASE 3.29.0 | 1390 passed / 38 skipped | 1392 passed / 36 skipped | Passed |
+| Python 3.12.3, ASE 3.28.0 | 1390 passed / 38 skipped | 1392 passed / 36 skipped | Passed |
+
+Each lane collects the same 1428 test identities. In each pair, all 33 other
+installed distributions are identical; only external adds abacuslite. Numeric
+facts match independent fixture constants. Both startup and finish of the
+pytest process attest installed package paths. A separate fresh process guards
+actual consumers against vendored imports. Full-suite tests that read relative
+document/example paths run at the ATST root with installed wheel imports;
+consumer probes and plugin-owned contracts execute outside source checkouts.
+Explicit vendored maintenance tests are retained and are not represented as
+external-backend coverage. Backend-specific tests explain the outcome
+variation; optional DeePMD models, scheduler cases, missing toolbox reference
+and source/distribution-specific tests remain visibly skipped.
+
+Both environments pip-install the same ATST wheel (SHA-256
+`bffbc2d3ada4f3ee7cfb9ba6f1b7e36bf6ca98171dac9a61854ed7c02bb59059`).
+Only external pip-installs abacuslite (SHA-256
+`4715299fe25b4ff583b577a4024d45eb2f338cd2aa2bb1d3c2db5066588abac9`).
+`wheels.json` binds every production Python file to its frozen source; both
+wheels and the plugin sdist pass strict Twine checks. The optional ATST wheel
+inspection also passes when supplied `ATST_DIST_WHEEL`; no new ATST sdist
+release is claimed by this follow-up.
+
+The installed comparison at `probe_improvements.py` establishes two concrete
+improvements over this vendored baseline: mixed legacy/latest calculators
+work in both creation orders, and high-level `read_abacus_out` supports repeated
+reads without deleting `eig_occ.txt`. Vendored fails those three probes;
+external passes. The lower-level `read_band_from_eig_occ` alone is read-only
+in both implementations and is not used to claim an improvement.
+
+The plugin-owned installed ATST/Forge contracts pass 10 tests. Independent
+mutations of installed copies show that removing MD cell scaling, reverting
+instance-specific reader choice, and restoring high-level eig_occ deletion
+all fail their behavior tests. Restored files reproduce 10 passed. An ATST
+consumer deliberately routed back to vendored is rejected by the fresh-process
+guard. Source trees and the paired environments are untouched by mutations.
+
+### Candidate CI and review
+
+ATST changes test their current wheel against plugin `06f97b1`; plugin changes
+test their current wheel against ATST `87caeedb` and Forge `43f5d4a`. Both use
+the ATST-owned installed-consumer runner. Scheduled jobs follow counterpart
+main heads; manual refs support coordinated changes. Dependencies, wheel/file
+identities, test identities/outcomes and numeric facts are compared, not merely
+a final pytest exit message. No release or cross-repository write token is used.
+
+Independent review found and closed a real failure-propagation defect:
+plugin consumer `pytest | tee` previously returned 0 when pytest failed.
+The corrected explicit Bash/pipefail step returns 1 for the same intentionally
+wrong SCF energy expectation (1 failed / 9 passed); restoring the test returns
+0 with 10 passed. Exact command/log/JUnit evidence is retained under
+`~/scratch/abacuslite-consumer-contract-229/ci-pipefail/`. Review also corrected
+documentation that had mixed the historical GPU tuple with the new candidate.
+
+Read-only GitHub settings inspection confirms plugin main has no protection or
+ruleset. ATST main has no required status checks; its existing named ruleset
+only protects `v1.5.0` from deletion/non-fast-forward. Thus these locally
+implemented checks are not yet enforced merge gates. After local acceptance,
+the activation dependency is: make plugin `06f97b1` fetchable, make ATST
+`87caeedb` fetchable, then validate the plugin CI commit. Only after remote
+checks actually pass should main require `compatibility-gate` (plugin) and
+`paired installed abacuslite consumer parity` (ATST). PR delivery, remote CI,
+required-check configuration and indexed publication remain separately tracked.
+
+The full offline evidence index is `~/scratch/abacuslite-atst229-parity/evidence.json`.
+Raw logs retain upstream warnings; no blanket warning filter was introduced.
+The completed paired real-runtime result is recorded separately below.
+
+
+The final installed suite also covers Python subprocesses. An additional audit
+found source-tree `PYTHONPATH` injections in runtime/plot/CLI tests, invisible
+to parent pytest attestation. `87caeedb` introduces an installed-test mode,
+shared subprocess-environment helper and lazy origin guard. Actual child imports
+resolve inside the environment; deliberate source shadowing exits nonzero.
+The guard uses `find_spec` without preloading NumPy/ASE, preserving lazy import
+and short-worker timeout behavior. The earlier eager guard's failures are kept
+as harness-development evidence. Both ASE versions were then rerun in full
+with the final guard (the 1428-case results above); no production code changed.
+
+### Paired real-runtime checkpoint
+
+SAI job `1827672` completed with `0:0` in 20:34 on `4v100n15` with two V100s.
+The same frozen ATST wheel and ABACUS binary ran in two isolated Python 3.10
+venvs with the same site dependencies; only the external lane installed the
+plugin. Import guards, every installed Python file, `pip check`, dependency
+sets and identical asset hashes were verified before comparing results.
+Both lanes passed all ten cases: Relax, ASE MD initial/restart, native MD,
+serial/two-rank NEB, Pt fixed-electron baseline/constant-potential handoff,
+finite-difference vibration and a separately identified LTS 3.10.1 run.
+All twenty recorded stages and the outer streamed process returned zero.
+
+The independent comparison uses tolerances fixed before reading external
+results: energy/EF/mu/Omega `1e-5 eV`, forces `1e-4 eV/Å`, positions/cells
+`1e-8 Å`, frequencies `1e-3 cm^-1`; the finite-difference Hessian uses
+`1e-2 eV/Å²`, accounting for two force errors over the `0.02 Å` span.
+All selected cross-lane values are identical at stored precision. The additional
+154-check artifact audit reads every MD/NEB trajectory frame, native MD_dump
+frames and literal raw energies, all seven vibration force caches and their
+central-difference Hessian. Maximum raw-vs-trajectory discrepancies are
+`2.0e-10 eV` and `5.7e-8 eV/Å`. These raw rounding differences are distinct
+from the zero cross-lane differences. The manifest hashes 599 archived lane
+files, including inputs, outputs and harness/provenance files.
+
+The external high-level reader reads eleven relax/CP/NEB outputs twice with
+unchanged raw log/eig_occ/STRU hashes. Vendored removes eig_occ after reading;
+external preserves it. Artifact roles and numerical handoff remain equivalent.
+The GPU engine is the selected `4b92455ca` / v3.11.0-beta10 binary (SHA-256
+`409dd40fc66e5ce4f71025bf979ddc4201c4147419b5839e314b362a346875e5`).
+The LTS compatibility case has its own recorded v3.10.1 binary hash and is not
+misrepresented as develop engine evidence.
+
+Full report and raw artifacts:
+`~/scratch/abacuslite-atst229-paired-runtime/attempt3-corrected-gpu/REPORT.md`.
+The successful archive SHA-256 is
+`930b4f7a94f9372345dba4b31ea725211f0048ba584abdea0fea635998e70e40`.
+`comparison.json`, `artifact-audit.json` and the frozen analysis scripts retain
+all thresholds, differences and file identities. Earlier queued/cancelled GPU
+attempts and the partial CPU preflight remain separate; none is counted as a
+completed paired acceptance.
+
+Scope: the full offline suite covers the wider ATST API/workflow contracts,
+including transition-state paths. The ten real cases validate interface and
+data handoff, not optimizer/scientific convergence. Single-step Relax/NEB
+retain their nonconvergence warnings. H2 vibration has two imaginary modes;
+it tests finite-difference plumbing, not a valid transition state. Dimer,
+Sella TS, CCQN and IRC have no new real-engine runs in this follow-up. Vibration
+cache stores forces only; per-displacement energies are not independently
+claimed. No assertion of universal compatibility across arbitrary future
+engine versions or untested scientific inputs follows from these results.
+
+Independent final review passed with no remaining blockers. The reviewer checked
+the final subprocess guards, both ASE comparisons, production-file identities,
+the successful archive and all 599 archived lane hashes, and independently
+recomputed the 110 trajectory/native-MD/vibration numeric checks. The other
+44 artifact checks cover the bounded repeat-read behavior described above.
+This completes the local acceptance checkpoint within the documented scope.
+No candidate push, PR, indexed publication, production dependency cutover or
+Forge modification has occurred in this follow-up. `pip install` here means
+installing the recorded candidate wheels; ATST does not yet pull a published
+abacuslite version automatically from PyPI.
