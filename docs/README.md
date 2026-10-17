@@ -26,10 +26,12 @@ identify the revisions and environments that were actually validated.
 
 ## Plans and evidence
 
+- [Post-release ATST and engine integration](superpowers/plans/2026-10-18-atst-next-actions.md):
+  external-only consumers, clean dual-engine builds, hosted checks and rollout status.
 - [1.1.0 release](superpowers/plans/2026-10-17-1.1.0-release.md):
   stable artifacts, release checks and publication status.
 - [Dual-engine CI follow-up](superpowers/plans/2026-10-17-dual-engine-ci.md):
-  remaining portable-harness, build, PR-gate and engine-side adoption work.
+  approved portable-harness, build, PR-gate and engine-side adoption plan.
 - [ABACUS/ATST integration acceptance](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md):
   local acceptance evidence, tested revision tuples and remaining rollout gates.
 - [Standalone bootstrap](superpowers/plans/2026-10-16-standalone-bootstrap.md):

@@ -11,9 +11,9 @@ and LTS v3.10.x are supported; the fixed-cell socket calculator requires an
 engine with socket support.
 
 **Stable release:** [1.1.0 on PyPI](https://pypi.org/project/abacuslite/1.1.0/).
-Local develop/LTS interface checks have passed;
-dual-engine PR CI is still planned. See the [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/compatibility-ci.md)
-for tested snapshots and the [release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-17-1.1.0-release.md)
+Develop/LTS interface checks have passed locally and on hosted CI.
+See the [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
+for tested snapshots and current gates, and the [release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-17-1.1.0-release.md)
 for publication status.
 
 ## Installation
@@ -60,15 +60,15 @@ calculator configuration and the complete example collection.
 
 ## Documentation
 
-See the [documentation index](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/README.md) for current guides and development records.
+See the [documentation index](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/README.md) for guides and current development records.
 
 | Task | Guide |
 | --- | --- |
 | Configure calculators, read output, run examples | [Usage](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/usage.md) |
 | Migrate ABACUS/ATST callers | [Migration](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/migration.md) |
-| Set up development, run tests and validate packages | [Contributing](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/CONTRIBUTING.md) |
+| Set up development, run tests and validate packages | [Contributing](https://github.com/QuantumMisaka/abacuslite/blob/main/CONTRIBUTING.md) |
 | Understand modules and package boundaries | [Module reference](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/reference.md) |
-| Check supported engines, CI and acceptance evidence | [Compatibility](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/compatibility-ci.md) |
+| Check supported engines, CI and acceptance evidence | [Compatibility](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md) |
 | Review changes and source attribution | [Changelog](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/CHANGELOG.md), [provenance](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/UPSTREAM.md) |
 
 ## Authors and maintenance

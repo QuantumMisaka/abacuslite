@@ -161,68 +161,123 @@ package's full initial-revision-to-final diff and its retained raw evidence.
 
 ## Execution record
 
-- W1 local checks passed: `git cat-file` rejects the runner path on ATST
-  `origin/main`; the public integration ref resolves to `87caeedb`. Interim
-  scheduled ref and consumer result checks are implemented. All 14 guard
-  regressions passed, the retained ten-case tag report was accepted, and
-  actionlint passed. Hosted workflow verification remains pending.
-- W2 implementation and independent review passed at plugin `4772dd5`.
-  All 46 CI-helper regressions and actionlint pass; the aggregate rejects
-  failed, skipped, cancelled, neutral and missing engine results. The shared
-  ABACUS harness is frozen at `e446bda`, after closing stale-binary,
-  login-shell failure propagation and timeout descendant-cleanup findings.
-  All three local lanes (develop external/bundled and LTS external) pass 9/9;
-  the reviewer verified all 425 retained raw-file hashes. Fresh Ubuntu 24.04
-  builds with two workers took 733 seconds for develop and 511 seconds for
-  LTS; both new binaries passed a two-rank SCF/force/stress smoke. Full harness
-  runs with those new binaries and hosted engine runs remain in progress.
-- W3a remains complete. W3b external-only runtime is frozen at ATST `8246d68`;
-  runner-only fixes through `07aba237` close inherited pytest filtering and
-  stale retry-attestation findings. Both independent re-reviews passed.
-  Full installed ATST checks under the plugin workflow's exact minimum/current
-  environments each collect 1408 tests: 1373 pass, 35 expected skips, zero
-  deselection/failure. The two extra skips relative to earlier 33-skip reports
-  are the wheel/sdist-inspection tests, whose opt-in artifact variables are not
-  set in these consumer lanes. All ten plugin-owned consumer cases pass in
-  each environment. The production ATST wheel remains SHA256
-  `5cbce59082fddb6d4382602995fdb264531df35d3edb7978fde61907bcdb6270`.
-  [ATST hosted run 39058587561](https://github.com/QuantumMisaka/atst-tools/actions/runs/39058587561)
-  passed all six jobs on `07aba237`; its downloaded installed-consumer report
-  also passes the frozen verifier. No consumer main merge or ATST release.
-- W4: ATST `07aba237` is publicly fetchable on
-  `integrate/abacuslite-external-only`; ABACUS `e446bda` is available in the
-  personal fork on `integrate/abacuslite-portable-ci`.
-  [ABACUS hosted run 39058538488](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39058538488)
-  is in progress. LTS has a separate lightweight candidate workflow awaiting
-  the reviewed public plugin CI pin. No upstream PR has been opened.
-  The initial API inspection found no plugin main protection; ATST main has
-  one required review but no required status checks in that response. Upstream
-  ABACUS protection returned 404 and remains unconfirmed. No protection has
-  been changed before the new remote gate succeeds.
-- W5: SAI job `1834789` completed `0:0` in 11m26s on two V100 GPUs. The
-  installed external-only candidate passed 18 stages and 13 case checks,
-  including every non-deferred workflow row above. Sella, CCQN and two-direction
-  descent IRC report `converged=false` at one step; this is execution evidence.
-  The GPU binary was built from `4b92455`, not the latest CPU develop snapshot.
-  Source scripts are retained at ATST `a59928e` and are under independent
-  review. Review found that the restart overwrote the initial MD raw log:
-  runtime continuity assertions passed, but initial raw-log retention needs
-  an immutable snapshot and another coherent acceptance archive. That repair
-  and rerun are in progress; the first archive alone does not close W5.
-  The actual run records ATST `8246d68`, published plugin `94a26e4`
-  and each wheel/asset/binary hash. Runtime wheel bytes are unchanged by the
-  subsequent runner and harness commits. Remote persistent storage was not
-  used because its quota was exceeded; payload/results streamed via node `/tmp`.
-  Obsolete rc1 distributions from both plugin checkouts were moved to
-  `/home/james/scratch/abacuslite-archived-dist-20261018/` with a hash manifest.
-  Existing translated diagnostics in the released runtime remain follow-up
-  work; this CI-only candidate does not alter the eight runtime Python files.
+Acceptance on 2026-10-18 (UTC+08:00): implementation, selected independent
+reviews, local verification and hosted candidate runs all passed. The released
+1.1.0 tag and its PyPI artifacts remain unchanged. Consumer production adoption,
+community PR delivery and the next Forge work remain separate follow-ups.
 
-Raw controller evidence is retained in
-`/home/james/scratch/abacuslite-post-release-20261018/`. Clean engine builds are
-in `/home/james/scratch/abacuslite-dual-engine-build-20261018/`; portable harness
-evidence is in `/home/james/scratch/abacuslite-portable-harness/review-fixes/`.
-SAI evidence is in
-`/home/james/scratch/abacuslite-atst-runtime-20261018/candidate-run-1/`, including
-the raw result archive SHA256
-`9fbe05eabe6a0c1aa8fb7e8200ea486c742cd247b5ece8b8991844854e6b0e9c`.
+| Package | Verified outcome |
+| --- | --- |
+| W1 | Public ATST candidate ref, explicit missing-runner failure and exact ten-case consumer gate; both hosted consumer lanes pass |
+| W2 | Portable develop/LTS harness, clean CPU build helpers, source/asset/wheel provenance and required aggregate implemented; fresh local and hosted engine lanes each pass 9/9 |
+| W3a | 1.1.0 publication remains complete; no upload repeated |
+| W3b | External-only ATST dependency with historical import forwarders; full installed suites, four Python/ASE lanes and provenance checks pass; consumer main remains unchanged |
+| W4 | Public candidate refs and engine-owned develop/LTS workflows pass; plugin main requires the successful aggregate with strict freshness and administrator enforcement |
+| W5 | Exact minimum/current consumer environments pass; SAI job 1835021 passes all 18 stages and 13 bounded cases with retained, independently reviewed raw evidence |
+
+### Reviewed sources and hosted runs
+
+| Repository / candidate | Revision | Hosted evidence |
+| --- | --- | --- |
+| Plugin CI | `6de3b83677f6a5cc82a47dbf05e9b6c6b9b2ef55` | [39059543765](https://github.com/QuantumMisaka/abacuslite/actions/runs/39059543765): all eight jobs pass |
+| ATST external dependency and runtime harness | `edfd8f436d2bca6cc26b186b39a70f53e790e686` | [39060138450](https://github.com/QuantumMisaka/atst-tools/actions/runs/39060138450): all six jobs pass |
+| ABACUS develop harness and candidate lanes | `e446bda12f852a29d9cffd883ef29642e83cc6a6` | [39058538488](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39058538488): bundled and external each 9/9 |
+| ABACUS LTS external-harness workflow | `00028595fad799370e9cd1d5fe35abffa3b0ed75` | [39059239649](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649): external legacy 9/9 |
+
+Public branches are `integrate/dual-engine-external-consumers` (plugin),
+`integrate/abacuslite-external-only` (ATST), and
+`integrate/abacuslite-portable-ci` / `integrate/abacuslite-lts-ci` (personal
+ABACUS fork). The plugin PR pin remains the reviewed ATST runner `07aba237`;
+subsequent ATST commits only retain the separately executed runtime harness.
+Its production wheel files are unchanged from `8246d68`. The schedule follows
+the public external-only candidate branch until it reaches main.
+
+### Local and returned-artifact verification
+
+- All 46 plugin CI-helper regressions and actionlint pass. Independent code
+  review covered the complete plugin change and the pip provenance repair.
+- Exact minimum/current consumer environments each collect all 1408 ATST
+  tests: 1373 pass, 35 expected skips, zero deselection/failure. Two skips are
+  artifact-inspection opt-ins not enabled in those lanes; earlier reports with
+  wheel/sdist variables set have 33 skips. All ten plugin-owned cases pass in
+  each environment. The frozen verifier also accepts both downloaded hosted
+  consumer reports and their exact ten-case JUnit reports.
+- Fresh Ubuntu 24.04 Docker builds with two workers take 733 seconds for
+  develop and 511 seconds for LTS, followed by all nine checks per engine.
+  The controller verifies all 367 retained build/runtime artifact hashes.
+  The successful hosted plugin run builds develop in 388 seconds and LTS in
+  349 seconds, then passes all required cases. Its 283 raw-file hashes and
+  candidate-wheel identity were verified after download. All eight installed
+  plugin runtime files match the published wheel byte for byte.
+- The ABACUS candidate workflows additionally pass their own engine revisions;
+  the controller verifies all 425 downloaded raw-file hashes across develop
+  bundled, develop external and LTS external lanes.
+- SAI job `1835021` completes `0:0` in 11m21s on two V100 GPUs. Independent
+  review confirms 18 successful stages, 13 passing workflow cases, installed
+  wheel provenance, exact restart geometry/energy continuity and subsequent
+  motion from actual trajectories. All five retained harness files match
+  `edfd8f4`; six initial-MD snapshots have verified hashes and literal energies.
+  Sella, CCQN and two-direction descent IRC report `converged=false` at one
+  step. Dimer and scientific convergence remain explicitly deferred.
+
+### Repairs closed during acceptance
+
+- ABACUS CI now executes the newly built binary, checks the installed entry's
+  hash, propagates failures from login shells and kills surviving process-group
+  descendants after timeout. All three findings passed incremental review.
+- ATST clears inherited pytest selection options, rejects deselections and
+  starts a fresh attestation for retries at the same report path. Controlled
+  filtered/retry negatives and full installed reruns close both findings.
+- The first plugin hosted run `39059108288` passed both engines but correctly
+  failed its aggregate when Python 3.10's bundled pip 23.0.1 omitted a local
+  wheel archive hash. A real pip 23.0.1 reproduction confirms the cause;
+  explicit wheel URLs carrying SHA256 preserve provenance and reject a wrong
+  digest. Local full-suite verification and the next hosted run pass.
+- First SAI run `1834789` passed runtime assertions, but restart overwrote its
+  initial raw log. The revised auditor rejects that archive. Immutable initial
+  snapshots and the complete replacement run `1835021` close the retention
+  gap; run-1 is retained as failure evidence rather than relabeled as final.
+
+### Rollout, preservation and remaining scope
+
+The GitHub API confirms plugin main requires `compatibility-gate` from GitHub
+Actions app 15368, strict up-to-date checks, administrator enforcement, and no
+force pushes or branch deletion. The aggregate's failed/skipped/cancelled/
+missing-result negatives pass locally; the first hosted failure demonstrates
+remote failure propagation. Rule enforcement is verified through the returned
+configuration. The workflow includes `merge_group` for future merge queues.
+
+Ruling: use the reviewed isolated plugin branch for the main CI rollout so the
+default PR and scheduled workflows receive the verified gate. Preserve the
+main checkout's uncommitted alternative W1 workflow, expected-case list and
+original draft/review notes in place; do not overwrite them when updating the
+remote branch. Consumer and ABACUS branches remain reviewable candidates.
+No upstream PR, consumer main merge, new ATST release or Forge implementation
+change is performed in this continuation. ATST main currently has one required
+review but no status checks in the inspected response. Upstream ABACUS branch
+protection is unconfirmed (API 404); community adoption and enforcement require
+separate follow-up.
+
+Obsolete rc1 distributions from both plugin checkouts were moved to
+`/home/james/scratch/abacuslite-archived-dist-20261018/` with a hash manifest.
+Existing non-English diagnostics in the released runtime remain follow-up
+work. SAI's full persistent-storage quota required streaming payload/results
+through compute-node `/tmp`; the fixed GPU engine is `4b92455`, not the latest
+CPU develop source. The GPU checks supplement the fresh CPU matrix.
+
+### Retained evidence
+
+- Controller checks, downloaded hosted reports and branch-protection records:
+  `/home/james/scratch/abacuslite-post-release-20261018/`.
+- Clean engine build/runtime reports and all local hashes:
+  `/home/james/scratch/abacuslite-dual-engine-build-20261018/`.
+- Portable harness repair evidence:
+  `/home/james/scratch/abacuslite-portable-harness/review-fixes/`.
+- Final SAI evidence:
+  `/home/james/scratch/abacuslite-atst-runtime-20261018/candidate-run-2/`;
+  result archive SHA256
+  `429001446a5fc83409cbfd96c3a833215278080955f1b0a0f6e881de302f1717`.
+- ATST production wheel SHA256:
+  `5cbce59082fddb6d4382602995fdb264531df35d3edb7978fde61907bcdb6270`.
+- Published plugin wheel/source identities remain in the
+  [release record](2026-10-17-1.1.0-release.md).

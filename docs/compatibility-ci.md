@@ -10,16 +10,19 @@ See the [release record](superpowers/plans/2026-10-17-1.1.0-release.md) for
 artifact identities and retained evidence. Local package, consumer and real-engine
 acceptance exists. Package and installed-consumer checks have passed remotely
 on `v1.1.0` ([tag run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39036505393));
-the post-release candidate now implements dual-engine PR jobs and external-only
-ATST consumers, with hosted acceptance still pending. A successful local run, a workflow
-implemented in a branch and an enforced merge check are separate outcomes.
+the post-release candidate also passed the complete
+[dual-engine and external-consumer gate](https://github.com/QuantumMisaka/abacuslite/actions/runs/39059543765)
+at `6de3b83`. Plugin main now requires the GitHub Actions `compatibility-gate`,
+including for administrators, with branches required to be up to date. The API
+configuration has been verified. Community adoption of the consumer and
+engine-side candidates remains separate.
 
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
 | Wheel/sdist and offline contracts | Release source `94a26e4` passed local/hosted checks; exact tag artifacts published and indexed install verified | Release acceptance complete for 1.1.0 |
-| Installed ATST/Forge consumers | Historical release paired checks passed; external-only ATST and both plugin consumer environments pass locally | Verify the new hosted matrix before consumer production cutover |
-| Develop/LTS real engines | Portable harness passes both formats; clean hosted-style CPU builds are being verified | Run the implemented dual-engine jobs remotely |
-| Merge enforcement | Plugin protection absent at inspection; upstream enforcement unconfirmed | Activate appropriate required checks after successful remote runs |
+| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; final ATST candidate also passes its six hosted jobs | Consumer main-branch adoption and a new ATST release remain separate |
+| Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass locally and remotely; both engine-owned candidate workflows also pass | Community adoption of the develop/LTS workflow candidates |
+| Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | Upstream ATST/ABACUS adoption and required-check configuration |
 
 Exact revisions, environments, raw-output links and earlier GPU/consumer runs
 are in the [acceptance record](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md).
@@ -125,7 +128,19 @@ bundled velocity-writing correction preserves explicit native-MD velocities.
 Its portable harness passed all nine checks in each of the develop external,
 develop bundled and LTS external lanes, with retained raw-property evidence.
 The LTS candidate only adds an external-harness workflow; it does not backport
-`interfaces/`. Public candidate runs and community adoption remain separate.
+`interfaces/`. The [develop hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39058538488)
+passes both bundled and external lanes; the [LTS hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649)
+passes its external lane. All 425 retained raw-file hashes were checked after
+download. These runs validate personal-fork candidates, not community adoption.
+
+The final [ATST candidate run](https://github.com/QuantumMisaka/atst-tools/actions/runs/39060138450)
+passes all six jobs at `edfd8f4`. A separate SAI run (`1835021`) validates 13
+bounded workflow cases with installed external abacuslite, including restart
+continuity and serial/parallel NEB. Initial MD evidence is snapshotted before
+restart and checked from the returned archive. Sella, CCQN and descent IRC
+complete at one step with `converged=false`; Dimer and scientific convergence
+remain outside this acceptance. That GPU run uses the recorded `4b92455`
+engine plus a v3.10.1 legacy smoke; it does not replace the fresh CPU matrix.
 
 ## Repository responsibilities
 
@@ -162,14 +177,19 @@ verified plugin before switching stable consumers to its indexed version.
 Fork PR execution stays read-only: no release/HPC secrets or privileged
 `pull_request_target` execution of candidate code.
 
-After remote verification, require the stable aggregate gate on the intended
-branches; a green job alone does not enforce merge blocking. Review workflow
+The required `compatibility-gate` covers package, consumer, resolved-ref and
+dual-engine jobs. A real hosted consumer failure produced a failed aggregate;
+the repaired run passed all eight jobs. Branch protection requires that check
+from the GitHub Actions app (ID 15368), uses strict freshness, applies to
+administrators, and disallows force pushes and branch deletion. Keep this
+configuration aligned with the workflow; a green job alone does not enforce
+merge blocking. Review workflow
 changes that could remove the gate. If merge queues are introduced, add the
-`merge_group` trigger before requiring checks there. Upstream branch-protection
-details were unavailable to the inspecting account; visible rules do not prove
-an enforced abacuslite gate. This release did not change repository branch
-protection; its separate GitHub `pypi` environment only accepts deployments
-from main.
+`merge_group` trigger before requiring checks there. Upstream ABACUS
+branch-protection details were unavailable to the inspecting account, so its
+required-check enforcement remains unconfirmed. The plugin protection change belongs to this post-release
+CI rollout. The separate GitHub `pypi` environment still only accepts
+deployments from main; published 1.1.0 artifacts and its tag are unchanged.
 
 GitHub references:
 [required checks and skipped workflows](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks),
