@@ -2,7 +2,18 @@
 
 ## Introduction
 
-abacuslite is a lightweight plugin for ABACUS (Atomic-orbital Based Ab-initio Computation at UStc), implementing the ASE (Atomic Simulation Environment) calculator interface.
+abacuslite is a lightweight [ABACUS](https://github.com/deepmodeling/abacus-develop)
+calculator and I/O plugin for [ASE](https://ase-lib.org/). This independent
+package combines the ABACUS interface with general-purpose fixes from
+[ATST](https://github.com/QuantumMisaka/atst-tools), preserving their public
+calculator classes and I/O imports.
+
+**Release status:** `1.1.0rc1` is a source candidate, not yet published on PyPI.
+Install from this repository using the instructions below.
+
+[Installation](#installation) · [Examples](#usage-examples) ·
+[Migration](docs/migration.md) · [Contributing](CONTRIBUTING.md) ·
+[Compatibility checks](docs/compatibility-ci.md)
 
 ### Key Features
 
@@ -41,8 +52,7 @@ features and integrated ATST fixes.
 
 ## Installation
 
-Requires **Python 3.10+**. `1.1.0rc1` is an unreleased candidate; install from
-this repository until an indexed release is available. From a fresh checkout:
+Requires **Python 3.10+**. From a fresh checkout:
 
 ```bash
 git clone https://github.com/QuantumMisaka/abacuslite.git
@@ -64,6 +74,7 @@ For development, use `python -m pip install -e '.[dev]'`. Wheel and sdist builds
 are supported; downstream CI should record the exact candidate commit or wheel used for verification.
 
 ABACUS itself and the pseudopotential/orbital assets are supplied separately.
+
 Compatibility with the ABACUS LTS branch is part of this plugin's scope even
 though LTS does not contain `interfaces/ASE_interface`. `Abacus` selects
 `legacyio` for a v3.10.x engine from its actual `--version` output; each
@@ -137,16 +148,30 @@ python -m pytest --run-engine -m engine -q
 
 The imported engine tests need their named ABACUS `tests/PP_ORB` assets and
 include engine-specific numerical references. Do not interpret fixture tests
-as validation of arbitrary engine versions. Package CI tests installed wheels
-on Python 3.10 with minimum dependencies and Python 3.12 with current dependencies.
+as validation of arbitrary engine versions. The package workflow tests installed
+wheels on Python 3.10 with minimum dependencies and Python 3.12 with current
+dependencies. Its real develop/LTS engine jobs are still planned.
+
+Local installed-wheel checks on 2026-10-17 established the following bounded
+CPU/MPI interface results for the candidate at `ba65f606`:
+
+| Engine snapshot | Reader | Local real-engine checks |
+| --- | --- | --- |
+| develop `73cd094` (v3.11.0-beta10) | `latestio` | SCF, ASE relax/MD, native MD, band, magnetic and socket |
+| LTS `725bf47` (v3.10.1) | `legacyio` | SCF, ASE relax/MD, native MD, band and magnetic |
+
+LTS support does not require a bundled interface. Socket requires a supporting
+engine and is not covered on this LTS snapshot. These results validate the
+tested input/output handoffs, not all ABACUS features or scientific convergence.
+The [acceptance record](docs/superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md)
+identifies the exact builds, installed wheel and retained outputs; it also
+distinguishes local results from pending remote CI and merge enforcement.
 See [the implementation record](docs/superpowers/plans/2026-10-16-standalone-bootstrap.md)
 for the initial extraction, and [the CI record](docs/superpowers/plans/2026-10-16-cross-repository-regressions.md)
 for subsequent installed-consumer verification.
 
-Each calculator retains its own output-reader selection. Parsing existing
-output, including `eig_occ.txt`, is repeatable and does not consume source
-files. The old compatibility switch only sets the default for new bare
-templates. See [CHANGELOG.md](CHANGELOG.md) for migration differences.
+Parsing existing output, including `eig_occ.txt`, is repeatable and does not
+consume source files. See [CHANGELOG.md](CHANGELOG.md) for behavior changes.
 
 The [integration audit](docs/upstream-integration.md) maps ABACUS and ATST fixes
 to their regression coverage and explains reader instance isolation. See the
@@ -177,12 +202,19 @@ Recommended learning path:
 
 The regular `Abacus` calculator runs one ABACUS calculation for each ASE property evaluation. ASE controls the relaxation, molecular-dynamics, and other workflow steps. The socket calculator reuses one ABACUS process for position updates, while the cell and electronic-structure settings remain fixed for that calculator instance.
 
-## Authors
+## Authors and maintenance
 
-- Yuyang Ji
+- [Yuyang Ji (@jiyuyang)](https://github.com/jiyuyang)
 - Zhenxiong Shen
-- Yike Huang
-- Zhaoqing Liu
+- [Yike Huang (@kirk0830)](https://github.com/kirk0830)
+- [Zhaoqing Liu (@QuantumMisaka)](https://github.com/QuantumMisaka)
+
+The independent package is maintained by
+[QuantumMisaka](https://github.com/QuantumMisaka). Original ASE interface
+authorship and subsequent ABACUS/ATST adaptations are preserved in
+[UPSTREAM.md](UPSTREAM.md). Additional contributions are recorded in the
+[package history](https://github.com/QuantumMisaka/abacuslite/commits/main/)
+and the linked upstream history.
 
 ## Acknowledgments
 

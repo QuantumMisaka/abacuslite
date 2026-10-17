@@ -784,6 +784,11 @@ live-engine workflow jobs or activate required checks. No push, PR, PyPI
 publication, production dependency cutover or upstream settings change was
 performed.
 
+The [dual-engine CI follow-up plan](2026-10-17-dual-engine-ci.md) now details
+the portable harness, clean hosted-build recipe, aggregate failure handling
+and cross-repository rollout needed to close that gap. Its tasks remain
+unchecked until implementation and their specific acceptance evidence exist.
+
 Earlier develop `4b92455ca` paired CPU/SAI results and the previous v3.10.1 ATST
 relax result remain historical evidence, not reruns with this repaired wheel.
 Current CI gaps and the required two-format contract are described in

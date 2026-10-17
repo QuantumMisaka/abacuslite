@@ -92,7 +92,7 @@ plan for exact artifacts and evidence.
 | Changed repository | Required PR verification | Coordinated candidate check | Scheduled compatibility |
 | --- | --- | --- | --- |
 | abacuslite | Candidate wheel + own contracts + installed consumers; affected real-engine evidence before parser/calculator release | Candidate wheel against selected engine and consumer PR refs | Supported engines and consumer heads |
-| ABACUS | Build this PR's engine; install a validated plugin version; run engine integration harness with independent numeric references | Same engine binary with candidate plugin wheel/commit, before publishing the plugin | Develop engine with current released plugin and plugin main |
+| ABACUS | Build this PR's engine; install a validated plugin version; run engine integration harness with independent numeric references | Same engine binary with candidate plugin wheel/commit, before publishing the plugin | Develop and LTS engines with validated plugin release/candidate |
 | ATST | Install this PR's ATST and supported plugin version(s); run external-backend tests and affected workflows | Candidate ATST plus candidate plugin, assert both imports are installed | Main ATST against latest plugin candidate/release |
 | Forge | Candidate Forge plus optional installed plugin; retain native/parser projection and readonly regressions | Candidate plugin extra with candidate Forge | Main Forge with current plugin |
 
@@ -118,6 +118,10 @@ community PRs must not submit HPC jobs. Existing vendored tests remain a
 transition check until all direct imports have migrated, not the final gate.
 
 ## Develop and LTS engine coverage
+
+The [dual-engine CI follow-up plan](superpowers/plans/2026-10-17-dual-engine-ci.md)
+defines portable-harness, clean-build, PR-gate and engine-side adoption tasks,
+with local verification before remote delivery.
 
 LTS compatibility through `legacyio` is a required plugin responsibility,
 confirmed by the maintainer on 2026-10-17. It does not depend on whether the
