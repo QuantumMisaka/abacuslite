@@ -24,7 +24,7 @@ aprof = AbacusProfile(
 )
 
 # Abacus: the calculator instance
-jobdir = here / 'scf'
+jobdir = here / 'cellrelax'
 abacus = Abacus(
     profile=aprof,
     directory=str(jobdir),

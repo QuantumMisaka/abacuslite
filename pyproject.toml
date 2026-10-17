@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "abacuslite"
 version = "1.1.0rc1"
-description = "An ABACUS light-weighted plugin implementation of ase calculator"
+description = "A lightweight ABACUS calculator and I/O plugin for ASE"
 readme = "README.md"
 license = "LGPL-3.0-only"
 license-files = ["LICENSE"]
@@ -24,11 +24,15 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/QuantumMisaka/abacuslite"
+Documentation = "https://github.com/QuantumMisaka/abacuslite/tree/main/docs"
 Issues = "https://github.com/QuantumMisaka/abacuslite/issues"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
 dev = ["pytest>=8,<10", "build>=1.2", "twine>=6"]
+
+[tool.setuptools]
+include-package-data = false
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -36,7 +40,7 @@ include = ["abacuslite*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra"
+addopts = "-ra --strict-config --strict-markers"
 markers = [
     "engine: requires explicitly supplied ABACUS executable and assets",
     "consumer: requires explicitly installed external consumer packages"

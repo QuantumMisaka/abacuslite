@@ -63,7 +63,7 @@ aprof = AbacusProfile(
     orbital_dir=pporb,
     omp_num_threads=1,
 )
-jobdir = here / 'constraintmd'
+jobdir = here / 'metadynamics'
 abacus = Abacus(
     profile=aprof,
     directory=str(jobdir),

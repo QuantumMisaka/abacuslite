@@ -2,6 +2,15 @@
 
 ## 1.1.0rc1 — unreleased candidate
 
+- Honor explicit engine/consumer pytest markers and reject unknown markers or
+  configuration keys; offline tests no longer depend on checkout directory or
+  function names. Validate wheel and sdist tests outside the checkout, and
+  include the source-only test launchers in the sdist.
+- Restore the skipped pseudopotential/orbital filename-selection tests with
+  self-contained temporary assets, without requiring an ABACUS installation.
+- Give cell relaxation, DOS and metadynamics examples separate calculation
+  directories, and use the standard `abacus` command in the NEB default launcher.
+  Check default and overridden example settings before engine execution.
 - Preserve explicit ASE atomic velocities in STRU, converting from Angstrom
   per ASE time unit to Bohr per atomic time unit and maintaining species order;
   atoms without velocities retain the existing zero initialization.

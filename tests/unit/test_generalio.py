@@ -241,28 +241,28 @@ class TestAbacusCalculatorIOUtil(unittest.TestCase):
         #     write_kpt(kpt, fn_.as_posix())
         #     self.assertDictEqual(kpt, read_kpt(fn_.as_posix()))
 
-    @unittest.skip('')
     def test_load_pseudo(self):
-        pseudo_dir = self.testfiles / 'pporb'
-        pseudo_map = load_pseudo(pseudo_dir)
-        self.assertEqual(pseudo_map['O'],  'O.upf')
-        self.assertEqual(pseudo_map['Si'], 'Si.upf')
-        self.assertEqual(pseudo_map['In'], 'In.upf')
-        self.assertEqual(pseudo_map['As'], 'As.pbe-n-rrkjus_psl.0.2.UPF')
-        self.assertEqual(pseudo_map['Ga'], 'Ga.pbe-dn-kjpaw_psl.1.0.0.UPF')
+        expected = {
+            'O': 'O.upf', 'Si': 'Si.upf', 'In': 'In.upf',
+            'As': 'As.pbe-n-rrkjus_psl.0.2.UPF',
+            'Ga': 'Ga.pbe-dn-kjpaw_psl.1.0.0.UPF',
+        }
+        # These helpers inspect filenames, not pseudopotential contents.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for name in [*expected.values(), 'README.md', 'Si.orb']:
+                (Path(tmpdir) / name).touch()
+            self.assertDictEqual(load_pseudo(tmpdir), expected)
 
-    @unittest.skip('')
     def test_load_orbital(self):
-        orbital_dir = self.testfiles / 'pporb'
-        orbital_map = load_orbital(orbital_dir)
-        self.assertEqual(orbital_map['O'],  'O_gga_6au_100Ry_2s2p1d.orb')
-        self.assertEqual(orbital_map['Si'], 'Si_gga_7au_100Ry_2s2p1d.orb')
-        self.assertEqual(orbital_map['In'], 'In_gga_8au_100Ry_1s1p1d.orb')
-
-        orbital_map = load_orbital(orbital_dir, efficiency=False)
-        self.assertEqual(orbital_map['O'],  'O_gga_6au_100Ry_2s2p1d.orb')
-        self.assertEqual(orbital_map['Si'], 'Si_gga_7au_100Ry_2s2p1d.orb')
-        self.assertEqual(orbital_map['In'], 'In_gga_8au_100Ry_2s2p2d1f.orb')
+        common = {'O': 'O_gga_6au_100Ry_2s2p1d.orb',
+                  'Si': 'Si_gga_7au_100Ry_2s2p1d.orb'}
+        small = 'In_gga_8au_100Ry_1s1p1d.orb'
+        large = 'In_gga_8au_100Ry_2s2p2d1f.orb'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for name in [*common.values(), large, small, 'README.md', 'In.upf']:
+                (Path(tmpdir) / name).touch()
+            self.assertDictEqual(load_orbital(tmpdir), {**common, 'In': small})
+            self.assertDictEqual(load_orbital(tmpdir, efficiency=False), {**common, 'In': large})
 
     def test_write_stru_with_magmom(self):
         # from issue #6516: https://github.com/deepmodeling/abacus-develop/issues/6516

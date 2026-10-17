@@ -46,7 +46,7 @@ taud = np.array([
 dw = Atoms(elem, cell=cell, scaled_positions=taud)
 
 aprof = AbacusProfile(
-    command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 8 abacus_2p'),
+    command=os.environ.get('ABACUS_COMMAND', 'mpirun -np 8 abacus'),
     pseudo_dir=pporb,
     orbital_dir=pporb,
     omp_num_threads=1

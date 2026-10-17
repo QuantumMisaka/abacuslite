@@ -15,6 +15,13 @@ python -m pytest -q
 ```
 
 The default suite is offline; engine and external-consumer tests are opt-in.
+`tests/integration/` is marked `engine`, and `tests/consumers/` is marked
+`consumer`. Tests elsewhere must use `@pytest.mark.engine` or
+`@pytest.mark.consumer` when they need those resources; function names and
+checkout directory names do not select a test tier. Unknown markers and
+pytest configuration keys fail validation. `-m engine` selects tests but does
+not enable execution without `--run-engine`.
+
 Editable installs are appropriate for development. For acceptance, build wheel
 and sdist distributions and check their metadata:
 
@@ -30,6 +37,13 @@ Verify that `abacuslite.__file__` resolves inside that environment; the
 [migration guide](docs/migration.md#install-one-implementation) provides the
 check. Include `examples/` because offline tests verify their startup. Repeat
 with a wheel rebuilt from the sdist when validating distribution changes.
+Use the tests, examples and configuration extracted from that sdist for the
+second run, so missing distribution files cannot be masked by the checkout.
+CI uses this layout for Python 3.10 with the declared direct dependency floors
+and Python 3.12 with current dependencies. Tests and examples ship in the
+sdist; the wheel contains the runtime package only.
+Use `python -I -m pytest -q` for artifact validation: example subprocesses
+preserve isolated mode and check that a conflicting `PYTHONPATH` is ignored.
 
 ## Engine and consumer checks
 

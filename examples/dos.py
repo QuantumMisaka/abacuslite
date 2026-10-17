@@ -21,7 +21,7 @@ aprof = AbacusProfile(
     omp_num_threads=1,
 )
 
-jobdir = here / 'scf'
+jobdir = here / 'dos'
 abacus = Abacus(
     profile=aprof,
     directory=str(jobdir),

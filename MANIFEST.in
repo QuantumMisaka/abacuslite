@@ -1,6 +1,7 @@
 include CONTRIBUTING.md
 include LICENSE UPSTREAM.md CHANGELOG.md AGENTS.md
-recursive-include tests *.py
+include src/abacuslite/xtest.sh
+recursive-include tests *.py *.sh
 recursive-include tests/fixtures *
 recursive-include examples *.py
 recursive-include docs *.md

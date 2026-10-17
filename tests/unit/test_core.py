@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 from typing import Dict, Optional, List
 import numpy as np
+import pytest
 from ase.calculators.genericfileio import (
     BaseProfile,
     CalculatorTemplate,
@@ -155,6 +156,7 @@ class TestAbacusCalculator(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'ABACUS version'):
             AbacusProfile.parse_version('launcher failed before abacus started')
 
+    @pytest.mark.engine
     def test_calculator_results(self):
         from ase.build.bulk import bulk
         silicon = bulk('Si', crystalstructure='diamond', a=5.43)
@@ -222,6 +224,7 @@ class TestAbacusCalculator(unittest.TestCase):
         self.assertEqual(calculator.results['magmoms'].shape, (2,))
         self.assertTrue(np.allclose(calculator.results['magmoms'], np.zeros(2)))
 
+    @pytest.mark.engine
     def test_restart(self):
         from ase.build.bulk import bulk
         silicon = bulk('Si', crystalstructure='diamond', a=5.43)

@@ -46,7 +46,7 @@ python examples/scf.py
 ```
 
 All eleven scripts read `ABACUS_PP_ORB` and accept `ABACUS_COMMAND` to override
-their launcher default. The library itself takes these settings through
+their MPI launcher default, which invokes `abacus` from `PATH`. The library itself takes these settings through
 `AbacusProfile`; these environment variables are a convention of the examples.
 ABACUS is not downloaded automatically and ASE is not patched during install.
 
@@ -57,11 +57,13 @@ Check each script's parameters against your engine build: for example,
 `scf.py` selects `genelpa`, which needs ELPA support; use an available solver
 such as `scalapack_gvx` when adapting it for an appropriate MPI build.
 
-Several scripts delete their calculation directories on completion, and the
+Each example uses calculation directories named for that example. Several
+scripts delete their calculation directories on completion, and the
 socket example also clears its named directories before use. Use a dedicated
 copy and adjust cleanup if you need retained results. Metadynamics additionally
 requires a working PLUMED installation. Example startup tests check imports and
-configuration; they do not certify complete scientific workflows.
+configuration through the calculator constructor boundary; they do not launch
+ABACUS or PLUMED and do not certify complete scientific workflows.
 
 | Example | Purpose |
 | --- | --- |

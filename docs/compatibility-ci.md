@@ -28,7 +28,9 @@ push/PR checks without path filters, manual candidate runs and a weekly schedule
 
 - `installed-package` builds wheel/sdist, checks metadata, installs the wheel
   and runs offline regressions on Python 3.10/minimum and 3.12/current
-  dependencies. It also rebuilds a wheel from the sdist and tests it.
+  dependencies outside the checkout. The minimum lane pins ASE 3.28.0,
+  NumPy 1.26.0, seekpath 2.2.0 and pytest 8.0.0. It also rebuilds a wheel
+  from the sdist and tests it using the sdist's own tests/examples/configuration.
 - `installed-consumers` uses the current plugin wheel and the same selected
   ATST wheel in separate vendored/external environments with identical base
   dependencies. It compares test collection/outcomes, skip reasons, package
