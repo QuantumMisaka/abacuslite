@@ -843,14 +843,15 @@ def read_abacus_out(fileobj,
     # read the esolver type
     eslvtyp = read_esolver_type_from_running_log(abacus_lines)
     
-    # Native MD geometry lives in MD_dump; LTS running_md.log normally
-    # contains only the initial structure while electronic tables span steps.
+    # Prefer MD_dump when present: current LTS running_md.log normally contains
+    # only the initial structure, but older complete MD logs stand alone.
     log_path = Path(fileobj if isinstance(fileobj, (str, Path)) else fileobj.name)
-    is_md_dump = log_path.name == 'running_md.log'
-    if is_md_dump:
-        dump_path = log_path.parent / 'MD_dump'
+    is_md_log = log_path.name == 'running_md.log'
+    dump_path = log_path.parent / 'MD_dump' if is_md_log else None
+    uses_md_dump = is_md_log and dump_path.exists()
+    if uses_md_dump:
         if not dump_path.is_file():
-            raise FileNotFoundError(f'Native MD output requires {dump_path}')
+            raise ValueError(f'Invalid MD_dump: expected a file at {dump_path}')
         try:
             trajectory = read_traj_from_md_dump(dump_path)
         except (AssertionError, IndexError, ValueError, ZeroDivisionError) as exc:
@@ -888,10 +889,12 @@ def read_abacus_out(fileobj,
     magmom = read_magmom_from_running_log(abacus_lines)
 
     # roughly check the integrity of data from their length consistency
-    if is_md_dump and (len(trajectory) != len(energies)
-                       or len(trajectory) != len(elecstate)):
-        raise ValueError(f'MD_dump frame count {len(trajectory)} != energy/electronic '
-                         f'frame counts {len(energies)}/{len(elecstate)} in {log_path}')
+    if is_md_log and (len(trajectory) != len(energies)
+                      or len(trajectory) != len(elecstate)):
+        source = 'MD_dump' if uses_md_dump else 'running_md.log without MD_dump'
+        raise ValueError(f'{source} geometry frame count {len(trajectory)} != '
+                         f'energy/electronic frame counts '
+                         f'{len(energies)}/{len(elecstate)} in {log_path}')
     assert len(trajectory) == len(energies), \
         f'Inconsistent length: {len(trajectory)} != {len(energies)}'
     assert len(trajectory) == len(elecstate), \
@@ -913,11 +916,25 @@ def read_abacus_out(fileobj,
         trajectory, elecstate, magmom, forces, stress, energies):
         # for each frame, a structure can be defined
         ind = ind or list(range(len(frame['elem'])))
+        positions = frame['coords'][ind]
+        if is_md_log:
+            if uses_md_dump:
+                cell = frame['cell'] * frame['alat_in_angstrom']
+                # MD_dump labels Cartesian positions directly in Angstrom.
+            else:
+                cell = frame['cell']  # running-log reader already returns Angstrom
+                if frame['coordinate'] == 'Direct':
+                    positions = positions @ cell
+                elif frame['coordinate'] == 'Cartesian':
+                    positions = positions * frame['alat_in_angstrom']
+                else:
+                    raise ValueError(f'Unknown MD coordinate system: {frame["coordinate"]}')
+        else:
+            cell = frame['cell']
         atoms = Atoms(symbols=np.array(frame['elem'])[ind].tolist(), 
-                      positions=frame['coords'][ind], 
-                      cell=frame['cell'] * frame['alat_in_angstrom']
-                      if is_md_dump else frame['cell'],
-                      pbc=is_md_dump,
+                      positions=positions,
+                      cell=cell,
+                      pbc=is_md_log,
                       magmoms=mag[ind])
         
         # from result, a calculator can be assembled

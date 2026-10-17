@@ -38,8 +38,10 @@ the MD dump writes internal atomic-unit velocity divided by
 `ANGSTROM_AU * AU_to_FS` as Angstrom/fs. The real, unchanged v3.10.1 output
 in `tests/fixtures/lts_native_md` and focused unit regressions establish
 three-frame MD dump assembly, original-byte preservation and explicit failure
-for missing/incomplete dumps. Existing SCF/relax geometry assembly remains on
-the legacy running-log path.
+for incomplete log-only trajectories or incomplete dumps. Earlier complete
+single-file `running_md.log` trajectories remain supported when `MD_dump` is
+absent. Existing SCF/relax geometry assembly remains on the legacy running-log
+path.
 
 The default SCF identity tolerance is aligned with ATST 2.2.9 at
 `1081b9d1fed06842ee1d95dfbeb542ed81c57d49`: `1e-5` Angstrom, no relative

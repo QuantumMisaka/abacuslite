@@ -54,7 +54,7 @@ class TestLegacyIO(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir)
             shutil.copyfile(source / 'running_md.log', out / 'running_md.log')
-            with self.assertRaisesRegex(FileNotFoundError, 'MD_dump'):
+            with self.assertRaisesRegex(ValueError, 'running_md.log.*1.*3'):
                 read_abacus_out(out / 'running_md.log')
             dump = (source / 'MD_dump').read_text()
             (out / 'MD_dump').write_text(dump[:dump.index('MDSTEP:  2')])
@@ -66,6 +66,43 @@ class TestLegacyIO(unittest.TestCase):
             (out / 'MD_dump').write_text(last_step + 'MDSTEP:  2\n' + '\n'.join(lines))
             with self.assertRaisesRegex(ValueError, 'Invalid or truncated MD_dump'):
                 read_abacus_out(out / 'running_md.log')
+
+    def test_complete_legacy_md_log_without_dump_retains_physical_geometry(self):
+        source = Path(__file__).resolve().parents[1] / 'fixtures/multiframe_md_legacy/running_md.log'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / 'running_md.log'
+            original = source.read_bytes()
+            path.write_bytes(original)
+            frames = read_abacus_out(path)
+            self.assertEqual(len(frames), 1)
+            self.assertTrue(np.all(frames[0].pbc))
+            self.assertAlmostEqual(frames[0].get_potential_energy(), -1940.5509086572)
+            # The raw log has Direct (0.25, 0.25, 0.25), a0=0.529177 A,
+            # and a cell with rows (5.34197, 5.34197, 0) cyclically.
+            expected_cell = np.array([[5.34197, 5.34197, 0],
+                                      [0, 5.34197, 5.34197],
+                                      [5.34197, 0, 5.34197]]) * 0.529177
+            np.testing.assert_allclose(frames[0].cell.array, expected_cell, rtol=0, atol=1e-12)
+            np.testing.assert_allclose(frames[0].positions[0],
+                                       np.array([0.25, 0.25, 0.25]) @ expected_cell,
+                                       rtol=0, atol=1e-12)
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_complete_cartesian_md_log_without_dump_converts_alat(self):
+        source = Path(__file__).resolve().parents[1] / 'fixtures/multiframe_md_legacy/running_md.log'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / 'running_md.log'
+            original = source.read_text().replace('DIRECT COORDINATES\n', 'CARTESIAN COORDINATES\n', 1)
+            original = original.replace('taud_As1            0.2500000000        0.2500000000        0.2500000000',
+                                        'tauc_As1            2.0000000000        0.0000000000        0.0000000000', 1)
+            original = original.replace('taud_Ga1', 'tauc_Ga1', 1)
+            path.write_text(original)
+            frames = read_abacus_out(path)
+            self.assertEqual(len(frames), 1)
+            np.testing.assert_allclose(frames[0].positions[0], [2 * 0.529177, 0, 0],
+                                       rtol=0, atol=1e-12)
+            self.assertTrue(np.all(frames[0].pbc))
+            self.assertEqual(path.read_text(), original)
 
     def test_read_band_from_running_log(self):
         # nspin1
