@@ -441,7 +441,7 @@ def _normalize_scf_frame(frame, frame_index, expected, frame_is_direct, atol,
 
 
 def _select_scf_frame_for_structure(
-    frames, log_path, directory, atomorder, atol=1e-4, stru_file='STRU', _reference=None,
+    frames, log_path, directory, atomorder, atol=1e-5, stru_file='STRU', _reference=None,
     *, legacyio=None
 ):
     """Return the latest periodic-equivalent frame; malformed SCF data fails closed.
@@ -459,7 +459,8 @@ def _select_scf_frame_for_structure(
     stru_file : str or Path
         The STRU filename recorded by ``write_input``; defaults to ``STRU``.
     atol : float
-        绝对 Å 容差（spec P3 ③，按坐标打印精度取 ~1e-4 Å 量级）。
+        Absolute Angstrom bound for cell components and periodic Cartesian
+        residuals, with no relative tolerance. Explicit overrides are retained.
 
     Raises
     ------

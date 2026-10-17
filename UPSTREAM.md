@@ -30,6 +30,12 @@ are recorded in CHANGELOG.md and the implementation plan.
 
 ## Independent maintenance after the source import
 
+The default SCF identity tolerance is aligned with ATST 2.2.9 at
+`1081b9d1fed06842ee1d95dfbeb542ed81c57d49`: `1e-5` Angstrom, no relative
+tolerance, with explicit caller overrides retained. Boundary regressions
+exercise cell and position differences of `9e-6`, `11e-6` and `5e-5` Angstrom.
+Other implementation differences are not overwritten by this synchronization.
+
 The latest-format native MD cell conversion in `src/abacuslite/io/latestio.py`
 is an independent abacuslite correction made after the attributed ABACUS
 snapshot and ATST adaptations. The real two-frame

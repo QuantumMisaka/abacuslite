@@ -2,6 +2,11 @@
 
 ## 1.1.0rc1 — unreleased candidate
 
+- Align the default SCF structure-identity tolerance with ATST 2.2.9:
+  `1e-5` Angstrom for cell components and periodic Cartesian residuals,
+  with `rtol=0`. Explicit `atol` overrides remain supported. The former
+  `1e-5` to `1e-4` interval is now rejected rather than silently selecting
+  a mismatching SCF frame; native relax/MD last-frame selection is unchanged.
 - Establish an independent source package from ABACUS develop `4b92455ca`,
   retaining original attribution, module paths and socket support.
 - Integrate ATST SCF structure-frame matching, periodic equivalence and atom
