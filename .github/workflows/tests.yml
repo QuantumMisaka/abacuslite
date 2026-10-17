@@ -7,7 +7,7 @@ on:
     inputs:
       atst_ref:
         description: ATST commit or refs/pull/N/merge for coordinated candidates
-        default: '008d0610c94a4377a792304641fe387c840469dd'
+        default: '87caeedbca5ed7104316bfc6130fd2598b6c5e4b'
         type: string
       forge_ref:
         description: Forge commit or refs/pull/N/merge for coordinated candidates
@@ -82,7 +82,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: QuantumMisaka/atst-tools
-          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '008d0610c94a4377a792304641fe387c840469dd' }}
+          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '87caeedbca5ed7104316bfc6130fd2598b6c5e4b' }}
           path: consumer-sources/atst
           persist-credentials: false
       - name: Checkout Forge consumer

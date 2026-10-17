@@ -41,7 +41,7 @@ Ordinary pytest skips consumer tests so the plugin's own dependencies stay
 small. `--run-consumers` must fail if its consumers are unavailable. Consumer
 requirements do not become runtime dependencies of abacuslite.
 
-PR jobs pin the reviewed ATST 2.2.9 integration revision `008d0610` and
+PR jobs pin the reviewed ATST 2.2.9 integration revision `87caeedb` and
 public Forge `43f5d4a` revision. These are reproducible compatibility baselines,
 not permanent restrictions on consumer development. Update them through a
 tested PR. Weekly scheduled jobs
@@ -78,7 +78,7 @@ trusted GPU workflow acceptance for native MD, restart, serial/image-parallel
 NEB, CP and a separately identified LTS reader check; its final CP marker
 repair had targeted real-run evidence and an unchanged-path wheel diff.
 
-The current ATST `008d0610` and plugin `06f97b1` tuple has passed the full
+The current ATST `87caeedb` and plugin `06f97b1` tuple has passed the full
 offline installed-wheel vendored/external consumer comparison. Its new GPU
 attempt (job `1827672`) is pending; the earlier GPU result does not establish
 acceptance for this tuple. These are local candidate results: neither consumer
