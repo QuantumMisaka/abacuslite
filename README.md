@@ -205,7 +205,7 @@ The regular `Abacus` calculator runs one ABACUS calculation for each ASE propert
 ## Authors and maintenance
 
 - [Yuyang Ji (@jiyuyang)](https://github.com/jiyuyang)
-- Zhenxiong Shen
+- [Zhenxiong Shen (@Shen-Zhen-Xiong)](https://github.com/Shen-Zhen-Xiong)
 - [Yike Huang (@kirk0830)](https://github.com/kirk0830)
 - [Zhaoqing Liu (@QuantumMisaka)](https://github.com/QuantumMisaka)
 
