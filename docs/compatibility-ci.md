@@ -7,16 +7,31 @@ is built into wheel and sdist, metadata checked, installed and tested on
 Python 3.10 with minimum dependencies and Python 3.12 with current dependencies.
 The sdist is rebuilt and its wheel tested as well.
 
-`installed-consumers` downloads the same candidate wheel, installs actual ATST
-and Forge packages, checks dependencies, and runs `tests/consumers` outside all
-checkouts. Tests require installed imports and ATST's external backend; missing
-consumer packages or a vendored fallback fail an explicitly requested run.
-They exercise ATST input preparation and ASE calculator force/Fermi handoff,
-and Forge legacy/latest fact projection with literal fixture expectations.
-Only the ABACUS subprocess is substituted in the ATST calculator test. This is
-an offline consumer contract check, not a real engine or full workflow test.
+`installed-consumers` downloads the current PR's candidate wheel and builds a
+wheel from the selected ATST source. It installs that same ATST wheel in two
+separate environments: one with no independent plugin (vendored transition
+backend), one with the candidate plugin (external backend). Both first receive
+the same frozen `ATST[test]` dependency set; the candidate plugin is installed
+without changing that set. ATST's installed-consumer runner checks import
+provenance from outside the checkouts and runs the same ordinary offline suite
+in both environments. Some ATST tests use repository-relative fixtures, so
+pytest itself runs from the selected ATST root with installed-package origin
+attested at session start and finish. The runner compares collection, outcome,
+dependency, wheel and deterministic scientific/contract facts. Forge is then
+installed in the external environment, where the plugin's `tests/consumers`
+checks installed ATST and Forge behavior with literal ABACUS output fixtures.
+These tests exercise SCF energy, ordered forces and Fermi level, periodic
+frame matching and fail-closed behavior, native MD
+cell/positions/forces, input and constant-potential guards, and Forge
+legacy/latest fact projection. They also require mixed legacy/latest calculator
+instances to remain isolated and repeated complete latest-output reads to
+preserve `eig_occ.txt` and its energy, force and band facts. Only the engine
+subprocess is replaced in the calculator tests; neither parser is used as the
+other parser's oracle. This is an offline consumer contract gate, not a
+real-engine or HPC workflow run.
 
-Run locally after installing the candidate wheel and both consumers:
+Run the plugin-owned contracts locally from outside the checkouts after
+installing the candidate wheel and both consumers:
 
 ```bash
 python -m pytest tests/consumers --run-consumers -q -s
@@ -26,9 +41,10 @@ Ordinary pytest skips consumer tests so the plugin's own dependencies stay
 small. `--run-consumers` must fail if its consumers are unavailable. Consumer
 requirements do not become runtime dependencies of abacuslite.
 
-PR jobs use reviewed ATST `45d8c78` and public Forge `43f5d4a` revisions. These
-are reproducible compatibility baselines, not permanent restrictions on
-consumer development. Update them through a tested PR. Weekly scheduled jobs
+PR jobs pin the reviewed ATST 2.2.9 integration revision `008d0610` and
+public Forge `43f5d4a` revision. These are reproducible compatibility baselines,
+not permanent restrictions on consumer development. Update them through a
+tested PR. Weekly scheduled jobs
 use both consumer `main` heads to expose drift without making unrelated PRs
 randomly fail. Failed scheduled runs need maintainer triage.
 
@@ -57,8 +73,8 @@ engine, workflow and release verification before returning to Forge.
 
 Local integration candidates now implement those consumer lanes: ABACUS
 `bca8164` tests installed bundled/external packages, including native MD and
-socket; ATST `53d6b7c` uses one external-backend decision and tests the installed
-consumer wheel. Both pin plugin `dc02043`. The final ABACUS CPU comparison
+socket; ATST `008d0610` uses one external-backend decision and tests
+the installed consumer wheel. Both pin plugin `dc02043`. The final ABACUS CPU comparison
 passes nine cases in each lane; ATST offline and installed-consumer checks
 pass. Trusted GPU workflow acceptance passes, including native MD, restart,
 serial/image-parallel NEB, CP and a separately identified LTS reader check.
@@ -74,11 +90,11 @@ has not run on these changes. See the plan for exact artifacts and evidence.
 | ATST | Install this PR's ATST and supported plugin version(s); run external-backend tests and affected workflows | Candidate ATST plus candidate plugin, assert both imports are installed | Main ATST against latest plugin candidate/release |
 | Forge | Candidate Forge plus optional installed plugin; retain native/parser projection and readonly regressions | Candidate plugin extra with candidate Forge | Main Forge with current plugin |
 
-On the refreshed upstream baselines, ABACUS `.github/workflows/ase_plugin_test.yml` builds its PR
-engine but installs `interfaces/ASE_interface` from the same tree. ATST's
-interface workflow validates a pinned vendored snapshot; ordinary tests do
-not install the independent plugin. Those jobs remain useful, but neither
-currently protects the new independent package boundary.
+The historical ABACUS and ATST workflows guarded their bundled/vendored
+copies. The local integration branches now add independent installed-plugin
+lanes, but their new GitHub Actions workflows have not yet run remotely. The
+ATST pin above is a local commit until its maintainer pushes it, so the
+plugin's pinned checkout cannot resolve on GitHub before that publication.
 
 ABACUS should retain its engine-side SCF/relax/MD/band/magnetic test harness,
 assets, independent references and failure-directory upload while changing

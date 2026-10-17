@@ -7,7 +7,7 @@ on:
     inputs:
       atst_ref:
         description: ATST commit or refs/pull/N/merge for coordinated candidates
-        default: '45d8c78de8a605c127cd4c36742d0c9525a0a6b6'
+        default: '008d0610c94a4377a792304641fe387c840469dd'
         type: string
       forge_ref:
         description: Forge commit or refs/pull/N/merge for coordinated candidates
@@ -63,8 +63,9 @@ jobs:
           path: dist/*
 
   installed-consumers:
-    name: installed-consumers
+    name: installed-consumers (vendored vs external)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: installed-package
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +82,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: QuantumMisaka/atst-tools
-          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '45d8c78de8a605c127cd4c36742d0c9525a0a6b6' }}
+          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '008d0610c94a4377a792304641fe387c840469dd' }}
           path: consumer-sources/atst
           persist-credentials: false
       - name: Checkout Forge consumer
@@ -91,19 +92,71 @@ jobs:
           ref: ${{ github.event_name == 'schedule' && 'main' || inputs.forge_ref || '43f5d4a274bb7106f1572dcaab122f7f29c7456b' }}
           path: consumer-sources/forge
           persist-credentials: false
-      - name: Install consumers and candidate wheel
+      - name: Build the selected ATST wheel
         run: |
-          python -m pip install 'pytest>=8,<10' ./consumer-sources/atst ./consumer-sources/forge candidate-dist/*.whl
-          python -m pip check
+          python -m pip install 'build>=1.2'
+          python -m build --wheel --outdir "$RUNNER_TEMP/atst-dist" consumer-sources/atst
           git -C consumer-sources/atst rev-parse HEAD
           git -C consumer-sources/forge rev-parse HEAD
-      - name: Run consumer contracts outside checkouts
+          sha256sum "$RUNNER_TEMP"/atst-dist/*.whl candidate-dist/*.whl
+      - name: Install separate vendored and external consumer environments
+        run: |
+          python -m venv "$RUNNER_TEMP/consumer-vendored"
+          python -m venv "$RUNNER_TEMP/consumer-external"
+          atst_wheel=("$RUNNER_TEMP"/atst-dist/*.whl)
+          "$RUNNER_TEMP/consumer-vendored/bin/python" -m pip install \
+            "${atst_wheel[0]}[test]"
+          "$RUNNER_TEMP/consumer-vendored/bin/python" -m pip freeze \
+            > "$RUNNER_TEMP/consumer-base-freeze.txt"
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pip install \
+            -r "$RUNNER_TEMP/consumer-base-freeze.txt"
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pip install \
+            --no-deps candidate-dist/*.whl
+          "$RUNNER_TEMP/consumer-vendored/bin/python" -m pip check
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pip check
+      - name: Compare ATST installed consumer suites
+        run: |
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/consumer-vendored/bin/python" \
+            "$GITHUB_WORKSPACE/consumer-sources/atst/scripts/run_abacuslite_consumer.py" \
+            --atst-root "$GITHUB_WORKSPACE/consumer-sources/atst" \
+            --backend vendored --report "$RUNNER_TEMP/vendored-consumer.json"
+          "$RUNNER_TEMP/consumer-external/bin/python" \
+            "$GITHUB_WORKSPACE/consumer-sources/atst/scripts/run_abacuslite_consumer.py" \
+            --atst-root "$GITHUB_WORKSPACE/consumer-sources/atst" \
+            --backend external --report "$RUNNER_TEMP/external-consumer.json"
+          "$RUNNER_TEMP/consumer-external/bin/python" \
+            "$GITHUB_WORKSPACE/consumer-sources/atst/scripts/run_abacuslite_consumer.py" \
+            --compare "$RUNNER_TEMP/vendored-consumer.json" "$RUNNER_TEMP/external-consumer.json"
+      - name: Install Forge after the paired ATST comparison
+        run: |
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pip install ./consumer-sources/forge
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pip check
+      - name: Run plugin-owned ATST and Forge contracts outside checkouts
         run: |
           mkdir -p "$RUNNER_TEMP/abacuslite-consumers"
           cp -R tests "$RUNNER_TEMP/abacuslite-consumers/tests"
           cp pyproject.toml "$RUNNER_TEMP/abacuslite-consumers/pyproject.toml"
           cd "$RUNNER_TEMP/abacuslite-consumers"
-          python -m pytest tests/consumers --run-consumers -q -s
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pytest tests/consumers \
+            --run-consumers -q -s --junitxml="$RUNNER_TEMP/plugin-consumers.pytest.xml" \
+            2>&1 | tee "$RUNNER_TEMP/plugin-consumers.pytest.log"
+      - name: Upload consumer comparison reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installed-consumer-comparison
+          path: |
+            ${{ runner.temp }}/vendored-consumer.json
+            ${{ runner.temp }}/vendored-consumer.pytest.log
+            ${{ runner.temp }}/vendored-consumer.pytest.xml
+            ${{ runner.temp }}/external-consumer.json
+            ${{ runner.temp }}/external-consumer.pytest.log
+            ${{ runner.temp }}/external-consumer.pytest.xml
+            ${{ runner.temp }}/consumer-base-freeze.txt
+            ${{ runner.temp }}/plugin-consumers.pytest.log
+            ${{ runner.temp }}/plugin-consumers.pytest.xml
+          if-no-files-found: ignore
 
   compatibility-gate:
     name: compatibility-gate
