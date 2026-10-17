@@ -1,0 +1,32 @@
+{
+  "schema": "abacus-engine-compatibility-refs-v1",
+  "engine_repository": "deepmodeling/abacus-develop",
+  "harness": {
+    "repository": "QuantumMisaka/abacus-develop",
+    "ref": "e446bda12f852a29d9cffd883ef29642e83cc6a6"
+  },
+  "engines": {
+    "develop": {
+      "ref": "73cd094361f77574f9b28e825913e00f1d2c742a",
+      "expected_format": "latest",
+      "binary": "abacus_basic_para"
+    },
+    "lts": {
+      "ref": "725bf475a7159db4c1890a1f55160393e14b6b13",
+      "expected_format": "legacy",
+      "binary": "abacus"
+    }
+  },
+  "assets": {
+    "repository": "deepmodeling/abacus-develop",
+    "ref": "73cd094361f77574f9b28e825913e00f1d2c742a",
+    "directory": "tests/PP_ORB",
+    "required_sha256": {
+      "Si_ONCV_PBE-1.0.upf": "481a5fae1167fd712d4e8e2e4df33f8bfc1e7d2abbc0565290d39fbba9dccb41",
+      "Si_gga_8au_100Ry_2s2p1d.orb": "28d0c1c16399423e4c8c1dd1795b707fd467838ac6153162eb9734ab4f3cb8a2",
+      "Fe_ONCV_PBE-1.0.upf": "d4e483a6d0b05b2217606a34f6a890f61b75f17d38f3876032fce22115e1a09d",
+      "Fe.upf": "b9b7671a2c667a6f87a7228d30fcc205e339b69f5568fe3f3dba567fdce59a19",
+      "Fe_gga_6au_100Ry_4s2p2d1f.orb": "51cb5d6d4da4d864a8732b64e0203bf92134f8e901f1dd7523e19a9d6ecf7fed"
+    }
+  }
+}

@@ -3,15 +3,28 @@ name: Package tests
 on:
   push:
   pull_request:
+  merge_group:
   workflow_dispatch:
     inputs:
       atst_ref:
         description: ATST commit or refs/pull/N/merge for coordinated candidates
-        default: '87caeedbca5ed7104316bfc6130fd2598b6c5e4b'
+        default: '07aba2373430b3793af575528c3d953a4d0ee713'
         type: string
       forge_ref:
         description: Forge commit or refs/pull/N/merge for coordinated candidates
         default: '43f5d4a274bb7106f1572dcaab122f7f29c7456b'
+        type: string
+      develop_ref:
+        description: Optional develop engine ref for a coordinated candidate
+        default: ''
+        type: string
+      lts_ref:
+        description: Optional LTS engine ref for a coordinated candidate
+        default: ''
+        type: string
+      harness_ref:
+        description: Optional reviewed ABACUS harness ref
+        default: ''
         type: string
   schedule:
     - cron: '17 3 * * 1'
@@ -31,6 +44,8 @@ jobs:
             dependencies: current
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
@@ -77,26 +92,34 @@ jobs:
           path: dist/*
 
   installed-consumers:
-    name: installed-consumers (vendored vs external)
-    runs-on: ubuntu-latest
+    name: installed-consumers (${{ matrix.python }}/${{ matrix.dependencies }})
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     needs: installed-package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.10'
+            dependencies: minimum
+          - python: '3.12'
+            dependencies: current
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python }}
       - uses: actions/download-artifact@v4
         with:
-          name: distributions-3.12
+          name: distributions-${{ matrix.python }}
           path: candidate-dist
       - name: Checkout ATST consumer
         uses: actions/checkout@v4
         with:
           repository: QuantumMisaka/atst-tools
-          ref: ${{ github.event_name == 'schedule' && 'integrate/abacuslite-1.1.0-acceptance' || inputs.atst_ref || '87caeedbca5ed7104316bfc6130fd2598b6c5e4b' }}
+          ref: ${{ github.event_name == 'schedule' && 'integrate/abacuslite-external-only' || inputs.atst_ref || '07aba2373430b3793af575528c3d953a4d0ee713' }}
           path: consumer-sources/atst
           persist-credentials: false
       - name: Require the selected ATST consumer runner
@@ -120,40 +143,40 @@ jobs:
           git -C consumer-sources/atst rev-parse HEAD
           git -C consumer-sources/forge rev-parse HEAD
           sha256sum "$RUNNER_TEMP"/atst-dist/*.whl candidate-dist/*.whl
-      - name: Install separate vendored and external consumer environments
+      - name: Install the external consumer environment
+        env:
+          DEPENDENCY_LANE: ${{ matrix.dependencies }}
         run: |
-          python -m venv "$RUNNER_TEMP/consumer-vendored"
           python -m venv "$RUNNER_TEMP/consumer-external"
-          atst_wheel=("$RUNNER_TEMP"/atst-dist/*.whl)
-          "$RUNNER_TEMP/consumer-vendored/bin/python" -m pip install \
-            "${atst_wheel[0]}[test]"
-          "$RUNNER_TEMP/consumer-vendored/bin/python" -m pip freeze \
-            > "$RUNNER_TEMP/consumer-base-freeze.txt"
+          : > "$RUNNER_TEMP/consumer-constraints.txt"
+          if [ "$DEPENDENCY_LANE" = minimum ]; then
+            printf '%s\n' 'ase==3.28.0' 'numpy==1.26.0' 'seekpath==2.2.0' 'pytest==8.4.0' \
+              > "$RUNNER_TEMP/consumer-constraints.txt"
+          fi
+          atst_wheels=("$RUNNER_TEMP"/atst-dist/*.whl)
+          test "${#atst_wheels[@]}" -eq 1
           "$RUNNER_TEMP/consumer-external/bin/python" -m pip install \
-            -r "$RUNNER_TEMP/consumer-base-freeze.txt"
-          "$RUNNER_TEMP/consumer-external/bin/python" -m pip install \
-            --no-deps candidate-dist/*.whl
-          "$RUNNER_TEMP/consumer-vendored/bin/python" -m pip check
+            -c "$RUNNER_TEMP/consumer-constraints.txt" \
+            "${atst_wheels[0]}[test]" candidate-dist/*.whl
           "$RUNNER_TEMP/consumer-external/bin/python" -m pip check
-      - name: Compare ATST installed consumer suites
+      - name: Run and verify the full installed ATST consumer suite
         run: |
           cd "$RUNNER_TEMP"
-          "$RUNNER_TEMP/consumer-vendored/bin/python" \
-            "$GITHUB_WORKSPACE/consumer-sources/atst/scripts/run_abacuslite_consumer.py" \
-            --atst-root "$GITHUB_WORKSPACE/consumer-sources/atst" \
-            --backend vendored --report "$RUNNER_TEMP/vendored-consumer.json"
           "$RUNNER_TEMP/consumer-external/bin/python" \
             "$GITHUB_WORKSPACE/consumer-sources/atst/scripts/run_abacuslite_consumer.py" \
             --atst-root "$GITHUB_WORKSPACE/consumer-sources/atst" \
             --backend external --report "$RUNNER_TEMP/external-consumer.json"
           "$RUNNER_TEMP/consumer-external/bin/python" \
             "$GITHUB_WORKSPACE/consumer-sources/atst/scripts/run_abacuslite_consumer.py" \
-            --compare "$RUNNER_TEMP/vendored-consumer.json" "$RUNNER_TEMP/external-consumer.json"
-      - name: Install Forge after the paired ATST comparison
+            --verify-report "$RUNNER_TEMP/external-consumer.json"
+      - name: Install Forge with the same dependency constraints
         run: |
-          "$RUNNER_TEMP/consumer-external/bin/python" -m pip install ./consumer-sources/forge
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pip install \
+            -c "$RUNNER_TEMP/consumer-constraints.txt" ./consumer-sources/forge
           "$RUNNER_TEMP/consumer-external/bin/python" -m pip check
-      - name: Run plugin-owned ATST and Forge contracts outside checkouts
+          "$RUNNER_TEMP/consumer-external/bin/python" -m pip freeze \
+            > "$RUNNER_TEMP/consumer-freeze.txt"
+      - name: Run every plugin-owned ATST and Forge contract outside checkouts
         shell: bash
         run: |
           set -euo pipefail
@@ -163,37 +186,167 @@ jobs:
           cd "$RUNNER_TEMP/abacuslite-consumers"
           "$RUNNER_TEMP/consumer-external/bin/python" -m pytest tests/consumers \
             --run-consumers -q -s --junitxml="$RUNNER_TEMP/plugin-consumers.pytest.xml" \
-            2>&1 | tee "$RUNNER_TEMP/plugin-consumers.pytest.log"
+            > "$RUNNER_TEMP/plugin-consumers.pytest.log" 2>&1
+          cat "$RUNNER_TEMP/plugin-consumers.pytest.log"
           python "$GITHUB_WORKSPACE/.github/scripts/check_consumer_results.py" \
             --junit "$RUNNER_TEMP/plugin-consumers.pytest.xml" \
             --expected "$GITHUB_WORKSPACE/.github/consumer-cases.json"
-      - name: Upload consumer comparison reports
+      - name: Upload installed consumer reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: installed-consumer-comparison
+          name: installed-consumers-${{ matrix.python }}
           path: |
-            ${{ runner.temp }}/vendored-consumer.json
-            ${{ runner.temp }}/vendored-consumer.pytest.log
-            ${{ runner.temp }}/vendored-consumer.pytest.xml
             ${{ runner.temp }}/external-consumer.json
             ${{ runner.temp }}/external-consumer.pytest.log
             ${{ runner.temp }}/external-consumer.pytest.xml
-            ${{ runner.temp }}/consumer-base-freeze.txt
+            ${{ runner.temp }}/consumer-freeze.txt
+            ${{ runner.temp }}/consumer-constraints.txt
             ${{ runner.temp }}/plugin-consumers.pytest.log
             ${{ runner.temp }}/plugin-consumers.pytest.xml
-          if-no-files-found: ignore
+          if-no-files-found: warn
+
+  resolve-engine-refs:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.refs.outputs.matrix }}
+      engine_repository: ${{ steps.refs.outputs.engine_repository }}
+      harness_repository: ${{ steps.refs.outputs.harness_repository }}
+      harness_ref: ${{ steps.refs.outputs.harness_ref }}
+      assets_repository: ${{ steps.refs.outputs.assets_repository }}
+      assets_ref: ${{ steps.refs.outputs.assets_ref }}
+      assets_directory: ${{ steps.refs.outputs.assets_directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve the engine, harness and asset tuple once
+        id: refs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DEVELOP_REF: ${{ inputs.develop_ref }}
+          LTS_REF: ${{ inputs.lts_ref }}
+          HARNESS_REF: ${{ inputs.harness_ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/ci/engine_refs.py --manifest tests/engine-refs.json \
+            --event "$EVENT_NAME" --develop-ref "$DEVELOP_REF" \
+            --lts-ref "$LTS_REF" --harness-ref "$HARNESS_REF" \
+            --github-output "$GITHUB_OUTPUT" > "$RUNNER_TEMP/engine-refs.json"
+          cat "$RUNNER_TEMP/engine-refs.json"
+          cat "$RUNNER_TEMP/engine-refs.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resolved-engine-refs
+          path: ${{ runner.temp }}/engine-refs.json
+
+  engine-compatibility:
+    name: engine-compatibility (${{ matrix.variant }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    needs: [installed-package, resolve-engine-refs]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.resolve-engine-refs.outputs.matrix) }}
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions-3.12
+          path: candidate-dist
+      - name: Checkout the resolved engine source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.resolve-engine-refs.outputs.engine_repository }}
+          ref: ${{ matrix.ref }}
+          path: engine-source
+          persist-credentials: false
+      - name: Checkout the reviewed shared harness
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.resolve-engine-refs.outputs.harness_repository }}
+          ref: ${{ needs.resolve-engine-refs.outputs.harness_ref }}
+          path: engine-harness
+          persist-credentials: false
+      - name: Checkout curated common assets
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.resolve-engine-refs.outputs.assets_repository }}
+          ref: ${{ needs.resolve-engine-refs.outputs.assets_ref }}
+          path: engine-assets
+          sparse-checkout: ${{ needs.resolve-engine-refs.outputs.assets_directory }}
+          persist-credentials: false
+      - name: Install the ordinary hosted CPU build dependencies
+        run: bash scripts/ci/install_abacus_build_deps.sh
+      - name: Cold-build this lane's resolved engine
+        env:
+          ENGINE_VARIANT: ${{ matrix.variant }}
+          ENGINE_REF: ${{ matrix.ref }}
+        run: |
+          bash scripts/ci/build_abacus.sh --variant "$ENGINE_VARIANT" \
+            --source-dir "$GITHUB_WORKSPACE/engine-source" \
+            --build-dir "$RUNNER_TEMP/engine-build" \
+            --report-dir "$RUNNER_TEMP/engine-reports/build" \
+            --expected-sha "$ENGINE_REF"
+      - name: Install the current plugin wheel in an isolated environment
+        run: |
+          python -m venv "$RUNNER_TEMP/engine-env"
+          "$RUNNER_TEMP/engine-env/bin/python" -m pip install candidate-dist/*.whl 'pytest>=8,<10'
+          "$RUNNER_TEMP/engine-env/bin/python" -m pip check
+      - name: Verify assets and execute every required real-engine case
+        env:
+          ENGINE_REF: ${{ matrix.ref }}
+          ENGINE_FORMAT: ${{ matrix.format }}
+          ASSETS_DIRECTORY: ${{ needs.resolve-engine-refs.outputs.assets_directory }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ci/engine_refs.py --manifest tests/engine-refs.json \
+            --assets-dir "$GITHUB_WORKSPACE/engine-assets/$ASSETS_DIRECTORY"
+          engine=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["binary"]["path"])' \
+            "$RUNNER_TEMP/engine-reports/build/build-provenance.json")
+          wheels=("$GITHUB_WORKSPACE"/candidate-dist/*.whl)
+          test "${#wheels[@]}" -eq 1
+          python engine-harness/interfaces/ASE_interface/tests/run_engine_compatibility.py \
+            --engine "$engine" --mpi-command 'mpirun -np 2' \
+            --assets "$GITHUB_WORKSPACE/engine-assets/$ASSETS_DIRECTORY" \
+            --format "$ENGINE_FORMAT" --wheel "${wheels[0]}" \
+            --report-dir "$RUNNER_TEMP/engine-reports/runtime" \
+            --engine-ref "$ENGINE_REF" --python "$RUNNER_TEMP/engine-env/bin/python"
+      - name: Retain engine build, provenance and raw runtime outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-compatibility-${{ matrix.variant }}
+          path: ${{ runner.temp }}/engine-reports/
+          if-no-files-found: warn
 
   compatibility-gate:
     name: compatibility-gate
     if: always()
-    needs: [installed-package, installed-consumers]
+    needs: [installed-package, installed-consumers, resolve-engine-refs, engine-compatibility]
     runs-on: ubuntu-latest
     steps:
       - name: Require every compatibility job to succeed
         env:
           PACKAGE_RESULT: ${{ needs.installed-package.result }}
           CONSUMER_RESULT: ${{ needs.installed-consumers.result }}
+          ENGINE_REFS_RESULT: ${{ needs.resolve-engine-refs.result }}
+          ENGINE_RESULT: ${{ needs.engine-compatibility.result }}
         run: |
           test "$PACKAGE_RESULT" = success
           test "$CONSUMER_RESULT" = success
+          test "$ENGINE_REFS_RESULT" = success
+          test "$ENGINE_RESULT" = success

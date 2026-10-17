@@ -59,8 +59,12 @@ python -m pytest --run-engine -m engine -q
 
 These imported tests contain engine-specific references and do not replace the
 stronger two-format engine harness. Consult the [compatibility guide](docs/compatibility-ci.md)
-for installed ATST/Forge checks, current develop/LTS evidence and pending CI
-work. Fixture or example-startup success alone is not real-engine acceptance.
+for installed ATST/Forge checks, the portable harness and current develop/LTS
+evidence. The candidate workflow cold-builds both engines using
+`scripts/ci/build_abacus.sh`; reviewed sources and asset hashes are in
+`tests/engine-refs.json`. Changes to CI helpers should run
+`python -m pytest .github/tests -q` as well as workflow validation.
+Fixture or example-startup success alone is not real-engine acceptance.
 
 ## Changes and review
 

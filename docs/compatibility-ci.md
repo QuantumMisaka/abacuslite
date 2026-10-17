@@ -10,20 +10,22 @@ See the [release record](superpowers/plans/2026-10-17-1.1.0-release.md) for
 artifact identities and retained evidence. Local package, consumer and real-engine
 acceptance exists. Package and installed-consumer checks have passed remotely
 on `v1.1.0` ([tag run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39036505393));
-the plugin's dual-engine PR jobs are still planned. A successful local run, a workflow
+the post-release candidate now implements dual-engine PR jobs and external-only
+ATST consumers, with hosted acceptance still pending. A successful local run, a workflow
 implemented in a branch and an enforced merge check are separate outcomes.
 
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
 | Wheel/sdist and offline contracts | Release source `94a26e4` passed local/hosted checks; exact tag artifacts published and indexed install verified | Release acceptance complete for 1.1.0 |
-| Installed ATST/Forge consumers | Local and hosted paired checks passed on `94a26e4` | Consumer production cutover remains a separate task |
-| Develop/LTS real engines | Validated for the snapshots below | Implement portable dual-engine PR jobs |
+| Installed ATST/Forge consumers | Historical release paired checks passed; external-only ATST and both plugin consumer environments pass locally | Verify the new hosted matrix before consumer production cutover |
+| Develop/LTS real engines | Portable harness passes both formats; clean hosted-style CPU builds are being verified | Run the implemented dual-engine jobs remotely |
 | Merge enforcement | Plugin protection absent at inspection; upstream enforcement unconfirmed | Activate appropriate required checks after successful remote runs |
 
 Exact revisions, environments, raw-output links and earlier GPU/consumer runs
 are in the [acceptance record](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md).
 The [dual-engine CI plan](superpowers/plans/2026-10-17-dual-engine-ci.md) defines
-remaining implementation and rollout steps. Historical failures and detailed
+implementation and rollout steps. The [post-release execution record](superpowers/plans/2026-10-18-atst-next-actions.md)
+tracks the current candidate and separates local, hosted and upstream states. Historical failures and detailed
 run sequences stay in those records.
 
 ## Package and installed-consumer workflow
@@ -36,20 +38,32 @@ push/PR checks without path filters, manual candidate runs and a weekly schedule
   dependencies outside the checkout. The minimum lane pins ASE 3.28.0,
   NumPy 1.26.0, seekpath 2.2.0 and pytest 8.0.0. It also rebuilds a wheel
   from the sdist and tests it using the sdist's own tests/examples/configuration.
-- `installed-consumers` uses the current plugin wheel and the same selected
-  ATST wheel in separate vendored/external environments with identical base
-  dependencies. It compares test collection/outcomes, skip reasons, package
-  identity and deterministic output facts. The runner starts outside checkouts;
+- `installed-consumers` installs the current plugin wheel and selected ATST
+  wheel in external-only Python 3.10/minimum and 3.12/current environments.
+  The minimum consumer lane uses pytest 8.4.0 to satisfy ATST's test extra;
+  the package-only lane retains its pytest 8.0.0 floor. The runner verifies
+  full collection/outcomes, expected skip reasons, package identity and
+  deterministic output facts. It clears inherited pytest selectors and
+  rejects deselection. The runner starts outside checkouts;
   ATST pytest uses repository fixtures with installed imports attested at both
-  ends and in child processes. Forge is installed after this paired comparison.
+  ends and in child processes. Forge is installed afterward under the same
+  dependency constraints. The previous paired vendored/external acceptance
+  remains historical evidence; the new ATST candidate keeps thin import
+  forwarders and no duplicate parser implementation.
 - Plugin-owned consumer tests then run outside checkouts. They cover input
   preparation, ordered SCF forces/Fermi values, periodic frame matching,
   fail-closed handoff, native-MD geometry, mixed-reader isolation, repeatable
   reads, constant-potential guards and Forge fact projection. Engine subprocesses
   are replaced in these offline tests; parsers are not each other's oracle.
+  `.github/consumer-cases.json` lists all required case identities: missing,
+  duplicate, extra, failed or skipped cases fail the report gate.
+- `resolve-engine-refs` records one engine/harness/asset tuple for the run;
+  `engine-compatibility` cold-builds both engines on Ubuntu 24.04 with two
+  workers, installs the candidate wheel, and runs the reviewed ABACUS harness.
+  Build provenance, runtime reports and raw files are uploaded on failure too.
 - `compatibility-gate` runs even when prerequisites fail or are skipped and
-  requires successful package and consumer jobs. It currently has no real-engine
-  dependency; adding one is part of the dual-engine plan.
+  requires successful package, consumer, ref-resolution and real-engine jobs.
+  A skipped engine lane cannot produce a passing aggregate.
 
 After installing the candidate wheel and both consumers, run the plugin-owned
 contracts from a copied test tree outside checkouts:
@@ -62,10 +76,13 @@ Ordinary pytest skips consumers; explicit opt-in must fail if a consumer is
 missing. Consumer dependencies do not become plugin runtime dependencies.
 See [Contributing](../CONTRIBUTING.md) for package setup and verification.
 
-PR jobs pin ATST `87caeedb` and Forge `43f5d4a`; the weekly schedule uses their
-`main` heads to detect drift. Baselines can be updated through tested changes.
+PR jobs pin reviewed ATST and Forge commits in `.github/workflows/tests.yml`.
+Until ATST's external-only migration reaches main, weekly checks use its
+`integrate/abacuslite-external-only` candidate branch; Forge follows `main`.
 Manual runs accept `atst_ref` and `forge_ref` for coordinated candidates.
-The ATST pin is available on the `integrate/abacuslite-1.1.0-acceptance` branch.
+The release's former ATST pin `87caeedb` remains on
+`integrate/abacuslite-1.1.0-acceptance` for historical paired evidence.
+Candidate pins must be publicly fetchable before a hosted run is accepted.
 Weekly checks supplement PR checks.
 
 ## Develop and LTS engine coverage
@@ -91,16 +108,24 @@ equivalence between engine versions or support for every engine feature.
 See [repaired-wheel acceptance](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md#repaired-wheel-acceptance)
 for full engine/wheel identities, failures, repairs and retained output.
 
-The plugin workflow currently runs offline legacy/latest regressions, including
-real LTS output fixtures; it does not pass `--run-engine`. Simply enabling its
-imported integration tests is insufficient: some only print an energy or check
-file existence. Reuse the stronger ABACUS-owned raw-property assertions.
+The new engine jobs use the stronger ABACUS-owned raw-property assertions,
+independently of this package's imported opt-in tests. The manifest
+`tests/engine-refs.json` pins engines, the reviewed harness and curated asset
+hashes. Weekly runs resolve develop/LTS heads once; manual runs may select
+`develop_ref`, `lts_ref` and `harness_ref`. The harness accepts an explicit
+engine, MPI command, assets, format, wheel, report directory and installed
+Python environment. It rejects wrong module origins, wheel/runtime mismatch,
+wrong reader selection and incomplete case execution. LTS requires its eight
+ordinary checks plus the seeded native-MD case; absent socket support is a
+documented boundary, not a substitute for one of those checks.
 
-Upstream develop tests its bundled plugin. Our local `bca8164` candidate adds
-an external wheel lane but still pins old plugin `dc02043`; it needs the reviewed
-repair revision, explicit newly built binary identity and matching supported
-socket coverage. LTS needs a lightweight external-harness workflow, without
-backporting the interface implementation. These are pending changes.
+The ABACUS develop candidate `e446bda` tests the newly built executable directly
+against both its bundled plugin and the published external 1.1.0 wheel. A
+bundled velocity-writing correction preserves explicit native-MD velocities.
+Its portable harness passed all nine checks in each of the develop external,
+develop bundled and LTS external lanes, with retained raw-property evidence.
+The LTS candidate only adds an external-harness workflow; it does not backport
+`interfaces/`. Public candidate runs and community adoption remain separate.
 
 ## Repository responsibilities
 
@@ -115,10 +140,11 @@ enforcement remain incomplete.
 | ATST | This PR's ATST with the supported external plugin; profile, I/O and affected workflow checks |
 | Forge | This PR's Forge with the optional plugin; preserve native-default and read-only projection contracts |
 
-Coordinated runs select both candidate revisions explicitly. Planned scheduled
+Coordinated runs select both candidate revisions explicitly. Scheduled
 engine checks follow develop/LTS heads, supplementing stable PR baselines.
 ABACUS adapters may forward imports/configuration but must not duplicate the
-parser. ATST's vendored lane is transitional until direct callers migrate.
+parser. ATST's candidate forwards supported historical import paths to the
+installed external package, including shared module state.
 Ordinary community PRs must not submit HPC jobs; expensive workflow acceptance
 runs only through a maintainer-controlled entry on trusted infrastructure.
 
