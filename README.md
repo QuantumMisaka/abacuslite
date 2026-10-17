@@ -64,6 +64,13 @@ For development, use `python -m pip install -e '.[dev]'`. Wheel and sdist builds
 are supported; downstream CI should record the exact candidate commit or wheel used for verification.
 
 ABACUS itself and the pseudopotential/orbital assets are supplied separately.
+Compatibility with the ABACUS LTS branch is part of this plugin's scope even
+though LTS does not contain `interfaces/ASE_interface`. `Abacus` selects
+`legacyio` for a v3.10.x engine from its actual `--version` output; each
+calculator retains its own selection. Develop engines using the newer output
+format select `latestio`. See the [engine compatibility checks](docs/compatibility-ci.md#develop-and-lts-engine-coverage)
+for the distinction between reader regressions and real-engine acceptance.
+
 Pure input/output functions do not require an ABACUS executable:
 
 ```python

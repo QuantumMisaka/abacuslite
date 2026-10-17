@@ -117,6 +117,84 @@ trusted infrastructure with a maintainer-controlled entry point; ordinary
 community PRs must not submit HPC jobs. Existing vendored tests remain a
 transition check until all direct imports have migrated, not the final gate.
 
+## Develop and LTS engine coverage
+
+LTS compatibility through `legacyio` is a required plugin responsibility,
+confirmed by the maintainer on 2026-10-17. It does not depend on whether the
+engine repository ships an ASE interface. `Abacus` obtains the version from
+its configured executable and binds the chosen reader to that calculator;
+v3.10.x uses `legacyio`. Explicit reader functions remain available for pure
+I/O. Creating a develop calculator must not change an existing LTS instance.
+
+The refreshed upstream references are develop `73cd094361f77574f9b28e825913e00f1d2c742a`
+and LTS `725bf475a7159db4c1890a1f55160393e14b6b13`. Develop contains the bundled
+plugin and engine-owned ASE workflow; LTS contains neither `interfaces/` nor
+that workflow. The LTS documentation still describes the separate historical
+`ase-abacus` distribution. Its absence of a bundled plugin does not mean LTS
+is unsupported by abacuslite, and there is no LTS vendored baseline to compare.
+
+Current CI coverage must be read in three separate layers:
+
+- Plugin PR CI runs offline legacy/latest reader and instance-isolation tests
+  on installed wheels. Its current workflow does not pass `--run-engine`, so
+  it does not yet validate a real develop or LTS executable.
+- Upstream develop's ASE PR job builds that engine checkout and tests its
+  bundled plugin. Our local `bca8164` candidate additionally installs the
+  independent wheel and runs the strengthened engine-owned suite outside the
+  checkout. That candidate has not run remotely; its default plugin ref is
+  still the historical `dc02043`, before both the `06f97b1` tolerance alignment
+  and the `ba65f606` LTS/native-MD repairs.
+- Current LTS has no abacuslite CI lane. Earlier v3.10.1 ATST relax evidence is
+  useful but does not establish acceptance of the current LTS branch or all
+  legacy I/O behavior. Fresh source-bound engine evidence is recorded in the
+  [acceptance plan](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md).
+
+The current candidate repairs two issues exposed by real LTS execution:
+`write_stru` now preserves ASE velocities in ABACUS atomic units and species
+order, and `legacyio` reads native-MD geometry from `MD_dump` with physical
+cells, Cartesian positions and periodic boundaries. Complete historical
+single-log MD remains readable; an incomplete log or a corrupt existing dump
+fails explicitly. The package's ordinary offline suite now includes retained
+real LTS output and these compatibility regressions. This protects the observed
+failures once the commits enter CI, but does not replace live engine jobs.
+
+Local installed-wheel acceptance at `ba65f606` passed nine develop tests and
+eight LTS tests against the exact source builds above, plus a seeded LTS
+native-MD case with engine-generated initial velocities. Both native-MD paths
+verify actual motion and compare every returned frame against raw engine
+output. LTS correctly selects `legacyio`; socket is tested only on develop,
+which has the corresponding driver. These short CPU/MPI interface cases do
+not establish scientific equivalence between engine versions or support for
+every engine feature. Detailed identities, failures and repaired-run evidence
+are recorded in the acceptance plan.
+
+Merely enabling the current `tests/integration` is insufficient: for example,
+its SCF test prints the energy and its band test checks that a JSON file exists.
+The stronger raw-property assertions currently live in the develop integration
+candidate's engine-owned harness. The two-format engine gate must preserve
+those observable checks for applicable legacy output rather than accept a
+successful process or an existing output file as its only oracle.
+
+The remaining engine gate should exercise the plugin PR's own wheel against
+both a pinned develop engine and a pinned LTS engine, asserting actual
+`latestio`/`legacyio` selection and installed import provenance. Use original
+engine output to check energy, forces, stress, available Fermi/band/magnetic
+facts and native-MD frames, with format-specific expectations where needed.
+Do not require newer develop-only output files or socket capabilities from
+LTS, and do not skip ordinary legacy behavior merely because LTS lacks the
+newer ASE test directory. Scheduled branch-head checks supplement the pinned
+PR gate. An LTS engine PR lane can consume the same external package and test
+contract without copying the develop interface implementation into LTS.
+
+Before activation, the develop candidate also needs an updated plugin pin,
+an explicit path/hash binding to the freshly built executable, and matching
+socket coverage in both lanes where the engine supports it. These are recorded
+gaps, not already enabled checks. Engine tests must retain failed outputs and
+nonzero exit statuses. Required-check activation is separate from a successful
+job: the inspected develop effective rules only prohibit deletion and force
+pushes; the branch-protection details endpoint was unavailable to this account.
+No upstream branch settings were changed.
+
 ## Compatibility and coordinated changes
 
 Protect public behavior: imports, inputs, units, atom ordering, missing values,

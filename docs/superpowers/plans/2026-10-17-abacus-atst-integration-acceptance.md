@@ -620,3 +620,171 @@ No candidate push, PR, indexed publication, production dependency cutover or
 Forge modification has occurred in this follow-up. `pip install` here means
 installing the recorded candidate wheels; ATST does not yet pull a published
 abacuslite version automatically from PyPI.
+
+
+## Develop/LTS compatibility audit (2026-10-17)
+
+The maintainer requested the same installed-package and CI assessment for both
+ABACUS branches, and explicitly confirmed that LTS compatibility must be
+provided through `legacyio` although LTS does not carry the new interface.
+This follow-up investigates that requirement; it does not authorize a release,
+PR delivery or changes to upstream branch protection.
+
+Ruling: treat LTS as a supported external engine target, not as a vendored
+comparison lane. Test automatic per-instance legacy-reader selection and real
+input/output handoff. Do not backport the whole develop interface or require
+its newer output files/socket protocol just to obtain a symmetric matrix.
+The cost of a mistaken format assumption is a false acceptance or an avoidable
+LTS regression, so raw output and the engine source identity remain explicit.
+
+- Refreshed develop: `73cd094361f77574f9b28e825913e00f1d2c742a`, two engine
+  commits after the previously tested `4b92455ca`.
+- Refreshed LTS: `725bf475a7159db4c1890a1f55160393e14b6b13`; no `interfaces/`
+  tree or ASE-plugin workflow. Its documented historical interface is
+  `ase-abacus`, which is distinct from this independent distribution.
+- Initial plugin baseline: the installed `06f97b1` production wheel, SHA-256
+  `4715299fe25b4ff583b577a4024d45eb2f338cd2aa2bb1d3c2db5066588abac9`.
+- The focused installed-wheel legacy/reader/instance contract tests pass
+  **25 tests** from outside the checkout. Raw output:
+  `~/scratch/abacuslite-engine-branches-audit-20261017/legacy-installed-offline.log`.
+  This result alone does not establish current-engine compatibility.
+- Upstream develop's existing ASE workflow has recent successful runs but
+  tests its bundled plugin. Our independent-package workflow remains local at
+  `bca8164`, with historical default plugin pin `dc02043`. The plugin-owned
+  workflow currently has no `--run-engine` job for either engine line.
+- Read-only remote observations are retained in the same audit directory as
+  `remote.json` and `develop-effective-rules.json`. Develop is reported
+  protected, but visible effective rules only block deletion/non-fast-forward;
+  its branch-protection details endpoint returns 404 to this account. LTS is
+  reported unprotected. No claim of an enforced abacuslite merge gate follows.
+
+Both refreshed engines were built locally from exact `git archive` sources in
+`~/scratch/abacuslite-current-branches-20261017/`, without modifying the
+integration checkouts or replacing earlier binaries. Develop executable SHA-256
+is `ae341d54d3ddfe84061c5d29266a732bdc146b8a7bf983c477ca900c929e9e19`;
+LTS executable SHA-256 is
+`72cc354b0dc3b80479525923a880d39f2b423eef093e4ae27126175cf64a8b63`.
+These are bounded CPU/MPI/LCAO interface builds, not full-feature or scientific
+validation of either engine. Build logs and CMake caches retain the feature
+selection. LTS initially used the modern ELPA option and failed configuration;
+the successful retry uses its actual `USE_ELPA=OFF` option. A diagnostic note
+retains that first failure; its complete first configure log was not retained.
+
+### Real-runtime failures and compatibility repairs
+
+The original wheel passed develop's nine tests, but its native-MD input had
+zero velocities and a static trajectory. On LTS, seven tests passed and native
+MD failed: `init_vel=1` with zero temperature produced invalid velocities when
+the engine rescaled to the requested temperature. Supplying nonzero ASE
+velocities still wrote zeros to STRU. A separate seeded engine-generated
+velocity run completed three physical frames, then exposed the reader error
+`Inconsistent length: 1 != 3`. All failures and raw outputs remain in
+`BASELINE.md` and its linked evidence, separate from successful reruns.
+
+Minimal repairs are recorded in `546d706` and `ba65f606`:
+
+- Preserve supplied ASE velocities when writing STRU, converted to atomic
+  velocity units and reordered with the species. No-momenta inputs retain
+  their existing zero default.
+- For legacy native MD, use the existing dump parser to obtain every physical
+  frame; keep Cartesian positions in Angstrom, scale lattice vectors once,
+  and retain PBC. Accept the LTS `ION=2`/`ELEC=1` header spelling.
+- Preserve complete historical log-only MD. Independent review caught an
+  intermediate unconditional-dump requirement; the follow-up restores the
+  old consumer fixtures and this API. Existing corrupt dumps cannot silently
+  fall back, and incomplete log-only frame sets fail explicitly.
+
+The real LTS log/dump fixture is retained byte-for-byte with hashes in
+`tests/fixtures/lts_native_md/README.md`. Unit regressions cover physical
+geometry, frame count, energies/forces, read-only output, velocity units and
+species order, plus the old log-only path. Independent review of `ba65f606`
+closed the intermediate compatibility finding with no remaining code blocker.
+No public module layout or calculator API was replaced.
+
+The final candidate wheel has SHA-256
+`3f81661fefa3583b1bd19b680db715c0f5477d1bce5afb3f4fcd7f8dfb672850`;
+its sdist is `a78813693c30d80b51125a0e111636b7e0bbcbdf58336ebd4ad587d585b4dd8c`.
+Both pass strict Twine metadata checks. All eight wheel production Python
+files match the recorded `ba65f606` source hashes. Build provenance separately
+records the uncommitted documentation included at build time; no release was
+made from these artifacts. The real-run environment uses the same Python
+3.10.20 and dependency freeze as the original baseline, with only the plugin
+wheel changed.
+
+### Repaired-wheel acceptance
+
+`~/scratch/abacuslite-current-branches-20261017/FINAL_REPORT.md` records:
+
+| Exact engine | Real interface scope | Result |
+| --- | --- | --- |
+| develop `73cd094` | SCF, ASE relax/MD, native MD, band, FM/AFM/noncollinear magnetic, socket | 9/9 tests; 142 retained raw files hashed |
+| LTS `725bf47` | SCF, ASE relax/MD, native MD, band, FM/AFM/noncollinear magnetic | 8/8 tests; 125 retained raw files hashed |
+| Same LTS, seeded generated velocities | Native MD with zero STRU velocities, `init_vel=0`, seed 1729 | 1/1 test; 16 retained raw files hashed |
+
+All processes returned zero with no timeout. Installed-module probes select
+`latestio` for develop v3.11.0-beta10 and `legacyio` for LTS v3.10.1. The LTS
+source has no socket driver, so it is not assigned that newer capability.
+There is no LTS bundled-plugin comparison.
+
+The native-MD oracle now verifies STRU initial velocity units and actual motion
+as well as every frame's raw energy, forces, physical cell/positions and PBC.
+Its velocity tolerance is `rtol=2e-6, atol=1e-12`, covering the independently
+checked `4.63e-7` relative difference in ASE/engine unit constants. Develop
+emits two frames and LTS three for `md_nstep=2`, consistent with their source
+loops. Maximum minimum-image displacements are respectively `0.000666386 Å`
+and `0.00131604 Å`; the seeded LTS case also moves `0.00131610 Å`.
+These are short Si LCAO/MPI two-rank CPU checks; they do not establish broad
+scientific accuracy, GPU behavior, or all engine features.
+
+The intermediate log-only compatibility failure was reproduced separately
+from frozen archives: `lts-logonly-evidence/README.md` records identical
+focused tests failing six cases at `546d706` and passing all six at `ba65f606`.
+The fixed source suite passes 124 tests with 21 skips. These are new isolated
+reproductions because the first source-test output was not saved to disk.
+
+The ATST full installed suite was rerun with the repaired plugin in Python
+3.12.3/ASE 3.29.0. It passes **1392 tests with 36 skips**; comparison with the
+unchanged vendored **1390/38** baseline passes the existing strict comparator
+over all 1428 collected cases, installed ATST file/wheel identities, dependency
+versions, skip reasons and raw fixture fact projections. The unchanged ATST
+wheel remains `bffbc2d3ada4f3ee7cfb9ba6f1b7e36bf6ca98171dac9a61854ed7c02bb59059`.
+Reports are in `~/scratch/abacuslite-engine-branches-audit-20261017/`:
+`atst-fixed-py312.json` and `atst-fixed-py312-comparison.log`.
+
+Harness corrections are retained honestly: the first new ATST environment
+used Python 3.13.13, so its 1392/36 pass could not be accepted as a paired
+comparison against Python 3.12.3. The comparator rejected that mismatch;
+the new same-version environment passed without changing the comparator.
+The first copied plugin test tree omitted `examples/`, causing eleven missing
+file failures; restoring the unchanged examples gives 124 passed/21 skipped
+in `fixed-offline-complete-harness.log`. The original failed logs remain.
+
+The final Python 3.12 installed-wheel rerun also passes **124 offline tests
+with 21 skips** (`fixed-py312-offline.log`). After the paired ATST comparison,
+Forge was installed from the pinned `43f5d4a` archive; `pip check` passes and
+all **10 plugin-owned ATST/Forge consumer tests** pass from the copied test tree
+outside checkouts (`fixed-py312-consumers.log`). Import assertions require all
+three packages to resolve inside the virtual environment. No Forge production
+source or dependency selection was changed by this follow-up.
+
+Independent final review verified all **283 retained raw-file hashes**,
+engine/wheel/harness identities, and byte equality of the eight plugin Python
+files across commit, wheel and installed package. It independently reread all
+three native-MD trajectories and checked raw energy/geometry/forces/PBC,
+velocity units and actual motion. Review also confirmed the strict same-Python
+ATST comparison and the isolated log-only RED/GREEN reproduction. No blocking
+finding remains within this local CPU/MPI interface acceptance scope.
+
+The next CI work remains explicit: add plugin-PR jobs using its own wheel
+against pinned develop/LTS engines, add scheduled branch-head checks, and
+complete the engine-side external-package lane with current plugin pin and
+explicit binary identity. The current LTS absence of `interfaces/` does not
+remove that legacy compatibility obligation. This audit did not add those
+live-engine workflow jobs or activate required checks. No push, PR, PyPI
+publication, production dependency cutover or upstream settings change was
+performed.
+
+Earlier develop `4b92455ca` paired CPU/SAI results and the previous v3.10.1 ATST
+relax result remain historical evidence, not reruns with this repaired wheel.
+Current CI gaps and the required two-format contract are described in
+`docs/compatibility-ci.md`; no remote workflow was dispatched.
