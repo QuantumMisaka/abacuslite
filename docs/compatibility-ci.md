@@ -2,9 +2,10 @@
 
 ## Current checkpoint
 
-As recorded on 2026-10-17, the independent package remains an unpublished
-`1.1.0rc1` candidate. Local package, consumer and real-engine acceptance exists.
-The candidate cross-repository workflows have not run remotely, and the plugin's
+As recorded on 2026-10-17, stable `1.1.0` is being prepared for publication;
+see the [release record](superpowers/plans/2026-10-17-1.1.0-release.md) for the
+final artifact and registry status. Local package, consumer and real-engine
+acceptance exists. Hosted release checks are pending, and the plugin's
 dual-engine PR jobs are still planned. A successful local run, a workflow
 implemented in a branch and an enforced merge check are separate outcomes.
 
@@ -60,8 +61,8 @@ See [Contributing](../CONTRIBUTING.md) for package setup and verification.
 PR jobs pin ATST `87caeedb` and Forge `43f5d4a`; the weekly schedule uses their
 `main` heads to detect drift. Baselines can be updated through tested changes.
 Manual runs accept `atst_ref` and `forge_ref` for coordinated candidates.
-The ATST pin is still local at this checkpoint, so remote checkout cannot work
-until that commit is published. Weekly checks supplement PR checks.
+The ATST pin is available on the `integrate/abacuslite-1.1.0-acceptance` branch.
+Weekly checks supplement PR checks.
 
 ## Develop and LTS engine coverage
 

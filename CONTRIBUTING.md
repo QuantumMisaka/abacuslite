@@ -81,3 +81,27 @@ Historical implementation evidence is retained in the
 and [installed-consumer CI record](docs/superpowers/plans/2026-10-16-cross-repository-regressions.md).
 Current engine/consumer results and subsequent plans are linked from the
 compatibility guide.
+
+## Releasing
+
+Stable releases require explicit maintainer authorization, reviewed changes,
+installed-wheel/sdist checks and successful `Package tests` for the release
+tag. Preserve affected develop/LTS and consumer evidence. Set the version in
+`pyproject.toml`, update the changelog, and merge the reviewed source into main
+before creating its `vMAJOR.MINOR.PATCH` tag. Never move a published tag or
+replace a published distribution.
+
+The manual `Publish to PyPI` workflow must run from main. Supply the stable tag
+and the successful **tag push** run ID of `Package tests`. It checks the source
+repository, workflow, event, revision, main ancestry and artifact versions,
+then publishes that run's `distributions-3.12` artifact without rebuilding.
+Only the upload job receives OIDC permission. The `pypi` GitHub environment
+must match a PyPI Trusted Publisher for owner `QuantumMisaka`, repository
+`abacuslite`, workflow `publish.yml`, environment `pypi`. A first release uses
+a pending publisher configured by the maintainer in their PyPI account.
+
+After upload, compare PyPI's SHA256 digests with the workflow summary and
+verify `pip install abacuslite==VERSION` and `pip check` in a fresh environment.
+If an upload partially succeeds, inspect the registry before retrying; do not
+silently skip conflicting artifacts. Keep the release's source/run IDs and
+verification evidence in its record under `docs/superpowers/plans/`.

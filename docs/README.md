@@ -26,6 +26,8 @@ identify the revisions and environments that were actually validated.
 
 ## Plans and evidence
 
+- [1.1.0 release](superpowers/plans/2026-10-17-1.1.0-release.md):
+  stable artifacts, release checks and publication status.
 - [Dual-engine CI follow-up](superpowers/plans/2026-10-17-dual-engine-ci.md):
   remaining portable-harness, build, PR-gate and engine-side adoption work.
 - [ABACUS/ATST integration acceptance](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md):

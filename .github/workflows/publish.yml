@@ -1,0 +1,81 @@
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable tag whose Package tests push run passed (e.g. v1.1.0)
+        required: true
+        type: string
+      run_id:
+        description: Successful Package tests run ID for that exact tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-publication
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify successful package run and release ancestry
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.run_id }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$SOURCE_RUN" =~ ^[0-9]+$ ]]
+          gh api "repos/QuantumMisaka/abacuslite/actions/runs/$SOURCE_RUN" > "$RUNNER_TEMP/source-run.json"
+          python .github/scripts/validate_release.py --tag "$RELEASE_TAG" source \
+            --run "$RUNNER_TEMP/source-run.json" --main-sha "$GITHUB_SHA"
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions-3.12
+          path: dist
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+      - name: Verify exact wheel and source distribution
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python .github/scripts/validate_release.py --tag "$RELEASE_TAG" distributions \
+            --directory dist > "$RUNNER_TEMP/release-sha256.json"
+          cat "$RUNNER_TEMP/release-sha256.json"
+          cat "$RUNNER_TEMP/release-sha256.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-release
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/abacuslite
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-release
+          path: dist
+      - name: Publish verified distributions using Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1

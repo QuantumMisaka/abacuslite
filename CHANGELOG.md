@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.1.0rc1 — unreleased candidate
+## 1.1.0
+
+- Provide the independent ASE plugin as a wheel and source distribution with
+  unchanged public imports. Preserve the validated runtime from the final
+  candidate; the stable release adds packaging, documentation and release gates.
 
 - Honor explicit engine/consumer pytest markers and reject unknown markers or
   configuration keys; offline tests no longer depend on checkout directory or
@@ -46,6 +50,7 @@
 - Raise the ASE dependency floor to 3.28 for the supported candidate matrix;
   this release does not claim the old unverified `ase>=3.22` range.
 
-This candidate is not a PyPI publication or a complete engine compatibility
-certification. Existing consumers must validate their installed integration
+Publication status and artifact identities are recorded in the
+[release record](docs/superpowers/plans/2026-10-17-1.1.0-release.md).
+Existing consumers must validate their installed integration
 before removing vendored implementations or changing production dependencies.

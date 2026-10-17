@@ -30,9 +30,12 @@ necessary for independent packaging.
 ## Install one implementation
 
 Use a fresh virtual environment for initial validation, following README.md.
-Install the candidate wheel, or install this repository with `pip install .`.
-Record the exact source revision or wheel used; `1.1.0rc1` alone does not identify
-all pre-release source iterations. PyPI publication has not happened yet.
+Install the stable package with `pip install 'abacuslite==1.1.0'`, or use a
+validated local wheel while publication is pending. See the
+[release record](superpowers/plans/2026-10-17-1.1.0-release.md) for registry status.
+For development use `pip install .` and record the exact source revision.
+The earlier `1.1.0rc1` label covered several source iterations and does not
+uniquely identify those pre-release builds.
 
 Do not run consumer validation from a directory containing another top-level
 `abacuslite` source tree. In a virtual environment, verify the installed import
@@ -76,7 +79,7 @@ a second parser implementation or move ATST launcher policy into this package.
 
 ## Intentional compatibility changes
 
-- Python remains 3.10+. The supported candidate dependency floor is ASE 3.28,
+- Python remains 3.10+. The supported dependency floor is ASE 3.28,
   instead of the old unverified 3.22 declaration; NumPy and seekpath have explicit
   bounds in `pyproject.toml`. Check existing environment constraints first.
 - Output parsing preserves `eig_occ.txt`; callers that relied on its removal
