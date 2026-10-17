@@ -1,26 +1,30 @@
 # Developer Guide
 
-Runtime modules now live under `src/abacuslite`; tests and fixtures live under
-`tests`. The module map below describes the runtime package. Install the package
-before running tests; `python -m pytest` exercises the installed implementation.
-See [README.md](README.md) for offline/engine test separation and
-[docs/design.md](docs/design.md) for package boundaries.
+This reference describes runtime modules and output formats. Setup, test
+commands and package verification live in [CONTRIBUTING.md](CONTRIBUTING.md);
+calculator usage and examples are in [the usage guide](docs/usage.md).
 
-Within `src/abacuslite`, the inherited module structure is:
-```
-.
-├── __init__.py
-├── core.py
-├── io
-│   ├── __init__.py
-│   ├── generalio.py
-│   ├── latestio.py
-│   ├── legacyio.py
-├── utils
-│   ├── __init__.py
-│   └── ksampling.py
-└── xtest.sh
-```
+## Architecture and source continuity
+
+The package follows the original ABACUS ASE interface design, combining its
+implementation with ATST's general-purpose fixes. Runtime code is under
+`src/abacuslite`, examples under `examples`, and tests/fixtures under `tests`.
+Moving code to `src/` changes packaging, not `import abacuslite` or public
+calculator/I/O module paths. Tests formerly embedded in production modules
+now live under `tests/`.
+
+| Runtime module | Responsibility |
+| --- | --- |
+| `core.py` | `AbacusProfile`, `AbacusTemplate`, ASE `Abacus` and `AbacusSocketIO` |
+| `io/generalio.py` | INPUT, STRU and KPT reading/writing |
+| `io/legacyio.py`, `io/latestio.py` | Readers for the two existing ABACUS output formats |
+| `utils/ksampling.py` | K-point paths and sampling helpers |
+
+ASE owns optimization/MD/NEB algorithms; ATST owns its workflow and launcher
+policy. Neither ATST nor Forge is a runtime dependency of this plugin.
+[Package boundaries](docs/design.md) define this separation. The
+[integration audit](docs/upstream-integration.md) records preserved ABACUS
+features, integrated ATST fixes and reader-instance isolation.
 
 ## core.py
 
@@ -31,6 +35,11 @@ This file contains the implementation of the Atomic Simulation Environment (ASE)
 This directory contains the input/output (I/O) functions for extracting information from ABACUS dumped files. A summary is here:
 
 ### Long-term-support (LTS) version
+
+The table describes legacy running-log fields. For native MD, `legacyio`
+prefers `MD_dump` for complete physical geometry; complete historical log-only
+trajectories remain supported. See [output reading](docs/usage.md#read-files-without-an-engine)
+for companion-file requirements.
 
 |Item|Regular expression|Example|
 |----|----|----|

@@ -162,9 +162,15 @@ fails explicitly. The package's ordinary offline suite now includes retained
 real LTS output and these compatibility regressions. This protects the observed
 failures once the commits enter CI, but does not replace live engine jobs.
 
-Local installed-wheel acceptance at `ba65f606` passed nine develop tests and
-eight LTS tests against the exact source builds above, plus a seeded LTS
-native-MD case with engine-generated initial velocities. Both native-MD paths
+Local installed-wheel acceptance on 2026-10-17 used plugin `ba65f606`:
+
+| Engine snapshot | Reader | Real CPU/MPI interface checks |
+| --- | --- | --- |
+| develop `73cd094` (v3.11.0-beta10) | `latestio` | SCF, ASE relax/MD, native MD, band, magnetic and socket: 9 tests passed |
+| LTS `725bf47` (v3.10.1) | `legacyio` | SCF, ASE relax/MD, native MD, band and magnetic: 8 tests passed |
+
+A seeded LTS native-MD case with engine-generated initial velocities also
+passed. Both native-MD paths
 verify actual motion and compare every returned frame against raw engine
 output. LTS correctly selects `legacyio`; socket is tested only on develop,
 which has the corresponding driver. These short CPU/MPI interface cases do
