@@ -1,0 +1,12 @@
+[
+  "tests.consumers.test_installed::test_atst_input_preparation_uses_installed_writers",
+  "tests.consumers.test_installed::test_atst_profile_and_ase_calculator_preserve_scf_forces_and_fermi",
+  "tests.consumers.test_installed::test_atst_periodic_scf_handoff_fails_closed_on_unmatched_structure",
+  "tests.consumers.test_installed::test_atst_native_md_frames_keep_physical_cell_and_raw_cartesian_positions",
+  "tests.consumers.test_installed::test_atst_selected_calculators_keep_mixed_output_readers_isolated[order0]",
+  "tests.consumers.test_installed::test_atst_selected_calculators_keep_mixed_output_readers_isolated[order1]",
+  "tests.consumers.test_installed::test_atst_selected_latest_reader_preserves_eig_occ_on_repeated_reads",
+  "tests.consumers.test_installed::test_atst_input_paths_and_cp_guard_use_external_writers",
+  "tests.consumers.test_installed::test_forge_collects_installed_parser_facts_read_only[legacy-v3.10.1--1940.468007385-forces0]",
+  "tests.consumers.test_installed::test_forge_collects_installed_parser_facts_read_only[latest-v3.11.0--1940.5272981334-forces1]"
+]

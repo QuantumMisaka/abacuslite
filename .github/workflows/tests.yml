@@ -96,9 +96,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: QuantumMisaka/atst-tools
-          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '87caeedbca5ed7104316bfc6130fd2598b6c5e4b' }}
+          ref: ${{ github.event_name == 'schedule' && 'integrate/abacuslite-1.1.0-acceptance' || inputs.atst_ref || '87caeedbca5ed7104316bfc6130fd2598b6c5e4b' }}
           path: consumer-sources/atst
           persist-credentials: false
+      - name: Require the selected ATST consumer runner
+        run: |
+          git -C consumer-sources/atst rev-parse HEAD
+          test -f consumer-sources/atst/scripts/run_abacuslite_consumer.py || {
+            echo 'The selected ATST revision does not provide the installed consumer runner.' >&2
+            exit 1
+          }
       - name: Checkout Forge consumer
         uses: actions/checkout@v4
         with:
@@ -157,6 +164,9 @@ jobs:
           "$RUNNER_TEMP/consumer-external/bin/python" -m pytest tests/consumers \
             --run-consumers -q -s --junitxml="$RUNNER_TEMP/plugin-consumers.pytest.xml" \
             2>&1 | tee "$RUNNER_TEMP/plugin-consumers.pytest.log"
+          python "$GITHUB_WORKSPACE/.github/scripts/check_consumer_results.py" \
+            --junit "$RUNNER_TEMP/plugin-consumers.pytest.xml" \
+            --expected "$GITHUB_WORKSPACE/.github/consumer-cases.json"
       - name: Upload consumer comparison reports
         if: always()
         uses: actions/upload-artifact@v4
