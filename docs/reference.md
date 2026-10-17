@@ -1,8 +1,8 @@
-# Developer Guide
+# Module and output-format reference
 
 This reference describes runtime modules and output formats. Setup, test
-commands and package verification live in [CONTRIBUTING.md](CONTRIBUTING.md);
-calculator usage and examples are in [the usage guide](docs/usage.md).
+commands and package verification live in [CONTRIBUTING.md](../CONTRIBUTING.md);
+calculator usage and examples are in [the usage guide](usage.md).
 
 ## Architecture and source continuity
 
@@ -22,8 +22,8 @@ now live under `tests/`.
 
 ASE owns optimization/MD/NEB algorithms; ATST owns its workflow and launcher
 policy. Neither ATST nor Forge is a runtime dependency of this plugin.
-[Package boundaries](docs/design.md) define this separation. The
-[integration audit](docs/upstream-integration.md) records preserved ABACUS
+[Package boundaries](design.md) define this separation. The
+[integration audit](upstream-integration.md) records preserved ABACUS
 features, integrated ATST fixes and reader-instance isolation.
 
 ## core.py
@@ -38,7 +38,7 @@ This directory contains the input/output (I/O) functions for extracting informat
 
 The table describes legacy running-log fields. For native MD, `legacyio`
 prefers `MD_dump` for complete physical geometry; complete historical log-only
-trajectories remain supported. See [output reading](docs/usage.md#read-files-without-an-engine)
+trajectories remain supported. See [output reading](usage.md#read-files-without-an-engine)
 for companion-file requirements.
 
 |Item|Regular expression|Example|

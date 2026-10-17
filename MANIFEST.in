@@ -1,5 +1,5 @@
 include CONTRIBUTING.md
-include LICENSE UPSTREAM.md CHANGELOG.md DEVELOP.md
+include LICENSE UPSTREAM.md CHANGELOG.md AGENTS.md
 recursive-include tests *.py
 recursive-include tests/fixtures *
 recursive-include examples *.py

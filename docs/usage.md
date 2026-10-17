@@ -108,4 +108,4 @@ geometry normally comes from `MD_dump`. Complete historical legacy MD logs
 remain readable without a dump; incomplete trajectories and malformed existing
 dumps fail explicitly. Reading preserves source files, including `eig_occ.txt`.
 The [migration guide](migration.md) explains compatibility changes, and the
-[developer guide](../DEVELOP.md) describes the reader modules.
+[module reference](reference.md) describes the reader modules.

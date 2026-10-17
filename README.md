@@ -58,12 +58,14 @@ calculator configuration and the complete example collection.
 
 ## Documentation
 
+See the [documentation index](docs/README.md) for current guides and development records.
+
 | Task | Guide |
 | --- | --- |
 | Configure calculators, read output, run examples | [Usage](docs/usage.md) |
 | Migrate ABACUS/ATST callers | [Migration](docs/migration.md) |
 | Set up development, run tests and validate packages | [Contributing](CONTRIBUTING.md) |
-| Understand modules and package boundaries | [Developer guide](DEVELOP.md) |
+| Understand modules and package boundaries | [Module reference](docs/reference.md) |
 | Check supported engines, CI and acceptance evidence | [Compatibility](docs/compatibility-ci.md) |
 | Review changes and source attribution | [Changelog](CHANGELOG.md), [provenance](UPSTREAM.md) |
 
