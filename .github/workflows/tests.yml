@@ -133,7 +133,9 @@ jobs:
           "$RUNNER_TEMP/consumer-external/bin/python" -m pip install ./consumer-sources/forge
           "$RUNNER_TEMP/consumer-external/bin/python" -m pip check
       - name: Run plugin-owned ATST and Forge contracts outside checkouts
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p "$RUNNER_TEMP/abacuslite-consumers"
           cp -R tests "$RUNNER_TEMP/abacuslite-consumers/tests"
           cp pyproject.toml "$RUNNER_TEMP/abacuslite-consumers/pyproject.toml"

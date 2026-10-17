@@ -71,17 +71,19 @@ The [ABACUS/ATST acceptance plan](superpowers/plans/2026-10-17-abacus-atst-integ
 records refreshed source baselines, remaining migration work and the order of
 engine, workflow and release verification before returning to Forge.
 
-Local integration candidates now implement those consumer lanes: ABACUS
-`bca8164` tests installed bundled/external packages, including native MD and
-socket; ATST `008d0610` uses one external-backend decision and tests
-the installed consumer wheel. Both pin plugin `dc02043`. The final ABACUS CPU comparison
-passes nine cases in each lane; ATST offline and installed-consumer checks
-pass. Trusted GPU workflow acceptance passes, including native MD, restart,
-serial/image-parallel NEB, CP and a separately identified LTS reader check.
-The final CP marker repair has targeted real-run evidence and a wheel diff
-proving the other workflow paths unchanged. These are local
-candidate results: neither consumer PR has been created and GitHub Actions
-has not run on these changes. See the plan for exact artifacts and evidence.
+The earlier local integration tuple was ABACUS `bca8164`, ATST `53d6b7c`
+and plugin `dc02043`. ABACUS passed nine CPU cases in both bundled and
+external lanes, including native MD and socket. That ATST/plugin tuple passed
+trusted GPU workflow acceptance for native MD, restart, serial/image-parallel
+NEB, CP and a separately identified LTS reader check; its final CP marker
+repair had targeted real-run evidence and an unchanged-path wheel diff.
+
+The current ATST `008d0610` and plugin `06f97b1` tuple has passed the full
+offline installed-wheel vendored/external consumer comparison. Its new GPU
+attempt (job `1827672`) is pending; the earlier GPU result does not establish
+acceptance for this tuple. These are local candidate results: neither consumer
+PR has been created and GitHub Actions has not run on these changes. See the
+plan for exact artifacts and evidence.
 
 | Changed repository | Required PR verification | Coordinated candidate check | Scheduled compatibility |
 | --- | --- | --- | --- |
