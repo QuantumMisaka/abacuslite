@@ -155,9 +155,18 @@ jobs:
           fi
           atst_wheels=("$RUNNER_TEMP"/atst-dist/*.whl)
           test "${#atst_wheels[@]}" -eq 1
+          plugin_wheels=("$GITHUB_WORKSPACE"/candidate-dist/*.whl)
+          test "${#plugin_wheels[@]}" -eq 1
+          atst_url=$(python -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).as_uri())' "${atst_wheels[0]}")
+          plugin_url=$(python -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).as_uri())' "${plugin_wheels[0]}")
+          atst_sha=$(sha256sum "${atst_wheels[0]}")
+          plugin_sha=$(sha256sum "${plugin_wheels[0]}")
+          # Explicit hashes preserve archive provenance even with pip 23.0.1
+          # bundled in Python 3.10's ensurepip; plain wheel paths do not.
           "$RUNNER_TEMP/consumer-external/bin/python" -m pip install \
             -c "$RUNNER_TEMP/consumer-constraints.txt" \
-            "${atst_wheels[0]}[test]" candidate-dist/*.whl
+            "atst-tools[test] @ ${atst_url}#sha256=${atst_sha%% *}" \
+            "abacuslite @ ${plugin_url}#sha256=${plugin_sha%% *}"
           "$RUNNER_TEMP/consumer-external/bin/python" -m pip check
       - name: Run and verify the full installed ATST consumer suite
         run: |
