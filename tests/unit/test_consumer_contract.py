@@ -49,12 +49,14 @@ def test_calculator_readers_remain_independent(tmp_path, monkeypatch, order):
 
     monkeypatch.setattr(core, "__LEGACYIO__", core.__LEGACYIO__)
     versions = {"legacy": "v3.10.1", "latest": "v3.11.0"}
-    energies = {"legacy": -1940.5509086572, "latest": -1940.6311063727}
+    energies = {"legacy": -210.6230563530, "latest": -1940.6311063727}
     calculators = {}
     for name in order:
         directory = tmp_path / name
         calculators[name] = core.Abacus(VersionProfile(versions[name]), directory=directory)
-        shutil.copytree(FIXTURES / f"multiframe_md_{name}", directory / "OUT.ABACUS")
+        source = FIXTURES / ("lts_native_md" if name == "legacy"
+                             else "multiframe_md_latest")
+        shutil.copytree(source, directory / "OUT.ABACUS")
         calculators[name].template.suffix = "ABACUS"
         calculators[name].template.calculation = "md"
 

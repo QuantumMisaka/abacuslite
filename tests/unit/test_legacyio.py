@@ -1,6 +1,7 @@
 # Tests extracted without semantic changes from the attributed upstream snapshot.
 import re
 import shutil
+import tempfile
 import unittest
 from io import TextIOWrapper
 from pathlib import Path
@@ -20,6 +21,51 @@ class TestLegacyIO(unittest.TestCase):
 
     here = Path(__file__).resolve().parents[1] / 'fixtures/io'
     testfiles = here / 'testfiles'
+
+    def test_real_lts_native_md_uses_dump_frames_and_preserves_raw_files(self):
+        source = Path(__file__).resolve().parents[1] / 'fixtures/lts_native_md'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = Path(tmpdir)
+            original = {name: (source / name).read_bytes()
+                        for name in ('running_md.log', 'MD_dump')}
+            for name, content in original.items():
+                (out / name).write_bytes(content)
+            frames = read_abacus_out(out / 'running_md.log')
+            self.assertEqual(len(frames), 3)
+            self.assertEqual(read_iter_header_from_running_log(out / 'running_md.log')[-1],
+                             (3, 1))
+            expected_energies = [-210.6232157020, -210.6231743578, -210.6230563530]
+            for frame, energy in zip(frames, expected_energies):
+                self.assertTrue(np.all(frame.pbc))
+                self.assertEqual(frame.get_chemical_symbols(), ['Si', 'Si'])
+                self.assertAlmostEqual(frame.get_potential_energy(), energy, delta=1e-8)
+            self.assertTrue(np.allclose(frames[0].cell.array[0],
+                                        [0, 2.714998919, 2.714998919], atol=1e-8))
+            self.assertTrue(np.allclose(frames[-1].positions[0],
+                                        [2.715919335449, 2.715708402644, 5.429380230519],
+                                        rtol=0, atol=1e-10))
+            self.assertTrue(np.allclose(frames[-1].get_forces()[0],
+                                        [-0.089751265334, -0.069019542505, 0.059917431359],
+                                        rtol=0, atol=1e-8))
+            self.assertEqual({name: (out / name).read_bytes() for name in original}, original)
+
+    def test_lts_native_md_missing_or_truncated_dump_fails_clearly(self):
+        source = Path(__file__).resolve().parents[1] / 'fixtures/lts_native_md'
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = Path(tmpdir)
+            shutil.copyfile(source / 'running_md.log', out / 'running_md.log')
+            with self.assertRaisesRegex(FileNotFoundError, 'MD_dump'):
+                read_abacus_out(out / 'running_md.log')
+            dump = (source / 'MD_dump').read_text()
+            (out / 'MD_dump').write_text(dump[:dump.index('MDSTEP:  2')])
+            with self.assertRaisesRegex(ValueError, 'MD_dump.*frame'):
+                read_abacus_out(out / 'running_md.log')
+            last_step, tail = dump.split('MDSTEP:  2')
+            lines = [line for line in tail.splitlines()
+                     if not line.strip().startswith('1  Si')]
+            (out / 'MD_dump').write_text(last_step + 'MDSTEP:  2\n' + '\n'.join(lines))
+            with self.assertRaisesRegex(ValueError, 'Invalid or truncated MD_dump'):
+                read_abacus_out(out / 'running_md.log')
 
     def test_read_band_from_running_log(self):
         # nspin1
@@ -339,11 +385,10 @@ class TestLegacyIO(unittest.TestCase):
         self.assertEqual(header[2], (2,1))
         fn = self.testfiles / 'pw-symm0-nspin4-gamma-md_'
         header = read_iter_header_from_running_log(fn)
-        self.assertEqual(header[0], (1,1))
-        self.assertEqual(header[1], (1,2))
-        self.assertEqual(header[2], (1,3))
-        self.assertEqual(header[3], (3,2))
-        self.assertEqual(header[4], (3,3))
+        # LTS prints the first and last steps with padding, but ION=2 and
+        # ION=3 can be unpadded; neither electronic step may be dropped.
+        self.assertEqual(header, [(1, 1), (1, 2), (1, 3),
+                                  (2, 1), (3, 1), (3, 2), (3, 3)])
 
     def test_find_final_info_with_iter_header(self):
         info = [1, 2, 3, 4, 5, 6]

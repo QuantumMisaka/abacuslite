@@ -234,7 +234,8 @@ def write_stru(stru: Atoms,
     '''
     from ase.units import (
         Bohr as __BOHR__, 
-        Angstrom as __ANGSTROM__
+        Angstrom as __ANGSTROM__,
+        AUT as __AUT__,
     )
     assert isinstance(stru, Atoms)
     pp_file = pp_file or {} # can be None, for those non-ESolver_KS cases
@@ -246,6 +247,10 @@ def write_stru(stru: Atoms,
     ind = species_group_indices(elem)
     coords = stru.get_positions()[ind]
     mobility = _constraint_mobility(stru)[ind]
+    # ASE velocities are Angstrom / ASE time; STRU v is Bohr / atomic time.
+    # ABACUS MD writes v / (ANGSTROM_AU * AU_to_FS) as Angstrom/fs.
+    velocities = (stru.get_velocities()[ind] * __AUT__ / __BOHR__
+                  if stru.has('momenta') else np.zeros((len(stru), 3)))
     elem = [elem[i] for i in ind]
 
     # handle the atomic magnetic moment (issue #6516)
@@ -273,7 +278,7 @@ def write_stru(stru: Atoms,
                     magmoms[j] | {
                         'coord': coords[j].tolist(), # coordinate
                         'm': mobility[j].tolist(), # mobility
-                        'v': [0.0, 0.0, 0.0], # velocity
+                        'v': velocities[j].tolist(), # atomic units of velocity
                     } for j in range(np.sum(nat[:i]), np.sum(nat[:i+1]))
                 ]
             }

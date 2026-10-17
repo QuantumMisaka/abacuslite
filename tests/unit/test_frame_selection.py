@@ -6,7 +6,7 @@ Task 3 GREEN：`AbacusTemplate.read_results` 对 calculation=='scf' 按坐标选
 帧 1-2 为位移/trial 试探结构，末帧（ION=4）= P0 重算（≠ STRU）。
 
 Task 4 扩充（回归矩阵）：容差两侧、md/relax/sella/ccqn 五路径、双后端（legacyio/latestio）、
-真实非 scf 金样（multiframe_md_legacy / multiframe_md_latest）、latestio eig_occ.txt 一次性消费（P5）。
+真实非 scf 金样（lts_native_md / multiframe_md_latest）、latestio eig_occ.txt 一次性消费（P5）。
 """
 import re
 import shutil
@@ -42,16 +42,16 @@ LAST_FRAME_FORCES = np.array(
     [[-0.45, -0.014, 0.0], [0.45, 0.014, 0.0], [0.0, 0.0, 0.0]]
 )
 
-# 真实 md 金样末帧力（multiframe_md_legacy=首个 MD 步/唯一帧；multiframe_md_latest=MD_dump 第 2 帧）
+# 真实 md 金样末帧力（LTS 和 latest 均来自各自 MD_dump 末帧）
 MD_LEGACY_FORCES = np.array(
-    [[1.0712942948, 2.1781413019, 1.2152201133],
-     [-1.0712942948, -2.1781413019, -1.2152201133]]
+    [[-0.089751265334, -0.069019542505, 0.059917431359],
+     [0.089751265334, 0.069019542505, -0.059917431359]]
 )
 MD_LATEST_FORCES = np.array(
     [[0.1191299488, 0.2678988387, 1.5033416041],
      [-0.1191299488, -0.2678988387, -1.5033416041]]
 )
-MD_LEGACY_ENERGY = -1940.5509086572
+MD_LEGACY_ENERGY = -210.6230563530
 MD_LATEST_ENERGY = -1940.6311063727
 
 
@@ -193,13 +193,14 @@ def _read_results_fixture(tmp_path, calc="scf", stru_text=None, log_text=None):
 
 
 def _md_fixture_legacy(tmp_path):
-    """布置真实 legacy md 金样：OUT.ABACUS/running_md.log（multiframe_md_legacy，真实 ABACUS md 日志）。
+    """布置真实 LTS md 金样：OUT.ABACUS/running_md.log + MD_dump。
 
     刻意不写 STRU：原生 md 路径不做坐标匹配，缺 STRU 也必须正常返回（不 fail-closed）。
     """
     out = tmp_path / "OUT.ABACUS"
     out.mkdir()
-    shutil.copy(TESTFILES / "multiframe_md_legacy" / "running_md.log", out / "running_md.log")
+    for name in ("running_md.log", "MD_dump"):
+        shutil.copy(TESTFILES / "lts_native_md" / name, out / name)
     return tmp_path
 
 
@@ -365,7 +366,7 @@ def test_frame_selection_tolerance_both_sides(tmp_path):
 
 
 def test_native_md_legacy_keeps_last_frame_semantics_real_gold(tmp_path):
-    """真实 legacy md 金样（multiframe_md_legacy，真实 ABACUS md 日志的首个完整 MD 步）：
+    """真实 LTS 三帧 md 金样：
     原生 md 走 [-1] 末帧语义、不做坐标匹配——目录无 STRU 也正常返回力/能量（不 fail-closed）。"""
     directory = _md_fixture_legacy(tmp_path)
     results = _template(calc="md", atomorder=[0, 1]).read_results(directory)

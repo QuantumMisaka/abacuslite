@@ -102,6 +102,28 @@ class TestAbacusCalculatorIOUtil(unittest.TestCase):
         self.assertEqual(stru_['species'][0]['orb_file'], 'Na_gga_6au_100Ry_2s2p1d.orb')
         self.assertEqual(stru_['species'][1]['orb_file'], 'Cl_gga_6au_100Ry_2s2p1d.orb')
 
+    def test_stru_velocities_keep_physical_units_and_species_order(self):
+        from ase.units import fs
+
+        atoms = Atoms('HOH', positions=[[0, 0, 0], [1, 0, 0], [2, 0, 0]],
+                      cell=[8, 8, 8], pbc=True)
+        # One ASE velocity unit is Angstrom per ASE time unit. These inputs
+        # represent 1, 2 and -0.5 Angstrom/fs before species grouping.
+        atoms.set_velocities(np.array([[1, 0, 0], [0, 2, 0], [0, 0, -0.5]]) / fs)
+        # ABACUS md_func.cpp writes MD_dump velocity (Angstrom/fs) as STRU
+        # atomic velocity divided by ANGSTROM_AU * AU_to_FS.
+        au_per_angstrom_fs = 1.8897270 * 2.418884326505e-2
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = write_stru(atoms, tmpdir, {'H': 'H.upf', 'O': 'O.upf'})
+            species = read_stru(path)['species']
+        self.assertEqual([entry['symbol'] for entry in species], ['H', 'O'])
+        self.assertEqual([entry['natom'] for entry in species], [2, 1])
+        np.testing.assert_allclose([entry['v'] for entry in species[0]['atom']],
+                                   np.array([[1, 0, 0], [0, 0, -0.5]]) * au_per_angstrom_fs,
+                                   rtol=0, atol=1e-7)
+        np.testing.assert_allclose(species[1]['atom'][0]['v'],
+                                   [0, 2 * au_per_angstrom_fs, 0], rtol=0, atol=1e-7)
+
     def test_read_stru_with_lattice_parameter(self):
         # STRU that uses LATTICE_PARAMETER instead of LATTICE_VECTORS
         # (issue #7555: previously raised KeyError on 'LATTICE_PARAMETERS')

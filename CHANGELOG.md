@@ -2,6 +2,13 @@
 
 ## 1.1.0rc1 — unreleased candidate
 
+- Preserve explicit ASE atomic velocities in STRU, converting from Angstrom
+  per ASE time unit to Bohr per atomic time unit and maintaining species order;
+  atoms without velocities retain the existing zero initialization.
+- Read LTS native MD geometry from `MD_dump` instead of its one-structure
+  running log. Assemble physical Angstrom cells and periodic ASE frames,
+  recognize unpadded LTS ionic-step headers, and reject missing or incomplete
+  dumps without changing SCF/relax output semantics.
 - Align the default SCF structure-identity tolerance with ATST 2.2.9:
   `1e-5` Angstrom for cell components and periodic Cartesian residuals,
   with `rtol=0`. Explicit `atol` overrides remain supported. The former
