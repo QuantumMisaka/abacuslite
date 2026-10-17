@@ -5,14 +5,15 @@
 As recorded on 2026-10-17, stable `1.1.0` is being prepared for publication;
 see the [release record](superpowers/plans/2026-10-17-1.1.0-release.md) for the
 final artifact and registry status. Local package, consumer and real-engine
-acceptance exists. Hosted release checks are pending, and the plugin's
-dual-engine PR jobs are still planned. A successful local run, a workflow
+acceptance exists. Package and installed-consumer checks have passed remotely
+on `v1.1.0` ([tag run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39036505393));
+the plugin's dual-engine PR jobs are still planned. A successful local run, a workflow
 implemented in a branch and an enforced merge check are separate outcomes.
 
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
-| Wheel/sdist and offline contracts | Validated; package workflow defined | Deliver the reviewed candidate and inspect remote results |
-| Installed ATST/Forge consumers | Validated; paired consumer workflow defined | Make candidate refs fetchable and run remote checks |
+| Wheel/sdist and offline contracts | Local and hosted checks passed on release source `94a26e4` | Publish the verified tag artifacts to PyPI |
+| Installed ATST/Forge consumers | Local and hosted paired checks passed on `94a26e4` | Consumer production cutover remains a separate task |
 | Develop/LTS real engines | Validated for the snapshots below | Implement portable dual-engine PR jobs |
 | Merge enforcement | Plugin protection absent at inspection; upstream enforcement unconfirmed | Activate appropriate required checks after successful remote runs |
 
@@ -24,7 +25,7 @@ run sequences stay in those records.
 
 ## Package and installed-consumer workflow
 
-The candidate `Package tests` workflow (`.github/workflows/tests.yml`) defines
+The `Package tests` workflow (`.github/workflows/tests.yml`) defines
 push/PR checks without path filters, manual candidate runs and a weekly schedule:
 
 - `installed-package` builds wheel/sdist, checks metadata, installs the wheel
@@ -101,8 +102,8 @@ backporting the interface implementation. These are pending changes.
 ## Repository responsibilities
 
 Each changed repository should check its own candidate against tested partners.
-The rows below describe the target; engine-side adoption and remote candidate
-verification remain incomplete.
+The rows below describe the target; engine-side adoption and upstream merge
+enforcement remain incomplete.
 
 | Changed repository | PR verification |
 | --- | --- |
@@ -137,7 +138,9 @@ branches; a green job alone does not enforce merge blocking. Review workflow
 changes that could remove the gate. If merge queues are introduced, add the
 `merge_group` trigger before requiring checks there. Upstream branch-protection
 details were unavailable to the inspecting account; visible rules do not prove
-an enforced abacuslite gate. No branch settings were changed by this work.
+an enforced abacuslite gate. This release did not change repository branch
+protection; its separate GitHub `pypi` environment only accepts deployments
+from main.
 
 GitHub references:
 [required checks and skipped workflows](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks),
