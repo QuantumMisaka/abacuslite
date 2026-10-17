@@ -2,9 +2,12 @@
 
 ## Current checkpoint
 
-As recorded on 2026-10-17, stable `1.1.0` is being prepared for publication;
-see the [release record](superpowers/plans/2026-10-17-1.1.0-release.md) for the
-final artifact and registry status. Local package, consumer and real-engine
+As recorded on 2026-10-18 (UTC+08:00), stable `1.1.0` is
+[published on PyPI](https://pypi.org/project/abacuslite/1.1.0/). Both registry
+file digests match the verified tag artifacts; a fresh indexed install passed
+dependency checks and 148 offline tests (19 engine/consumer opt-in skips).
+See the [release record](superpowers/plans/2026-10-17-1.1.0-release.md) for
+artifact identities and retained evidence. Local package, consumer and real-engine
 acceptance exists. Package and installed-consumer checks have passed remotely
 on `v1.1.0` ([tag run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39036505393));
 the plugin's dual-engine PR jobs are still planned. A successful local run, a workflow
@@ -12,7 +15,7 @@ implemented in a branch and an enforced merge check are separate outcomes.
 
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
-| Wheel/sdist and offline contracts | Local and hosted checks passed on release source `94a26e4` | Publish the verified tag artifacts to PyPI |
+| Wheel/sdist and offline contracts | Release source `94a26e4` passed local/hosted checks; exact tag artifacts published and indexed install verified | Release acceptance complete for 1.1.0 |
 | Installed ATST/Forge consumers | Local and hosted paired checks passed on `94a26e4` | Consumer production cutover remains a separate task |
 | Develop/LTS real engines | Validated for the snapshots below | Implement portable dual-engine PR jobs |
 | Merge enforcement | Plugin protection absent at inspection; upstream enforcement unconfirmed | Activate appropriate required checks after successful remote runs |

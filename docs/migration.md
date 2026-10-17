@@ -30,9 +30,10 @@ necessary for independent packaging.
 ## Install one implementation
 
 Use a fresh virtual environment for initial validation, following README.md.
-Install the stable package with `pip install 'abacuslite==1.1.0'`, or use a
-validated local wheel while publication is pending. See the
-[release record](superpowers/plans/2026-10-17-1.1.0-release.md) for registry status.
+Install the [published stable package](https://pypi.org/project/abacuslite/1.1.0/)
+with `pip install 'abacuslite==1.1.0'`. See the
+[release record](superpowers/plans/2026-10-17-1.1.0-release.md) for artifact
+identities and fresh indexed-install verification.
 For development use `pip install .` and record the exact source revision.
 The earlier `1.1.0rc1` label covered several source iterations and does not
 uniquely identify those pre-release builds.

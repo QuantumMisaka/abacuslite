@@ -2,6 +2,9 @@
 
 ## 1.1.0
 
+Published on [PyPI](https://pypi.org/project/abacuslite/1.1.0/) on
+2026-10-18 (UTC+08:00).
+
 - Provide the independent ASE plugin as a wheel and source distribution with
   unchanged public imports. Preserve the validated runtime from the final
   candidate; the stable release adds packaging, documentation and release gates.

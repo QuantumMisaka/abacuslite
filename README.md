@@ -10,7 +10,8 @@ ABACUS files without launching an engine. Both develop's newer output format
 and LTS v3.10.x are supported; the fixed-cell socket calculator requires an
 engine with socket support.
 
-**Release line:** `1.1.0`. Local develop/LTS interface checks have passed;
+**Stable release:** [1.1.0 on PyPI](https://pypi.org/project/abacuslite/1.1.0/).
+Local develop/LTS interface checks have passed;
 dual-engine PR CI is still planned. See the [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/compatibility-ci.md)
 for tested snapshots and the [release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-17-1.1.0-release.md)
 for publication status.
