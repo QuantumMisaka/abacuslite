@@ -27,6 +27,11 @@ Set `ABACUS_PP_ORB` to a directory containing the files named in the example,
 or pass your own `pseudopotentials` and `basissets` mappings. ABACUS's
 `tests/PP_ORB` directory is a convenient source for the examples.
 
+`AbacusProfile` uses explicit `pseudo_dir` / `orbital_dir` first. If they are
+omitted, it falls back to `ABACUS_PP_PATH` / `ABACUS_ORB_PATH`; no other asset
+environment variables are read. Dataset download and element matching are
+outside this package.
+
 The SCF example needs `Si_ONCV_PBE-1.0.upf` and
 `Si_gga_8au_100Ry_2s2p1d.orb`. Other examples name their own assets in the
 [usage guide](usage.md).

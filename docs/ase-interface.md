@@ -52,6 +52,9 @@ ASE property request
 - Configure `AbacusProfile` with the pseudopotential/orbital directories and
   pass the file mappings to `Abacus`. The examples use `ABACUS_PP_ORB` as a
   convention, not as a runtime requirement.
+- If the directory arguments are omitted, `AbacusProfile` reads
+  `ABACUS_PP_PATH` / `ABACUS_ORB_PATH` only; dataset download, `element.json`
+  matching and batch preparation remain outside this package.
 - Constructing `Abacus` probes `abacus --version`. Use `abacuslite.io.*`
   directly for file-only work that should not start or query the engine.
 - For output-only work, call `legacyio.read_abacus_out` or

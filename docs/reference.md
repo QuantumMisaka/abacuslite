@@ -16,6 +16,8 @@ The supported user-facing entry points are:
 
 Other names are implementation details. The format tables below are primarily
 for maintainers and consumers that need to understand a specific output file.
+`AbacusProfile` uses `ABACUS_PP_PATH` / `ABACUS_ORB_PATH` only as directory
+fallbacks; asset download and element matching are outside this package.
 
 ## Architecture and source continuity
 

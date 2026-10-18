@@ -15,6 +15,10 @@ file I/O must work without an ABACUS executable.
   contracts. Neither is a runtime dependency.
 - Keep general parser/calculator fixes here. Adapters may forward, but do not
   add duplicate parsers, schedulers, orchestration or consumer result schemas.
+- Asset provisioning, dataset downloads, element matching and batch
+  preparation belong to abacustest/abacusforge. The only environment fallbacks
+  in this package are `ABACUS_PP_PATH` and `ABACUS_ORB_PATH` for directory
+  defaults.
 
 ## Invariants
 

@@ -18,6 +18,14 @@ read-only and repeatable. A calculator's choice of legacy/latest output reader
 must not change when another calculator is constructed. Existing reader
 functions remain available for consumers that explicitly select a format.
 
+## Asset handling
+
+`abacuslite` consumes explicit pseudopotential/orbital directories and file
+mappings. `AbacusProfile` falls back to `ABACUS_PP_PATH` and `ABACUS_ORB_PATH`
+only when the corresponding argument is omitted; these are the package's only
+environment defaults. Dataset download, `element.json` matching, copy/symlink
+and batch preparation belong to abacustest/abacusforge.
+
 ATST workflow configuration and orchestration remain outside this project.
 Forge's native default, optional parser and fact projection are unaffected.
 ABACUS's bundled `interfaces/ASE_interface` is expected to be replaced by this

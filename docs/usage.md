@@ -21,6 +21,12 @@ directory, pseudopotential/orbital filenames and ABACUS input parameters; then
 attach the calculator to an ASE `Atoms` object. The complete
 [SCF example](../examples/scf.py) shows this sequence.
 
+Explicit `pseudo_dir` / `orbital_dir` arguments take precedence. If they are
+omitted, `AbacusProfile` reads `ABACUS_PP_PATH` / `ABACUS_ORB_PATH`; these are
+the package's only environment defaults. abacuslite does not download or match
+assets; use abacustest or abacusforge for `element.json`, APNS datasets or
+batch preparation.
+
 `Abacus` runs one engine calculation for each ASE property evaluation that
 requires a calculation. ASE owns optimization, molecular dynamics and NEB
 algorithms. `AbacusSocketIO` reuses one engine process for position updates
