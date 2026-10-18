@@ -16,17 +16,11 @@ The supported user-facing entry points are:
 
 Other names are implementation details. The format tables below are primarily
 for maintainers and consumers that need to understand a specific output file.
-`AbacusProfile` uses `ABACUS_PP_PATH` / `ABACUS_ORB_PATH` only as directory
-fallbacks; asset download and element matching are outside this package.
 
-## Architecture and source continuity
+## Runtime modules
 
-The package follows the original ABACUS ASE interface design, combining its
-implementation with ATST's general-purpose fixes. Runtime code is under
-`src/abacuslite`, examples under `examples`, and tests/fixtures under `tests`.
-Moving code to `src/` changes packaging, not `import abacuslite` or public
-calculator/I/O module paths. Tests formerly embedded in production modules
-now live under `tests/`.
+Runtime code lives under `src/abacuslite`; examples and tests are separate.
+Public imports remain `abacuslite`, `abacuslite.io` and `abacuslite.utils`.
 
 See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
 the old ASE fork and the current write -> execute -> read lifecycle.

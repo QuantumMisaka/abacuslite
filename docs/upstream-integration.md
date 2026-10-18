@@ -12,6 +12,10 @@ Refs fetched on 2026-10-16:
 - ATST main: `45d8c78de8a605c127cd4c36742d0c9525a0a6b6`.
 - Independent package baseline: `f36f3664edd8fe39719b1237f54eb0c9da482680`.
 
+The comparison covered 66 public ABACUS definitions and 60 ATST definitions,
+including constructors. These counts are audit observations, not a
+compatibility contract.
+
 Production functions and methods were compared structurally after excluding
 embedded tests/docstrings. Every substantive difference was inspected against
 ATST's `PATCHES.md`. This audit found no missing registered general fix; it is

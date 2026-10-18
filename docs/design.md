@@ -1,45 +1,42 @@
 # Independent ASE calculator package
 
-The maintainer approved establishing `QuantumMisaka/abacuslite` and continuing
-implementation on 2026-10-16. This repository owns the installable calculator package;
-ABACUS retains engine integration tests, and ATST and Forge consume its package.
+This repository owns the installable ASE calculator and I/O package. ABACUS
+retains engine integration tests; ATST and Forge consume this package.
 
-The initial implementation preserves `Abacus`, `AbacusProfile`, `AbacusSocketIO`,
-and the existing `abacuslite.io` and `abacuslite.utils` module paths. Source
-layout changes must not be combined with an unrelated API rewrite. Preserve
-upstream socket support and diagnostics while merging ATST's general-purpose
-SCF frame, Fermi-level and point-KPT corrections.
+The package preserves `Abacus`, `AbacusProfile`, `AbacusSocketIO`, and the
+`abacuslite.io` and `abacuslite.utils` module paths. Keep source layout changes
+separate from unrelated API rewrites. Preserve upstream socket support and
+diagnostics while carrying the general SCF frame, Fermi-level and point-KPT
+corrections.
 
 See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
 the old ASE fork and the current lifecycle.
 
-I/O functions remain independent of engine execution. Output parsing is
-read-only and repeatable. A calculator's choice of legacy/latest output reader
-must not change when another calculator is constructed. Existing reader
-functions remain available for consumers that explicitly select a format.
+I/O functions are independent of engine execution. Output parsing is read-only
+and repeatable. A calculator keeps its reader choice when another calculator is
+constructed. Existing reader functions remain available for explicit selection.
 
 ## Asset handling
 
 `abacuslite` consumes explicit pseudopotential/orbital directories and file
 mappings. `AbacusProfile` falls back to `ABACUS_PP_PATH` and `ABACUS_ORB_PATH`
 only when the corresponding argument is omitted; these are the package's only
-environment defaults. Dataset download, `element.json` matching, copy/symlink
-and batch preparation belong to abacustest/abacusforge.
+asset-directory environment defaults. Dataset download, `element.json`
+matching, copy/symlink and batch preparation belong to
+abacustest/abacusforge.
 
-ATST workflow configuration and orchestration remain outside this project.
-Forge's native default, optional parser and fact projection are unaffected.
-ABACUS's bundled `interfaces/ASE_interface` is expected to be replaced by this
-package; the compatibility and migration records track that rollout.
+## Boundaries
 
-Package, engine and output-format versions are distinct. Version 1.1.0 is
-published on PyPI and validated by package, consumer and real-engine checks.
-See the [compatibility record](compatibility-ci.md) for tested snapshots and
-remaining gaps.
+ATST owns workflow configuration and launcher policy. Forge owns its native
+default, optional parser and fact projection. ABACUS's bundled
+`interfaces/ASE_interface` is the historical source; this package is the
+maintained implementation and is expected to replace it.
 
-Use one source implementation. Existing consumers must migrate direct vendored
-imports before their copies are removed; temporary compatibility modules may
-forward to this package but must not retain a second implementation.
+Package, engine and output-format versions are distinct. See the
+[compatibility record](compatibility-ci.md) for tested snapshots.
 
-Source provenance is recorded in [UPSTREAM.md](../UPSTREAM.md). The initial
-snapshot commit preserves the imported tree; later commits separate packaging
-and behavior adaptations. No automatic PyPI publication is enabled by bootstrap.
+Use one source implementation. Existing consumers should migrate direct
+vendored imports; compatibility modules should forward to this package rather
+than keep a second implementation.
+
+Source provenance is recorded in [UPSTREAM.md](../UPSTREAM.md).

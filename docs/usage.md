@@ -23,9 +23,7 @@ attach the calculator to an ASE `Atoms` object. The complete
 
 Explicit `pseudo_dir` / `orbital_dir` arguments take precedence. If they are
 omitted, `AbacusProfile` reads `ABACUS_PP_PATH` / `ABACUS_ORB_PATH`; these are
-the package's only environment defaults. abacuslite does not download or match
-assets; use abacustest or abacusforge for `element.json`, APNS datasets or
-batch preparation.
+the package's only asset-directory environment defaults.
 
 `Abacus` runs one engine calculation for each ASE property evaluation that
 requires a calculation. ASE owns optimization, molecular dynamics and NEB
@@ -54,9 +52,9 @@ python examples/scf.py
 ```
 
 All eleven scripts read `ABACUS_PP_ORB` and accept `ABACUS_COMMAND` to override
-their MPI launcher default, which invokes `abacus` from `PATH`. The library itself takes these settings through
-`AbacusProfile`; these environment variables are a convention of the examples.
-ABACUS is not downloaded automatically and ASE is not patched during install.
+their MPI launcher default (`abacus` from `PATH`). The library takes directory
+settings through `AbacusProfile`; `ABACUS_PP_ORB` is a single-directory
+convention of the examples. Install ABACUS separately; ASE remains unpatched.
 
 Recent develop builds may name the executable `abacus_basic_para` (or another
 feature/parallel variant). Set `ABACUS_COMMAND` to the actual binary; a bare
@@ -73,9 +71,8 @@ Each example uses calculation directories named for that example. Several
 scripts delete their calculation directories on completion, and the
 socket example also clears its named directories before use. Use a dedicated
 copy and adjust cleanup if you need retained results. Metadynamics additionally
-requires a working PLUMED installation. Example startup tests check imports and
-configuration through the calculator constructor boundary; they do not launch
-ABACUS or PLUMED and do not certify complete scientific workflows.
+requires a working PLUMED installation. The examples illustrate usage; validate
+scientific settings for your system.
 
 | Example | Purpose | Notes |
 | --- | --- | --- |
