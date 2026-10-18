@@ -251,6 +251,7 @@ def write_stru(stru: Atoms,
     # ABACUS MD writes v / (ANGSTROM_AU * AU_to_FS) as Angstrom/fs.
     velocities = (stru.get_velocities()[ind] * __AUT__ / __BOHR__
                   if stru.has('momenta') else np.zeros((len(stru), 3)))
+    masses = stru.get_masses()[ind]
     elem = [elem[i] for i in ind]
 
     # handle the atomic magnetic moment (issue #6516)
@@ -260,6 +261,15 @@ def write_stru(stru: Atoms,
                for m in magmoms]
     elem_uniq = list(dict.fromkeys(elem))
     nat = np.array([elem.count(e) for e in elem_uniq])
+    species_masses = []
+    start = 0
+    for symbol, count in zip(elem_uniq, nat):
+        values = masses[start:start + count]
+        if not np.all(values == values[0]):
+            raise ValueError(f'Different masses for species {symbol} cannot be '
+                             'represented by one ABACUS STRU species entry')
+        species_masses.append(float(values[0]))
+        start += count
     stru_dict = {
         'coord_type': 'Cartesian',
         'lat': {
@@ -269,7 +279,7 @@ def write_stru(stru: Atoms,
         'species': [
             {
                 'symbol': e,
-                'mass': ATOM_MASS[e],
+                'mass': species_masses[i],
                 'pp_file': pp_file.get(e, ''),
                 'pp_type': '',
                 'natom': n,

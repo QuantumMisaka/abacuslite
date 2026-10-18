@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Write ASE atom masses to STRU for each chemical species, including isotope
+  masses; reject different masses within one species before creating the file.
+- Resolve fixed-density charge input from the source calculation's output
+  suffix, while retaining an explicitly supplied `read_file_dir`.
+- Restart from the STRU filename selected by INPUT and read KPT only when
+  needed. Explicit k-points and implicit gamma/kspacing sampling no longer
+  require a KPT file; other missing KPT files still fail.
+
 ## 1.1.0
 
 Published on [PyPI](https://pypi.org/project/abacuslite/1.1.0/) on

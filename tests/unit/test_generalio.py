@@ -124,6 +124,23 @@ class TestAbacusCalculatorIOUtil(unittest.TestCase):
         np.testing.assert_allclose(species[1]['atom'][0]['v'],
                                    [0, 2 * au_per_angstrom_fs, 0], rtol=0, atol=1e-7)
 
+    def test_write_stru_preserves_explicit_mass_for_each_species(self):
+        atoms = Atoms('HOH', positions=np.zeros((3, 3)), cell=[8, 8, 8])
+        atoms.set_masses([2.014, 15.999, 2.014])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = write_stru(atoms, tmpdir, {'H': 'H.upf', 'O': 'O.upf'})
+            species = read_stru(path)['species']
+        self.assertEqual([entry['symbol'] for entry in species], ['H', 'O'])
+        self.assertEqual([entry['mass'] for entry in species], [2.014, 15.999])
+
+    def test_write_stru_rejects_different_masses_within_species_before_writing(self):
+        atoms = Atoms('HH', positions=np.zeros((2, 3)), cell=[8, 8, 8])
+        atoms.set_masses([1.008, 2.014])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with self.assertRaisesRegex(ValueError, 'species H'):
+                write_stru(atoms, tmpdir, {'H': 'H.upf'})
+            self.assertFalse((Path(tmpdir) / 'STRU').exists())
+
     def test_read_stru_with_lattice_parameter(self):
         # STRU that uses LATTICE_PARAMETER instead of LATTICE_VECTORS
         # (issue #7555: previously raised KeyError on 'LATTICE_PARAMETERS')
