@@ -1,5 +1,9 @@
 # Develop/LTS engine CI follow-up
 
+> Status (2026-10-18): implemented on `main`. The checkboxes below are kept as
+> the original implementation plan; see [compatibility and CI](../../compatibility-ci.md)
+> for current runs.
+
 ## Goal and current status
 
 On 2026-10-17 the maintainer asked how to close the real-engine CI gap and
@@ -7,16 +11,16 @@ improve the README. This is the implementation sequence for the remaining CI
 work under [the package design](../../design.md) and the existing
 [ABACUS/ATST acceptance plan](2026-10-17-abacus-atst-integration-acceptance.md).
 It preserves the instruction to validate locally before proposing PRs.
-The new jobs described here are not yet implemented or remotely active.
+The jobs described here are implemented on `main` and run on hosted CI; see
+[compatibility and CI](../../compatibility-ci.md) for current results. The
+sequence below is retained as the implementation record.
 
-The local candidate `ba65f606` passes current develop
+The original local candidate `ba65f606` passed the current develop
 `73cd094361f77574f9b28e825913e00f1d2c742a` and LTS
-`725bf475a7159db4c1890a1f55160393e14b6b13` interface checks. Scripts and raw
-evidence are retained in
-`~/scratch/abacuslite-current-branches-20261017/FINAL_REPORT.md`.
-The scripts contain local paths and the LTS adaptation is only in scratch.
-Simply adding `--run-engine` to the plugin workflow would neither reproduce
-that acceptance nor supply its stronger assertions.
+`725bf475a7159db4c1890a1f55160393e14b6b13` interface checks. That evidence
+led to the reviewed ABACUS-owned harness and the engine manifest now used by
+the hosted jobs. Simply adding `--run-engine` to the plugin workflow would
+neither reproduce that acceptance nor supply its stronger assertions.
 
 Ruling: ABACUS continues to own engine assertions, assets and independent
 references. Make its existing harness portable across the two output formats;
@@ -117,15 +121,15 @@ introduced. Actual remote Actions success remains a later checkpoint.
   LTS PR's own engine. No interface backport is needed. Upstream adoption is
   community work; until adopted, LTS engine-PR protection remains pending.
 - [ ] Keep plugin/harness refs explicit for coordinated candidates. After
-  publication a tested release may replace a source pin; the unpublished
-  `1.1.0rc1` cannot currently serve as a PyPI dependency.
+  publication a tested release may replace a source pin; 1.1.0 is now
+  published and can serve as a PyPI dependency.
 
 Local work proceeds through Tasks 1–3 and then engine-side lane verification.
-Before remote runs, every candidate ref must be fetchable: the ATST `87caeedb`
-consumer pin and new ABACUS harness currently depend on local candidates.
-The 2026-10-17 GitHub commit API checks returned `422: No commit found` for
-ATST `87caeedb`, plugin `ba65f606` and ABACUS fork harness `bca8164` in their
-respective repositories; none can currently serve as a remote checkout ref.
+Before remote runs, every candidate ref must be fetchable. The 2026-10-17
+GitHub commit API checks initially returned `422: No commit found` for ATST
+`87caeedb`, plugin `ba65f606` and ABACUS fork harness `bca8164`. Those refs
+were later pushed and verified; see the compatibility guide for the public
+candidates now used by CI.
 When remote delivery is authorized, publish reviewed branches in dependency
 order and verify checkout without private credentials. A reviewed personal-
 fork harness ref can support plugin CI before upstream ABACUS merges it.

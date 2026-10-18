@@ -1,0 +1,40 @@
+# Supported ABACUS versions
+
+`abacuslite` supports the two output-format generations used by current
+ABACUS releases. The table lists the snapshots covered by real-engine checks; it
+is not a guarantee for every commit or build configuration.
+
+| ABACUS snapshot | Output format | Reader | Socket | Checks |
+| --- | --- | --- | --- | --- |
+| develop `73cd094` (v3.11.0-beta10) | latest | `latestio` | yes | 9/9 |
+| LTS `725bf47` (v3.10.1) | legacy | `legacyio` | no | 9/9 |
+
+Both snapshots pass nine real-engine checks, including socket on develop and a
+seeded native-MD case on LTS. The checks cover SCF, ASE relaxation/MD, native
+MD, band structure, magnetic moments and socket handoff. They are interface
+checks, not convergence studies. See
+[compatibility and CI](compatibility-ci.md) for evidence.
+
+## Reader selection
+
+A calculator selects its reader from the configured executable's
+`abacus --version` output:
+
+- ABACUS 3.10.x uses `legacyio`.
+- The tested develop 3.11 format uses `latestio`.
+- Other revisions in these series are resolved by the same version rule but
+  are not individually validated.
+
+The selection belongs to each calculator instance; creating another calculator
+leaves the existing reader unchanged. For output-only work, call
+`legacyio.read_abacus_out` or `latestio.read_abacus_out` explicitly.
+
+## Known limitations
+
+- The tested LTS v3.10.1 build has no socket driver; use the regular
+  `Abacus` calculator or a develop build for `AbacusSocketIO`.
+- Output formats can change between develop commits. Re-run the engine
+  checks when moving to a new snapshot.
+
+See [compatibility and CI](compatibility-ci.md) for revisions, environments
+and retained evidence.

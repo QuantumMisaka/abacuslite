@@ -1,24 +1,35 @@
 # abacuslite
 
-A lightweight [ABACUS](https://github.com/deepmodeling/abacus-develop) calculator
-and I/O plugin for [ASE](https://ase-lib.org/), combining the ABACUS interface
-with general-purpose fixes from [ATST](https://github.com/QuantumMisaka/atst-tools).
-It preserves the existing `abacuslite` imports and works without patching ASE.
+## Introduction
 
-Use it for energy, forces and stress in ASE calculations, or to read and write
-ABACUS files without launching an engine. Both develop's newer output format
-and LTS v3.10.x are supported; the fixed-cell socket calculator requires an
-engine with socket support.
+A lightweight ABACUS calculator and I/O plugin for ASE. It packages ABACUS's
+ASE interface as an independent, pip-installable project. Existing
+`abacuslite` imports keep working, and ASE does not need patching.
+
+Use it for energy, forces and stress in ASE workflows, or to read and write
+ABACUS files without launching an engine. The current develop output format
+and the 3.10.x LTS format are supported. The fixed-cell socket calculator
+requires an ABACUS build with the socket driver.
 
 **Stable release:** [1.1.0 on PyPI](https://pypi.org/project/abacuslite/1.1.0/).
-Develop/LTS interface checks have passed locally and on hosted CI.
-See the [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
-for tested snapshots and current gates, and the [release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-17-1.1.0-release.md)
-for publication status.
+It was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`; see the
+[compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
+for the exact snapshots and current checks.
+
+### Key features
+
+- **Lightweight:** an ASE plugin; no ASE core changes are required.
+- **Engine compatibility:** each calculator selects `latestio` or `legacyio`
+  from the configured ABACUS version.
+- **ASE workflows:** energy, forces and stress for relaxation, MD, NEB,
+  band structure and DOS through ASE.
+- **Socket support:** `AbacusSocketIO` provides fixed-cell i-PI calculations.
+- **Pure I/O:** read and write INPUT, STRU and KPT, and read completed output
+  without launching ABACUS.
 
 ## Installation
 
-Requires **Python 3.10+** and **ASE 3.28+ (<4)**. From a POSIX shell:
+Requires **Python 3.10+** and **ASE 3.28+ (<4)**:
 
 ```bash
 python3 -m venv .venv
@@ -27,59 +38,103 @@ python -m pip install 'abacuslite==1.1.0'
 python -m pip check
 ```
 
-Pip installs ASE, NumPy and seekpath. ABACUS and its pseudopotential/orbital
-assets are supplied separately. Existing environments and callers should
-follow the [migration guide](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/migration.md).
+Pip installs ASE, NumPy and seekpath. ABACUS, pseudopotentials and orbital
+files are supplied separately. Tested engine snapshots are listed in
+[supported versions](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/supported-versions.md).
 
 ## Quick start
 
-Read an existing ABACUS input file without an engine:
+Read an existing input file without an engine:
 
 ```python
 from abacuslite.io.generalio import read_input
 
-parameters = read_input("INPUT")
-print(parameters)
+print(read_input("INPUT"))
 ```
 
-Examples are distributed in the source release. For a real calculation,
-get the matching checkout, configure the engine and assets, and run an example:
+Run a short SCF calculation:
 
-```bash
-git clone --branch v1.1.0 https://github.com/QuantumMisaka/abacuslite.git
-cd abacuslite
-export ABACUS_COMMAND='mpirun -np 2 abacus'
-export ABACUS_PP_ORB=/absolute/path/to/ABACUS/tests/PP_ORB
-export OMP_NUM_THREADS=1
-python examples/scf.py
+```python
+from ase.build import bulk
+from abacuslite import Abacus, AbacusProfile
+
+atoms = bulk("Si", "diamond", a=5.43)
+profile = AbacusProfile(
+    command="mpirun -np 2 abacus",   # or the actual ABACUS binary path
+    pseudo_dir="/path/to/PP_ORB",
+    orbital_dir="/path/to/PP_ORB",
+)
+atoms.calc = Abacus(
+    profile=profile,
+    directory="scf-run",
+    pseudopotentials={"Si": "Si_ONCV_PBE-1.0.upf"},
+    basissets={"Si": "Si_gga_8au_100Ry_2s2p1d.orb"},
+    inp={"basis_type": "lcao", "gamma_only": True, "scf_thr": 1e-3},
+)
+print(atoms.get_potential_energy())
 ```
 
-This example uses `genelpa`; select a solver supported by your ABACUS build.
-The [usage guide](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/usage.md) lists required assets, example cleanup behavior,
-calculator configuration and the complete example collection.
+Recent ABACUS develop builds may name the executable `abacus_basic_para`
+instead of `abacus`; point `command` at the actual binary. Most shipped
+examples use `genelpa`; if your build lacks it, set `ks_solver` to an available
+solver.
+
+## Examples
+
+The source release includes eleven examples. A suggested learning path is
+SCF, relaxation or MD, then the more specialized workflows. See the
+[usage guide](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/usage.md)
+for assets, engine features, cleanup behavior and the complete table.
+
+| Example | Purpose |
+| --- | --- |
+| [scf.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/scf.py) | SCF calculation of silicon |
+| [relax.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/relax.py) | Atomic position relaxation |
+| [cellrelax.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/cellrelax.py) | Cell relaxation |
+| [bandstructure.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/bandstructure.py) | Band structure |
+| [dos.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/dos.py) | Density of states |
+| [md.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/md.py) | Molecular dynamics |
+| [constraintmd.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/constraintmd.py) | Constrained molecular dynamics |
+| [metadynamics.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/metadynamics.py) | Metadynamics with PLUMED |
+| [neb.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/neb.py) | Nudged elastic band |
+| [soc.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/soc.py) | Noncollinear spin-orbit coupling |
+| [socketio.py](https://github.com/QuantumMisaka/abacuslite/blob/main/examples/socketio.py) | Fixed-cell socket calculations |
 
 ## Documentation
 
-See the [documentation index](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/README.md) for guides and current development records.
-
 | Task | Guide |
 | --- | --- |
-| Configure calculators, read output, run examples | [Usage](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/usage.md) |
-| Migrate ABACUS/ATST callers | [Migration](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/migration.md) |
-| Set up development, run tests and validate packages | [Contributing](https://github.com/QuantumMisaka/abacuslite/blob/main/CONTRIBUTING.md) |
-| Understand modules and package boundaries | [Module reference](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/docs/reference.md) |
-| Check supported engines, CI and acceptance evidence | [Compatibility](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md) |
-| Review changes and source attribution | [Changelog](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/CHANGELOG.md), [provenance](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/UPSTREAM.md) |
+| Configure calculators, read output, run examples | [Usage](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/usage.md) |
+| Check tested engines and limitations | [Supported versions](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/supported-versions.md) |
+| Fix common setup and runtime problems | [Troubleshooting](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/troubleshooting.md) |
+| Migrate ABACUS/ATST callers | [Migration](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/migration.md) |
+| Understand modules and package boundaries | [Module reference](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/reference.md) |
+| Check CI and acceptance evidence | [Compatibility](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md) |
+| Set up development and run tests | [Contributing](https://github.com/QuantumMisaka/abacuslite/blob/main/CONTRIBUTING.md) |
+| Review changes and attribution | [Changelog](https://github.com/QuantumMisaka/abacuslite/blob/main/CHANGELOG.md), [provenance](https://github.com/QuantumMisaka/abacuslite/blob/main/UPSTREAM.md) |
 
-## Authors and maintenance
+## Authors
 
 - [Yuyang Ji (@jiyuyang)](https://github.com/jiyuyang)
 - [Zhenxiong Shen (@Shen-Zhen-Xiong)](https://github.com/Shen-Zhen-Xiong)
 - [Yike Huang (@kirk0830)](https://github.com/kirk0830)
 - [Zhaoqing Liu (@QuantumMisaka)](https://github.com/QuantumMisaka)
 
-The independent package is maintained by QuantumMisaka. Thanks to the ABACUS
-and ATST contributors; original attribution is preserved in [UPSTREAM.md](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/UPSTREAM.md).
+## Contributors
 
-Licensed under [LGPL-3.0-only](https://github.com/QuantumMisaka/abacuslite/blob/v1.1.0/LICENSE). Report plugin issues at
-[QuantumMisaka/abacuslite](https://github.com/QuantumMisaka/abacuslite/issues).
+- [Jianrui Geng (@Phorbol)](https://github.com/Phorbol) — fixed-cell i-PI
+  socket driver and `AbacusSocketIO` (ABACUS #7609).
+
+## Acknowledgments
+
+Thanks to the ABACUS community for their support and contributions.
+
+## License
+
+Licensed under [LGPL-3.0-only](https://github.com/QuantumMisaka/abacuslite/blob/main/LICENSE).
+Original attribution and ATST-derived adaptations are recorded in
+[UPSTREAM.md](https://github.com/QuantumMisaka/abacuslite/blob/main/UPSTREAM.md).
+
+## Contact
+
+Report issues at [QuantumMisaka/abacuslite](https://github.com/QuantumMisaka/abacuslite/issues).

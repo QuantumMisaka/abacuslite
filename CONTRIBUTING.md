@@ -86,6 +86,20 @@ and [installed-consumer CI record](docs/superpowers/plans/2026-10-16-cross-repos
 Current engine/consumer results and subsequent plans are linked from the
 compatibility guide.
 
+## Cross-repository changes
+
+Shared contracts include the ASE calculator API, ABACUS output formats and the
+socket protocol. For a change that crosses repositories:
+
+1. Agree on the compatibility and version rule first; additive changes and
+   breaking changes need different rollout paths.
+2. Open linked PRs in this repository and in the owning upstream.
+3. Run engine-side and installed-adapter checks against the candidate pair.
+4. Update [supported versions](docs/supported-versions.md) and the
+   [compatibility record](docs/compatibility-ci.md).
+
+Do not land a breaking wire-format change on one side only.
+
 ## Releasing
 
 Stable releases require explicit maintainer authorization, reviewed changes,

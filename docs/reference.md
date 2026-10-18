@@ -4,14 +4,26 @@ This reference describes runtime modules and output formats. Setup, test
 commands and package verification live in [CONTRIBUTING.md](../CONTRIBUTING.md);
 calculator usage and examples are in [the usage guide](usage.md).
 
-## Architecture and source continuity
+## Public API
 
-The package follows the original ABACUS ASE interface design, combining its
-implementation with ATST's general-purpose fixes. Runtime code is under
-`src/abacuslite`, examples under `examples`, and tests/fixtures under `tests`.
-Moving code to `src/` changes packaging, not `import abacuslite` or public
-calculator/I/O module paths. Tests formerly embedded in production modules
-now live under `tests/`.
+The supported user-facing entry points are:
+
+- `abacuslite.Abacus`, `abacuslite.AbacusProfile`, `abacuslite.AbacusSocketIO`
+- `abacuslite.io.generalio.read_input`, `read_stru`, `read_kpt`,
+  `write_input`, `write_stru`, `write_kpt`
+- `abacuslite.io.legacyio.read_abacus_out`, `abacuslite.io.latestio.read_abacus_out`
+- `abacuslite.utils.ksampling` helpers
+
+Other names are implementation details. The format tables below are primarily
+for maintainers and consumers that need to understand a specific output file.
+
+## Runtime modules
+
+Runtime code lives under `src/abacuslite`; examples and tests are separate.
+Public imports remain `abacuslite`, `abacuslite.io` and `abacuslite.utils`.
+
+See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
+the old ASE fork and the current write -> execute -> read lifecycle.
 
 | Runtime module | Responsibility |
 | --- | --- |
@@ -21,7 +33,7 @@ now live under `tests/`.
 | `utils/ksampling.py` | K-point paths and sampling helpers |
 
 ASE owns optimization/MD/NEB algorithms; ATST owns its workflow and launcher
-policy. Neither ATST nor Forge is a runtime dependency of this plugin.
+policy. Neither ATST nor Forge is a runtime dependency of this package.
 [Package boundaries](design.md) define this separation. The
 [integration audit](upstream-integration.md) records preserved ABACUS
 features, integrated ATST fixes and reader-instance isolation.

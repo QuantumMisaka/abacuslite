@@ -1,42 +1,26 @@
 # Installing and migrating to independent abacuslite
 
-The independent package retains the ABACUS plugin's ASE calculator design and
-module responsibilities. The `src` layout separates installable code from
-examples and test assets; consumers still import `abacuslite`.
+The package retains the ABACUS ASE interface design and module
+responsibilities. The `src` layout separates installable code from examples and
+test assets; consumers still import `abacuslite`.
 
-## Architecture comparison
-
-A source-level audit at independent baseline `97d6850` found all 66 publicly
-named function/method definitions (including constructors) from ABACUS
-`4b92455ca` present with the same argument signatures. All 60 corresponding
-ATST definitions at `45d8c78` are also present with the same signatures.
-The additional public methods relative to ATST come from newer ABACUS socket
-support and `Abacus.write_input`. Test classes and private helpers were excluded
-from those counts. They are audit observations, not a source-hash CI contract
-or proof that every behavior is identical.
+## Architecture continuity
 
 The ASE inheritance remains `AbacusProfile(BaseProfile)`,
 `AbacusTemplate(CalculatorTemplate)`, `Abacus(GenericFileIOCalculator)` and
 `AbacusSocketIO(SocketIOCalculator)`. General input I/O, output readers and
-K-point helpers remain in their original modules. ATST's launcher/workflow
-policy remains in ATST. There is no new scheduler, service layer or runtime
-consumer dependency.
+K-point helpers remain in their modules. ATST owns workflow and launcher
+policy; this package adds no scheduler or service layer.
 
-The current runtime is deliberately close to upstream, including a relatively
-large `core.py`. Internal modularization can be considered when maintenance
-requires it; moving classes now would create migration work without being
-necessary for independent packaging.
+See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
+the old ASE fork and [the integration audit](upstream-integration.md) for
+source-level detail.
 
 ## Install one implementation
 
-Use a fresh virtual environment for initial validation, following README.md.
+Use a fresh virtual environment, following README.md.
 Install the [published stable package](https://pypi.org/project/abacuslite/1.1.0/)
-with `pip install 'abacuslite==1.1.0'`. See the
-[release record](superpowers/plans/2026-10-17-1.1.0-release.md) for artifact
-identities and fresh indexed-install verification.
-For development use `pip install .` and record the exact source revision.
-The earlier `1.1.0rc1` label covered several source iterations and does not
-uniquely identify those pre-release builds.
+with `pip install 'abacuslite==1.1.0'`. For development use `pip install -e .`.
 
 Do not run consumer validation from a directory containing another top-level
 `abacuslite` source tree. In a virtual environment, verify the installed import
@@ -68,15 +52,16 @@ Verify `python -m pip check` after installing consumer dependencies as well.
 | ABACUS socket calculator | Keep `AbacusSocketIO`; verify the selected engine supports its protocol |
 | `abacuslite.io.generalio`, `legacyio`, `latestio` | Keep module paths and explicitly selected reader functions |
 | ATST workflow API / CLI | Keep ATST as the workflow entry; verify it selects the installed external package |
-| Direct `atst_tools.external.ASE_interface.abacuslite...` import | Maintainer migration is required: use ATST's adapter for calculators/profile policy, or `abacuslite.io...` for pure I/O |
-| Forge collection | Keep the explicit optional parser selection and native default; validate the supported plugin/Forge pair |
+| Direct `atst_tools.external.ASE_interface.abacuslite...` import | Migrate to ATST's adapter for calculators/profile policy, or use `abacuslite.io...` for pure I/O |
+| Forge collection | Keep the explicit optional parser selection and native default; validate the supported package/Forge pair |
 | Running tests from the old production modules | Use `pytest` against `tests/`; fixtures and examples ship in sdist, not the runtime wheel |
 | Examples relying on ABACUS's parent-directory layout | Set `ABACUS_PP_ORB` and `ABACUS_COMMAND`; install the package before running |
 
-During transition, do not remove the ATST fallback until direct vendored callers
-and supported deployment environments have migrated. A compatibility module,
-if needed, should forward to the independent implementation. It should not keep
-a second parser implementation or move ATST launcher policy into this package.
+ATST versions that depend on abacuslite use `abacuslite>=1.1,<2` and thin
+forwarding imports. The vendored copy remains only as a frozen audit baseline.
+Consumers that import `atst_tools.external.ASE_interface.abacuslite...`
+directly should migrate to the installed package; new code should use it
+rather than add a second parser or move ATST launcher policy here.
 
 ## Intentional compatibility changes
 
@@ -96,15 +81,11 @@ a second parser implementation or move ATST launcher policy into this package.
 Source attribution and the two upstreams' optimization dispositions are in
 [UPSTREAM.md](../UPSTREAM.md) and the [integration audit](upstream-integration.md).
 
-## What has been validated
+## Validation scope
 
-Built-wheel and sdist-derived-wheel tests cover Python 3.10/ASE 3.28 and
-Python 3.12/ASE 3.29, plus bounded installed ATST/Forge consumer contracts.
-Startup tests for all 11 examples verify their configured asset path and engine
-command without launching ABACUS. They do not execute full simulations.
-
-Real engine acceptance and production dependency migration remain separate
-steps. Before publishing or deploying a consumer pair, run the intended engine
-and affected workflows with independent reference results; see the
-[cross-repository CI guide](compatibility-ci.md). Architecture continuity and
-installation success alone do not establish scientific compatibility.
+Built-wheel tests cover Python 3.10/ASE 3.28 and Python 3.12/ASE 3.29, plus
+installed ATST/Forge consumer contracts. Example startup tests check
+configuration without launching ABACUS. They are interface checks; full
+simulation and scientific validation are separate. See the
+[cross-repository CI guide](compatibility-ci.md) for engine and workflow
+validation.

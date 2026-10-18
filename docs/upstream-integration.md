@@ -1,13 +1,20 @@
 # ABACUS and ATST integration audit
 
-The maintainer confirmed the independent package version `1.1.0rc1` on
-2026-10-16. It remains an unreleased candidate.
+This audit records the source comparison performed when the independent
+package was created. The maintained package is now version 1.1.0, published
+on PyPI; later changes and validation are recorded in
+[CHANGELOG.md](../CHANGELOG.md) and the
+[compatibility guide](compatibility-ci.md).
 
-Refs fetched on that date:
+Refs fetched on 2026-10-16:
 
 - ABACUS develop: `4b92455cab1b1a51e8534b7eb869798ae1241b1b`.
 - ATST main: `45d8c78de8a605c127cd4c36742d0c9525a0a6b6`.
 - Independent package baseline: `f36f3664edd8fe39719b1237f54eb0c9da482680`.
+
+The comparison covered 66 public ABACUS definitions and 60 ATST definitions,
+including constructors. These counts are audit observations, not a
+compatibility contract.
 
 Production functions and methods were compared structurally after excluding
 embedded tests/docstrings. Every substantive difference was inspected against
@@ -56,7 +63,7 @@ all ABACUS versions.
 
 General parser/calculator fixes should become tests and fixes here. Engine
 format changes belong in ABACUS and should carry a minimal output fixture and
-a linked plugin compatibility change. ATST owns workflow and launcher policy.
+a linked abacuslite compatibility change. ATST owns workflow and launcher policy.
 While upstream migration is pending, record necessary backports by source
 commit and behavior; neither automatically overwrite another repository nor
 maintain an untracked alternative implementation.

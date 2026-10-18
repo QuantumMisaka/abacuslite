@@ -1,8 +1,7 @@
 # fmt: off
 
 '''
-here the ase-abacus implementation is pasted and modified. 
-Source:
+Adapted from the ase-abacus implementation:
 https://gitlab.com/1041176461/ase-abacus/-/blob/master/ase/calculators/abacus.py
 
 This module defines an ASE interface to ABACUS.
@@ -26,7 +25,7 @@ Modified on Wed Jun 20 15:00:00 2018
 Modified on Wed Jun 03 23:00:00 2022
 @author: Ji Yu-yang
 
-Refactored from Sun Dec 07 21:41 2025
+Refactored on 2025-12-07
 @author: Huang Yi-ke
 '''
 
@@ -107,10 +106,12 @@ class AbacusProfile(BaseProfile):
             `OMP_NUM_THREADS=1 mpirun -np X abacus`. Here please do not set
             the number of omp threads in `command`, instead, use `nomp=1`.
         pseudo_dir : str or Path, optional
-            The directory containing pseudopotential files.
+            The directory containing pseudopotential files. If omitted,
+            ``ABACUS_PP_PATH`` is used when set.
         orbital_dir : str or Path, optional
             The directory containing orbital basis files. This is only necessary
-            for an ABACUS-LCAO calculation
+            for an ABACUS-LCAO calculation. If omitted, ``ABACUS_ORB_PATH`` is
+            used when set.
         omp_num_threads : int, optional
             The number of omp threads to use.
         '''
@@ -118,8 +119,10 @@ class AbacusProfile(BaseProfile):
         # further validation on the command will be in the __init__ of
         # the base class
         super().__init__(command, **kwargs)
-        self.pseudo_dir  = pseudo_dir
-        self.orbital_dir = orbital_dir
+        # These two community conventions are the only environment fallbacks
+        # in this package; explicit arguments always take precedence.
+        self.pseudo_dir = pseudo_dir or os.environ.get("ABACUS_PP_PATH") or None
+        self.orbital_dir = orbital_dir or os.environ.get("ABACUS_ORB_PATH") or None
 
         if omp_num_threads is not None:
             # set the number of omp threads for the present process
@@ -286,13 +289,14 @@ def _stru_positions_in_ase_order(directory, stru_file, atomorder):
 
 
 def _frame_coordinate_metadata(log_path, *, legacyio=None):
-    """从 running log 的实际坐标头推导帧侧坐标系，不依赖 STRU 的 coord_type。
+    """Return the frame coordinate convention and lattice constant from a log.
 
-    read_abacus_out 对 DIRECT 日志返回分数坐标、对 CARTESIAN 日志返回 Cartesian（原样），
-    因此帧侧换算必须以日志实际坐标系为准（spec P3 ③）。STRU 的 coord_type 可能与日志不一致
-    （如 write_stru 默认写 Cartesian STRU 而 ABACUS 打印坐标可仍为 DIRECT），不能作为
-    帧侧坐标系依据（fix round 1 F1）。坐标头格式两后端一致，取 backend 的
-    read_traj_from_running_log 的 `coordinate` 字段（与 read_abacus_out 同解析器，单一事实源）。
+    The selected reader returns fractional coordinates for DIRECT logs and
+    Cartesian coordinates for CARTESIAN logs. Use the coordinate header
+    actually printed in the log, not the STRU ``coord_type``: ``write_stru``
+    may write a Cartesian STRU while ABACUS prints DIRECT coordinates. Both
+    readers expose the same ``coordinate`` and ``alat_in_angstrom`` fields
+    through ``read_traj_from_running_log``.
     """
     use_legacy = __LEGACYIO__ if legacyio is None else legacyio
     if use_legacy:
@@ -449,13 +453,13 @@ def _select_scf_frame_for_structure(
     Parameters
     ----------
     frames : list of Atoms
-        按 atomorder 重排后的 running log 帧（read_abacus_out 返回）。
+        Frames returned by ``read_abacus_out``, reordered into ASE atom order.
     log_path : Path
-        running log 路径，用于 fail-closed 异常诊断。
+        Running log path, used in fail-closed diagnostics.
     directory : Path
-        工作目录（含本次 write_input 落盘的 STRU）。
+        Calculation directory containing the STRU written by ``write_input``.
     atomorder : list of int
-        species 序位置 -> ASE 序原子的 revmap（spec P3 ①）。
+        Permutation from species order to ASE atom order.
     stru_file : str or Path
         The STRU filename recorded by ``write_input``; defaults to ``STRU``.
     atol : float
@@ -465,7 +469,7 @@ def _select_scf_frame_for_structure(
     Raises
     ------
     RuntimeError
-        无与当前 STRU 坐标匹配的帧（异常含 log 路径、帧数与坐标差异摘要）。
+        If no frame matches the current STRU, or a frame is malformed.
     """
     try:
         nframes = len(frames)
@@ -709,7 +713,7 @@ class AbacusTemplate(CalculatorTemplate):
         # remove possible key-value pairs whose value is None
         parameters = {k: v for k, v in parameters.items() if v is not None}
 
-        # FIXME: only support the ksdft esolver_type presently
+        # Limitation: only the ksdft esolver is supported.
         if parameters.get('esolver_type', 'ksdft') != 'ksdft':
             raise NotImplementedError(
                 'ABACUS Lite only supports the ksdft esolver_type presently, '
@@ -801,7 +805,8 @@ class AbacusTemplate(CalculatorTemplate):
             _validate_raw_scf_trajectory(log, reference, legacyio=self._legacyio)
             parser_atomorder = None if self.atomorder is None else reference['atomorder']
 
-        # 读取全部帧；scf 下按坐标选择当前结构帧，非 scf（relax/md）保持末帧语义（spec R1/R2）
+        # Read all frames: SCF selects the frame matching the current STRU;
+        # relax and MD keep the final-frame behavior.
         try:
             frames = read_abacus_out(log, sort_atoms_with=parser_atomorder)
         except (IndexError, AssertionError, KeyError, TypeError, ValueError) as exc:
@@ -814,7 +819,7 @@ class AbacusTemplate(CalculatorTemplate):
         if not frames:
             raise RuntimeError(f"no ABACUS running-log frames in {log}")
         if self.calculation != 'scf':
-            atoms: Optional[Atoms] = frames[-1]  # 原生 relax/md：既有末帧语义（spec R2/P2）
+            atoms: Optional[Atoms] = frames[-1]  # relax/MD keep the final frame.
         else:
             atoms = _select_scf_frame_for_structure(
                 frames,
@@ -893,7 +898,7 @@ class Abacus(GenericFileIOCalculator):
         **kwargs:
             Other parameters to be passed to the ABACUS calculator.
         '''
-        # not recommended :(
+        # Fallback profile for callers that do not provide one.
         profile = AbacusProfile('abacus') if profile is None else profile
 
         # to be compatible with both the legacy and latest format of i/o, the
@@ -901,9 +906,7 @@ class Abacus(GenericFileIOCalculator):
         template = AbacusTemplate()
         template._legacyio = _uses_legacy_io(profile.version())
 
-        # because ABACUS run job in folders, based on the assumption that
-        # there is only one job in the folder. Therefore once there are already
-        # files in the folder, will try to create a new one...(seriously?)
+        # Optional ABACUS INPUT parameters, merged with calculator keywords.
         inp = kwargs.pop('inp', {})
 
         super().__init__(
