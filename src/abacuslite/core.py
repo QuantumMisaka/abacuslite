@@ -107,10 +107,12 @@ class AbacusProfile(BaseProfile):
             `OMP_NUM_THREADS=1 mpirun -np X abacus`. Here please do not set
             the number of omp threads in `command`, instead, use `nomp=1`.
         pseudo_dir : str or Path, optional
-            The directory containing pseudopotential files.
+            The directory containing pseudopotential files. If omitted,
+            ``ABACUS_PP_PATH`` is used when set.
         orbital_dir : str or Path, optional
             The directory containing orbital basis files. This is only necessary
-            for an ABACUS-LCAO calculation
+            for an ABACUS-LCAO calculation. If omitted, ``ABACUS_ORB_PATH`` is
+            used when set.
         omp_num_threads : int, optional
             The number of omp threads to use.
         '''
@@ -118,8 +120,10 @@ class AbacusProfile(BaseProfile):
         # further validation on the command will be in the __init__ of
         # the base class
         super().__init__(command, **kwargs)
-        self.pseudo_dir  = pseudo_dir
-        self.orbital_dir = orbital_dir
+        # These two community conventions are the only environment fallbacks
+        # in this package; explicit arguments always take precedence.
+        self.pseudo_dir = pseudo_dir or os.environ.get("ABACUS_PP_PATH") or None
+        self.orbital_dir = orbital_dir or os.environ.get("ABACUS_ORB_PATH") or None
 
         if omp_num_threads is not None:
             # set the number of omp threads for the present process
