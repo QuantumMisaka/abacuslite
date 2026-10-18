@@ -15,6 +15,11 @@ The adapter accepts the metadata schema
 be added within v1; a breaking change requires a new schema version and a
 transition window in both repositories.
 
+[ABACUS PR #8175](https://github.com/deepmodeling/abacus-develop/pull/8175)
+proposes the engine-side identifier in `source/source_relax/socket_utils.h`
+(`kPropertiesSchema`) and its socket driver unit test. Upstream adoption is
+pending.
+
 ## What the adapter relies on
 
 | Item | Contract |
@@ -32,6 +37,9 @@ transition window in both repositories.
 ## CI gates
 
 - ABACUS owns the socket driver tests and the engine-side socket handoff.
+- The workflow proposed in ABACUS PR #8175 installs the published `abacuslite` wheel, or a
+  reviewed candidate ref, and runs the socket handoff against the engine built
+  from that PR.
 - abacuslite builds pinned ABACUS develop and LTS snapshots and runs the
   socket handoff in the develop lane. LTS has no socket driver; that is a
   declared capability difference, not a skipped requirement.

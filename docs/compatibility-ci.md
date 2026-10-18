@@ -23,9 +23,9 @@ engine-side candidates remains separate.
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
 | Wheel/sdist and offline contracts | Release source `94a26e4` passed local/hosted checks; exact tag artifacts published and indexed install verified | Release acceptance complete for 1.1.0 |
-| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; final ATST candidate also passes its six hosted jobs | Consumer main-branch adoption and a new ATST release remain separate |
-| Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass locally and remotely; both engine-owned candidate workflows also pass | Community adoption of the develop/LTS workflow candidates |
-| Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | Upstream ATST/ABACUS adoption and required-check configuration |
+| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; ATST adoption merged at `49c8626` with six successful hosted jobs | ATST 2.3.0 publication remains pending |
+| Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass locally and remotely; the engine-side harness is ready for external-only adoption | Upstream ABACUS PR and its required-check configuration |
+| Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | ATST required-check configuration remains a separate maintenance decision |
 
 Exact revisions, environments, raw-output links and earlier GPU/consumer runs
 are in the [acceptance record](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md).
@@ -82,14 +82,11 @@ Ordinary pytest skips consumers; explicit opt-in must fail if a consumer is
 missing. Consumer dependencies do not become plugin runtime dependencies.
 See [Contributing](../CONTRIBUTING.md) for package setup and verification.
 
-PR jobs pin reviewed ATST and Forge commits in `.github/workflows/tests.yml`.
-Until ATST's external-only migration reaches main, weekly checks use its
-`integrate/abacuslite-external-only` candidate branch; Forge follows `main`.
-Manual runs accept `atst_ref` and `forge_ref` for coordinated candidates.
-The release's former ATST pin `87caeedb` remains on
-`integrate/abacuslite-1.1.0-acceptance` for historical paired evidence.
-Candidate pins must be publicly fetchable before a hosted run is accepted.
-Weekly checks supplement PR checks.
+PR jobs pin ATST `main` at the 2.3.0 merge commit `49c8626` and a reviewed
+Forge commit in `.github/workflows/tests.yml`. Weekly checks follow ATST and
+Forge `main`; manual runs accept `atst_ref` and `forge_ref` for coordinated
+candidates. Candidate pins must be publicly fetchable before a hosted run is
+accepted. Weekly checks supplement PR checks.
 
 ## Develop and LTS engine coverage
 
@@ -97,7 +94,8 @@ LTS compatibility through `legacyio` is a plugin responsibility even though
 LTS has no `interfaces/` tree or ASE-plugin workflow. Calculators bind reader
 selection to their configured executable's actual version; creating a develop
 calculator must not alter an existing LTS instance. Explicit readers remain
-available for pure I/O. LTS has no bundled-plugin comparison baseline.
+available for pure I/O. LTS has no socket driver; the shared harness supplies
+its legacy-format oracle.
 
 Local installed-wheel acceptance used plugin `ba65f606`:
 
@@ -125,16 +123,16 @@ wrong reader selection and incomplete case execution. LTS requires its eight
 ordinary checks plus the seeded native-MD case; absent socket support is a
 documented boundary, not a substitute for one of those checks.
 
-The ABACUS develop candidate `e446bda` tests the newly built executable directly
-against both its bundled plugin and the published external 1.1.0 wheel. A
-bundled velocity-writing correction preserves explicit native-MD velocities.
-Its portable harness passed all nine checks in each of the develop external,
-develop bundled and LTS external lanes, with retained raw-property evidence.
-The LTS candidate only adds an external-harness workflow; it does not backport
-`interfaces/`. The [develop hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39058538488)
-passes both bundled and external lanes; the [LTS hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649)
-passes its external lane. All 425 retained raw-file hashes were checked after
-download. These runs validate personal-fork candidates, not community adoption.
+The ABACUS target defined in
+[issue #8165](https://github.com/deepmodeling/abacus-develop/issues/8165) is
+fully external: no submodule and no vendored plugin. `interfaces/ASE_interface`
+keeps only the engine-side harness, and CI installs the published 1.1.0 wheel
+or a reviewed candidate. The harness passed all nine develop checks and the
+LTS external lane in the earlier candidate `e446bda`; that candidate also
+exercised a now-retired bundled lane. The
+[LTS hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649)
+passed its external lane, and all 425 retained raw-file hashes were checked
+after download. External-only ABACUS adoption is a separate upstream PR.
 
 The final [ATST candidate run](https://github.com/QuantumMisaka/atst-tools/actions/runs/39060138450)
 passes all six jobs at `edfd8f4`. A separate SAI run (`1835021`) validates 13
@@ -148,8 +146,8 @@ engine plus a v3.10.1 legacy smoke; it does not replace the fresh CPU matrix.
 ## Repository responsibilities
 
 Each changed repository should check its own candidate against tested partners.
-The rows below describe the target; engine-side adoption and upstream merge
-enforcement remain incomplete.
+The rows below describe the target; external-only ABACUS adoption and upstream
+merge enforcement remain separate upstream decisions.
 
 | Changed repository | PR verification |
 | --- | --- |

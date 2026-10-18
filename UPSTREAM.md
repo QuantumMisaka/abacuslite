@@ -7,6 +7,12 @@ Initial snapshot imported from `deepmodeling/abacus-develop`,
 Original repository: https://github.com/deepmodeling/abacus-develop
 Original history: https://github.com/deepmodeling/abacus-develop/commits/4b92455cab1b1a51e8534b7eb869798ae1241b1b/interfaces/ASE_interface
 
+The external-only adoption proposed in
+[ABACUS PR #8175](https://github.com/deepmodeling/abacus-develop/pull/8175)
+keeps only the engine-side compatibility harness in that directory. The
+calculator and parser implementation is maintained here as an installable
+package. Upstream adoption remains pending until that PR is merged.
+
 This is a snapshot import; the original Git history is linked, not rewritten
 or claimed as newly authored. Original author notices are retained. The root
 LICENSE is copied from the same ABACUS commit. ATST adaptations are recorded below with their source and regression evidence.

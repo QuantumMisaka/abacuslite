@@ -4,8 +4,9 @@
 
 ```text
 ase-abacus (ASE fork)
-  -> ABACUS interfaces/ASE_interface/abacuslite
+  -> ABACUS interfaces/ASE_interface (historical source)
      -> QuantumMisaka/abacuslite (standalone distribution)
+        -> ABACUS interfaces/ASE_interface/tests (proposed in PR #8175)
 ```
 
 The calculator API is intentionally continuous. What changed is where the
