@@ -17,13 +17,13 @@ functions remain available for consumers that explicitly select a format.
 
 ATST workflow configuration and orchestration remain outside this project.
 Forge's native default, optional parser and fact projection are unaffected.
-The precise compatibility wrapper in the ABACUS repository remains an open
-cross-repository decision and does not block this package's construction.
+ABACUS's bundled `interfaces/ASE_interface` is expected to be replaced by this
+package; the compatibility and migration records track that rollout.
 
-Package, engine and output-format versions are distinct. The initial candidate
-is `1.1.0rc1`, not a claim of a published or engine-validated release. Validate
-wheel and sdist installation, pure I/O, imported regressions, consumer behavior,
-and eventually real engine integration before declaring a stable release.
+Package, engine and output-format versions are distinct. Version 1.1.0 is
+published on PyPI and validated by package, consumer and real-engine checks.
+See the [compatibility record](compatibility-ci.md) for tested snapshots and
+remaining gaps.
 
 Use one source implementation. Existing consumers must migrate direct vendored
 imports before their copies are removed; temporary compatibility modules may

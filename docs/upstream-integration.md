@@ -1,9 +1,12 @@
 # ABACUS and ATST integration audit
 
-The maintainer confirmed the independent package version `1.1.0rc1` on
-2026-10-16. It remains an unreleased candidate.
+This audit records the source comparison performed when the independent
+package was created. The maintained package is now version 1.1.0, published
+on PyPI; later changes and validation are recorded in
+[CHANGELOG.md](../CHANGELOG.md) and the
+[compatibility guide](compatibility-ci.md).
 
-Refs fetched on that date:
+Refs fetched on 2026-10-16:
 
 - ABACUS develop: `4b92455cab1b1a51e8534b7eb869798ae1241b1b`.
 - ATST main: `45d8c78de8a605c127cd4c36742d0c9525a0a6b6`.

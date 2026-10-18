@@ -4,6 +4,19 @@ This reference describes runtime modules and output formats. Setup, test
 commands and package verification live in [CONTRIBUTING.md](../CONTRIBUTING.md);
 calculator usage and examples are in [the usage guide](usage.md).
 
+## Public API
+
+The supported user-facing entry points are:
+
+- `abacuslite.Abacus`, `abacuslite.AbacusProfile`, `abacuslite.AbacusSocketIO`
+- `abacuslite.io.generalio.read_input`, `read_stru`, `read_kpt`,
+  `write_input`, `write_stru`, `write_kpt`
+- `abacuslite.io.legacyio.read_abacus_out`, `abacuslite.io.latestio.read_abacus_out`
+- `abacuslite.utils.ksampling` helpers
+
+Other names are implementation details. The format tables below are primarily
+for maintainers and consumers that need to understand a specific output file.
+
 ## Architecture and source continuity
 
 The package follows the original ABACUS ASE interface design, combining its

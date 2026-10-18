@@ -73,10 +73,12 @@ Verify `python -m pip check` after installing consumer dependencies as well.
 | Running tests from the old production modules | Use `pytest` against `tests/`; fixtures and examples ship in sdist, not the runtime wheel |
 | Examples relying on ABACUS's parent-directory layout | Set `ABACUS_PP_ORB` and `ABACUS_COMMAND`; install the package before running |
 
-During transition, do not remove the ATST fallback until direct vendored callers
-and supported deployment environments have migrated. A compatibility module,
-if needed, should forward to the independent implementation. It should not keep
-a second parser implementation or move ATST launcher policy into this package.
+ATST's external-only candidate declares `abacuslite>=1.1,<2` and replaces the
+vendored parser with thin forwarding imports. The vendored copy remains only
+as a frozen audit baseline. Consumers that import
+`atst_tools.external.ASE_interface.abacuslite...` directly should migrate to
+the installed package; new code should not add a second parser implementation
+or move ATST launcher policy into this package.
 
 ## Intentional compatibility changes
 

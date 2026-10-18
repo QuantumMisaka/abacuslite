@@ -2,6 +2,9 @@
 
 ## Current checkpoint
 
+For a short user-facing summary of tested engines and limitations, see
+[supported versions](supported-versions.md).
+
 As recorded on 2026-10-18 (UTC+08:00), stable `1.1.0` is
 [published on PyPI](https://pypi.org/project/abacuslite/1.1.0/). Both registry
 file digests match the verified tag artifacts; a fresh indexed install passed

@@ -4,6 +4,8 @@ Install the package following the [README](../README.md#installation).
 The runtime depends on ASE, NumPy and seekpath. Tested package combinations
 include Python 3.10 / ASE 3.28 and Python 3.12 / ASE 3.29; the declared
 dependency range is not a guarantee for every future combination.
+Tested ABACUS snapshots are listed in [supported versions](supported-versions.md);
+common setup problems are covered in [troubleshooting](troubleshooting.md).
 
 ## Configure a calculator
 
@@ -50,6 +52,10 @@ their MPI launcher default, which invokes `abacus` from `PATH`. The library itse
 `AbacusProfile`; these environment variables are a convention of the examples.
 ABACUS is not downloaded automatically and ASE is not patched during install.
 
+Recent develop builds may name the executable `abacus_basic_para` (or another
+feature/parallel variant). Set `ABACUS_COMMAND` to the actual binary; a bare
+`abacus` is only correct when that name is on `PATH`.
+
 The SCF example requires `Si_ONCV_PBE-1.0.upf` and
 `Si_gga_8au_100Ry_2s2p1d.orb` in the asset directory. Other examples name their
 own assets. The directory can be your own collection or ABACUS `tests/PP_ORB`.
@@ -65,19 +71,19 @@ requires a working PLUMED installation. Example startup tests check imports and
 configuration through the calculator constructor boundary; they do not launch
 ABACUS or PLUMED and do not certify complete scientific workflows.
 
-| Example | Purpose |
-| --- | --- |
-| [scf.py](../examples/scf.py) | SCF calculation of silicon |
-| [relax.py](../examples/relax.py) | Atomic position relaxation |
-| [cellrelax.py](../examples/cellrelax.py) | Cell relaxation |
-| [bandstructure.py](../examples/bandstructure.py) | Band structure |
-| [dos.py](../examples/dos.py) | Density of states |
-| [md.py](../examples/md.py) | Molecular dynamics |
-| [constraintmd.py](../examples/constraintmd.py) | Constrained molecular dynamics |
-| [metadynamics.py](../examples/metadynamics.py) | Metadynamics with PLUMED |
-| [neb.py](../examples/neb.py) | Nudged elastic band |
-| [soc.py](../examples/soc.py) | Noncollinear spin-orbit coupling |
-| [socketio.py](../examples/socketio.py) | Fixed-cell socket calculations and FileIO comparison |
+| Example | Purpose | Notes |
+| --- | --- | --- |
+| [scf.py](../examples/scf.py) | SCF calculation of silicon | `genelpa`; Si assets |
+| [relax.py](../examples/relax.py) | Atomic position relaxation | `genelpa`; Si assets |
+| [cellrelax.py](../examples/cellrelax.py) | Cell relaxation | `genelpa`; Si assets |
+| [bandstructure.py](../examples/bandstructure.py) | Band structure | Band-capable output |
+| [dos.py](../examples/dos.py) | Density of states | DOS output |
+| [md.py](../examples/md.py) | Molecular dynamics | ASE-driven MD |
+| [constraintmd.py](../examples/constraintmd.py) | Constrained molecular dynamics | `nspin=2` |
+| [metadynamics.py](../examples/metadynamics.py) | Metadynamics | Requires PLUMED |
+| [neb.py](../examples/neb.py) | Nudged elastic band | ASE NEB |
+| [soc.py](../examples/soc.py) | Noncollinear spin-orbit coupling | `nspin=4`; SOC support |
+| [socketio.py](../examples/socketio.py) | Fixed-cell socket calculations and FileIO comparison | Socket-capable engine |
 
 Start with SCF, then relaxation or MD before adapting the more specialized
 examples. Choose numerical settings and convergence criteria for your system.
@@ -111,3 +117,8 @@ remain readable without a dump; incomplete trajectories and malformed existing
 dumps fail explicitly. Reading preserves source files, including `eig_occ.txt`.
 The [migration guide](migration.md) explains compatibility changes, and the
 [module reference](reference.md) describes the reader modules.
+
+If you are unsure which reader to use, check the ABACUS version banner in the
+running log: 3.10.x LTS uses `legacyio`; the tested develop 3.11 format uses
+`latestio`. A configured `Abacus` calculator makes this choice automatically
+from the engine version.
