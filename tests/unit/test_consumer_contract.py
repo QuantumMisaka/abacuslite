@@ -5,9 +5,10 @@ import shutil
 
 import numpy as np
 import pytest
+from ase import Atoms
 
 from abacuslite import core
-from abacuslite.io.generalio import read_kpt
+from abacuslite.io.generalio import read_kpt, write_input, write_kpt, write_stru
 
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
@@ -89,6 +90,94 @@ def test_fixed_density_uses_upstream_output_directory_default(monkeypatch, tmp_p
     calculator.fixed_density({"mode": "gamma", "nk": 1})
 
     assert captured["inp"]["read_file_dir"] == "OUT.ABACUS"
+
+
+def test_fixed_density_uses_source_suffix_and_keeps_explicit_charge_directory(monkeypatch, tmp_path):
+    calculator = object.__new__(core.Abacus)
+    calculator.profile = object()
+    calculator.directory = tmp_path
+    calculator.parameters = {"suffix": "CUSTOM"}
+    captured = []
+
+    def fake_restart(cls, **kwargs):
+        captured.append(kwargs)
+        return kwargs
+
+    monkeypatch.setattr(core.Abacus, "restart", classmethod(fake_restart))
+    calculator.fixed_density({"mode": "gamma", "nk": 1}, inp={"suffix": "NSCF"})
+    calculator.fixed_density({"mode": "gamma", "nk": 1},
+                             inp={"suffix": "NSCF", "read_file_dir": "CHARGE_ARCHIVE"})
+
+    assert captured[0]["inp"]["read_file_dir"] == "OUT.CUSTOM"
+    assert captured[1]["inp"]["read_file_dir"] == "CHARGE_ARCHIVE"
+
+
+def test_restart_reads_input_selected_stru_and_kpt(monkeypatch, tmp_path):
+    write_input({"stru_file": "CURRENT.STRU", "kpoint_file": "CURRENT.KPT"},
+                tmp_path / "INPUT")
+    write_stru(Atoms('H', positions=[[0, 0, 0]], cell=[8, 8, 8]),
+               tmp_path, {'H': 'H.upf'}, fname="CURRENT.STRU")
+    write_kpt({"mode": "mp-sampling", "nk": [2, 2, 2], "kshift": [0, 0, 0],
+               "gamma-centered": True}, tmp_path / "CURRENT.KPT")
+    captured = {}
+
+    def fake_init(self, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(core.Abacus, "__init__", fake_init)
+    core.Abacus.restart(profile=object(), directory=tmp_path)
+    assert captured["pseudopotentials"] == {"H": "H.upf"}
+    assert captured["kpts"]["nk"] == (2, 2, 2)
+    assert captured["inp"]["stru_file"] == "CURRENT.STRU"
+
+
+def test_restart_with_explicit_kpts_does_not_require_kpt_file(monkeypatch, tmp_path):
+    write_input({}, tmp_path / "INPUT")
+    write_stru(Atoms('H', positions=[[0, 0, 0]], cell=[8, 8, 8]),
+               tmp_path, {'H': 'H.upf'})
+    captured = {}
+
+    def fake_init(self, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(core.Abacus, "__init__", fake_init)
+    explicit = {"mode": "point", "nk": 1, "coordinate": "Direct",
+                "kpoints": [(0.0, 0.0, 0.0)]}
+    core.Abacus.restart(profile=object(), directory=tmp_path, kpts=explicit)
+    assert captured["kpts"] is explicit
+
+
+@pytest.mark.parametrize("input_sampling,override", [
+    ({"gamma_only": True}, {}),
+    ({"kspacing": 0.2}, {}),
+    ({}, {"kspacing": "0.2 0.2 0.2"}),
+    ({}, {"kspacing": [0.2, 0.2, 0.2]}),
+    ({}, {"kspacing": (0.2, 0.2, 0.2)}),
+])
+def test_restart_without_kpt_keeps_implicit_sampling(monkeypatch, tmp_path,
+                                                      input_sampling, override):
+    write_input(input_sampling, tmp_path / "INPUT")
+    write_stru(Atoms('H', positions=[[0, 0, 0]], cell=[8, 8, 8]),
+               tmp_path, {'H': 'H.upf'})
+    captured = {}
+
+    def fake_init(self, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(core.Abacus, "__init__", fake_init)
+    core.Abacus.restart(profile=object(), directory=tmp_path, inp=override)
+    assert "kpts" not in captured
+    assert all(captured["inp"][key] == str(value)
+               for key, value in input_sampling.items())
+    assert all(captured["inp"][key] == value for key, value in override.items())
+
+
+def test_restart_without_kpt_fails_for_explicit_sampling(tmp_path):
+    write_input({"gamma_only": False, "kspacing": 0}, tmp_path / "INPUT")
+    write_stru(Atoms('H', positions=[[0, 0, 0]], cell=[8, 8, 8]),
+               tmp_path, {'H': 'H.upf'})
+    with pytest.raises(FileNotFoundError, match='KPT'):
+        core.Abacus.restart(profile=object(), directory=tmp_path)
 
 
 def test_abacusprofile_version_keeps_native_probe(monkeypatch):

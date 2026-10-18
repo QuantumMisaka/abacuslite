@@ -936,8 +936,9 @@ class Abacus(GenericFileIOCalculator):
         optionally overwrite some keywords'''
         directory = Path(directory)
         inp_read = read_input(directory / 'INPUT')
+        inp = inp_read | kwargs.pop('inp', {})
 
-        pporb_read = read_stru(directory / 'STRU')['species']
+        pporb_read = read_stru(directory / (inp.get('stru_file', 'STRU') or 'STRU'))['species']
         pseudopotentials = kwargs.get(
             'pseudopotentials',
             {pporb['symbol']: pporb['pp_file'] for pporb in pporb_read}
@@ -955,19 +956,32 @@ class Abacus(GenericFileIOCalculator):
             basissets = {}
         assert all([forb is not None for forb in basissets.values()])
 
-        kpts = kwargs.get('kpts', read_kpt(directory / inp_read.get('kpoint_file', 'KPT')))
         if 'kpts' in kwargs:
-            del kwargs['kpts']
-
-        inp = inp_read | kwargs.get('inp', {})
-        if 'inp' in kwargs:
-            del kwargs['inp']
+            kpts_kwargs = {'kpts': kwargs.pop('kpts')}
+        else:
+            kpt_file = directory / (inp.get('kpoint_file', 'KPT') or 'KPT')
+            if kpt_file.is_file():
+                kpts_kwargs = {'kpts': read_kpt(kpt_file)}
+            else:
+                gamma_only = str(inp.get('gamma_only', '')).strip().lower() in (
+                    '1', 'true', 't', '.true.')
+                raw_spacing = inp.get('kspacing', '')
+                spacing = (raw_spacing if isinstance(raw_spacing, (list, tuple))
+                           else str(raw_spacing).split())
+                try:
+                    implicit_kpts = gamma_only or bool(spacing) and all(
+                        float(value) > 0 for value in spacing)
+                except ValueError:
+                    implicit_kpts = gamma_only
+                if not implicit_kpts:
+                    read_kpt(kpt_file)  # preserve the missing/invalid KPT error
+                kpts_kwargs = {}
 
         return cls(profile=profile, 
                    directory=directory,
                    pseudopotentials=pseudopotentials,
                    basissets=basissets,
-                   kpts=kpts,
+                   **kpts_kwargs,
                    inp=inp,
                    **kwargs)
 
@@ -1011,13 +1025,15 @@ class Abacus(GenericFileIOCalculator):
         # we should overwrite the 'calculation' to 'nscf', and 'init_chg' to 'file'
         assert symmetry == 'off'
         
-        kwargs.setdefault('inp', {}).update({'calculation': 'nscf',
-                                             'init_chg': 'file',
-                                             'symmetry': 0,
-                                             'out_band': 1,
-                                             'kspacing': 0.0,       # overwrite
-                                             'gamma_only': False,
-                                             'read_file_dir': 'OUT.ABACUS'})  # overwrite
+        inp = kwargs.setdefault('inp', {})
+        inp.update({'calculation': 'nscf',
+                    'init_chg': 'file',
+                    'symmetry': 0,
+                    'out_band': 1,
+                    'kspacing': 0.0,       # overwrite
+                    'gamma_only': False})
+        source_suffix = getattr(self, 'parameters', {}).get('suffix', 'ABACUS')
+        inp.setdefault('read_file_dir', f'OUT.{source_suffix}')
 
         profile = self.profile if profile is None else profile
 
