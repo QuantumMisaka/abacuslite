@@ -2,6 +2,9 @@
 
 ## 1.1.1
 
+- Default `pseudo_dir` and `orbital_dir` to `ABACUS_PP_PATH` and
+  `ABACUS_ORB_PATH` when the profile arguments are omitted; explicit arguments
+  still take precedence.
 - Write ASE atom masses to STRU for each chemical species, including isotope
   masses; reject different masses within one species before creating the file.
 - Resolve fixed-density charge input from the source calculation's output

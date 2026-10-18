@@ -12,8 +12,8 @@ and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
 **Release line:** `1.1.1` (candidate; publication pending authorization). It
-adds three calculator and restart corrections on top of `1.1.0`; the 1.1.x
-line was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
+adds calculator, restart and default-path corrections on top of `1.1.0`; the
+1.1.x line was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
 [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
 for the exact snapshots and current checks, and the
 [release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-19-1.1.1-release.md)
