@@ -61,6 +61,24 @@ class TestAbacusProfileAssetDefaults(unittest.TestCase):
         self.assertEqual(profile.pseudo_dir, "/env/pp")
         self.assertEqual(profile.orbital_dir, "/env/orb")
 
+    def test_explicit_none_argument_uses_environment(self):
+        with patch.dict(os.environ, {
+            "ABACUS_PP_PATH": "/env/pp",
+            "ABACUS_ORB_PATH": "/env/orb",
+        }):
+            profile = AbacusProfile("abacus", pseudo_dir=None, orbital_dir=None)
+        self.assertEqual(profile.pseudo_dir, "/env/pp")
+        self.assertEqual(profile.orbital_dir, "/env/orb")
+
+    def test_explicit_empty_directory_is_preserved(self):
+        with patch.dict(os.environ, {
+            "ABACUS_PP_PATH": "/env/pp",
+            "ABACUS_ORB_PATH": "/env/orb",
+        }):
+            profile = AbacusProfile("abacus", pseudo_dir="", orbital_dir="")
+        self.assertEqual(profile.pseudo_dir, "")
+        self.assertEqual(profile.orbital_dir, "")
+
     def test_unset_or_empty_environment_leaves_directories_unset(self):
         with patch.dict(os.environ, {
             "ABACUS_PP_PATH": "",
