@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
+
+### Added
+
+- Default `pseudo_dir` and `orbital_dir` to `ABACUS_PP_PATH` and
+  `ABACUS_ORB_PATH` when the profile arguments are omitted (`None`); explicit
+  values, including an empty string, are preserved. These are the package's
+  only asset-directory environment defaults.
+
+### Fixed
 
 - Write ASE atom masses to STRU for each chemical species, including isotope
   masses; reject different masses within one species before creating the file.

@@ -109,12 +109,14 @@ class AbacusProfile(BaseProfile):
             `OMP_NUM_THREADS=1 mpirun -np X abacus`. Here please do not set
             the number of omp threads in `command`, instead, use `nomp=1`.
         pseudo_dir : str or Path, optional
-            The directory containing pseudopotential files. If omitted,
-            ``ABACUS_PP_PATH`` is used when set.
+            The directory containing pseudopotential files. If ``None`` (the
+            default), ``ABACUS_PP_PATH`` is used when set; an explicit value,
+            including an empty string, is preserved.
         orbital_dir : str or Path, optional
             The directory containing orbital basis files. This is only necessary
-            for an ABACUS-LCAO calculation. If omitted, ``ABACUS_ORB_PATH`` is
-            used when set.
+            for an ABACUS-LCAO calculation. If ``None`` (the default),
+            ``ABACUS_ORB_PATH`` is used when set; an explicit value, including
+            an empty string, is preserved.
         omp_num_threads : int, optional
             The number of omp threads to use.
         '''
@@ -123,9 +125,13 @@ class AbacusProfile(BaseProfile):
         # the base class
         super().__init__(command, **kwargs)
         # These two community conventions are the only environment fallbacks
-        # in this package; explicit arguments always take precedence.
-        self.pseudo_dir = pseudo_dir or os.environ.get("ABACUS_PP_PATH") or None
-        self.orbital_dir = orbital_dir or os.environ.get("ABACUS_ORB_PATH") or None
+        # in this package; explicit arguments always take precedence. Only an
+        # omitted (None) argument falls back, so an explicit empty string is
+        # preserved instead of being replaced by the environment.
+        self.pseudo_dir = (pseudo_dir if pseudo_dir is not None
+                           else (os.environ.get("ABACUS_PP_PATH") or None))
+        self.orbital_dir = (orbital_dir if orbital_dir is not None
+                            else (os.environ.get("ABACUS_ORB_PATH") or None))
 
         if omp_num_threads is not None:
             # set the number of omp threads for the present process

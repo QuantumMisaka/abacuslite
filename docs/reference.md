@@ -42,6 +42,12 @@ features, integrated ATST fixes and reader-instance isolation.
 
 This file contains the implementation of the Atomic Simulation Environment (ASE) calculator.
 
+`Abacus.restart` recovers pseudopotentials, orbitals and k-points from an
+existing directory: the STRU name comes from INPUT `stru_file`, and KPT is read
+only when the input cannot sample k-points implicitly. `Abacus.fixed_density`
+reuses the source calculation's charge density from `OUT.<suffix>` and honors an
+explicit `read_file_dir`. Both accept `inp=` overrides.
+
 ## io
 
 This directory contains the input/output (I/O) functions for extracting information from ABACUS dumped files. A summary is here:
@@ -94,6 +100,10 @@ Please look at detailed implementations in the following files.
 ### generalio.py
 
 This module contains the general I/O functions for ABACUS.
+
+`write_stru` writes the ASE mass of each species, including isotope masses set on
+the `Atoms` object, and rejects different masses within one species before
+creating the file.
 
 ### latestio.py
 
