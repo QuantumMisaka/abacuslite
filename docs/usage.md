@@ -39,6 +39,31 @@ cannot change the first one's reader. Use separate directories for separate
 calculations. Supported snapshots and validation limits are recorded in the
 [compatibility guide](compatibility-ci.md#develop-and-lts-engine-coverage).
 
+## Restart and fixed-density follow-ups
+
+`Abacus.restart` rebuilds a calculator from an existing calculation directory.
+It reads `INPUT`, takes the STRU filename from `stru_file` (default `STRU`) and
+reads `KPT` only when the input needs k-points from a file: explicit `kpts`,
+`gamma_only` and positive `kspacing` sampling run without one. Any other missing
+KPT file still raises. `inp=` overrides are merged over the INPUT values:
+
+```python
+from abacuslite import Abacus
+
+calc = Abacus.restart(directory="previous_run", inp={"stru_file": "CURRENT.STRU"})
+```
+
+`Abacus.fixed_density` starts an NSCF calculation from the source calculator's
+charge density. It reads `OUT.<suffix>` of the source calculation (default
+`OUT.ABACUS`) unless the call passes `read_file_dir`; an explicit directory
+always takes precedence:
+
+```python
+kpts = {"mode": "mp-sampling", "nk": [4, 4, 4]}
+nscf = calc.fixed_density(kpts)                        # reads OUT.<suffix>
+archived = calc.fixed_density(kpts, inp={"read_file_dir": "CHARGE_ARCHIVE"})
+```
+
 ## Run the examples
 
 The scripts live in the source checkout and sdist, not the runtime wheel.

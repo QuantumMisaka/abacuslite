@@ -11,12 +11,13 @@ ABACUS files without launching an engine. The current develop output format
 and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
-**Release line:** `1.1.1` (candidate; publication pending authorization). It
-adds calculator, restart and default-path corrections on top of `1.1.0`; the
-1.1.x line was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
+**Release line:** `1.2.0` (candidate; publication pending authorization). It
+adds the `ABACUS_PP_PATH`/`ABACUS_ORB_PATH` profile defaults and three
+calculator and restart corrections on top of `1.1.0`; the 1.x line was tested
+with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
 [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
 for the exact snapshots and current checks, and the
-[release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-19-1.1.1-release.md)
+[release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-19-1.2.0-release.md)
 for artifact and publication status.
 
 ### Key features
@@ -37,7 +38,7 @@ Requires **Python 3.10+** and **ASE 3.28+ (<4)**:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install 'abacuslite==1.1.1'
+python -m pip install 'abacuslite==1.2.0'
 python -m pip check
 ```
 
