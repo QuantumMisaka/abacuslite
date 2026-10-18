@@ -26,6 +26,9 @@ Moving code to `src/` changes packaging, not `import abacuslite` or public
 calculator/I/O module paths. Tests formerly embedded in production modules
 now live under `tests/`.
 
+See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
+the old ASE fork and the current write -> execute -> read lifecycle.
+
 | Runtime module | Responsibility |
 | --- | --- |
 | `core.py` | `AbacusProfile`, `AbacusTemplate`, ASE `Abacus` and `AbacusSocketIO` |
@@ -34,7 +37,7 @@ now live under `tests/`.
 | `utils/ksampling.py` | K-point paths and sampling helpers |
 
 ASE owns optimization/MD/NEB algorithms; ATST owns its workflow and launcher
-policy. Neither ATST nor Forge is a runtime dependency of this plugin.
+policy. Neither ATST nor Forge is a runtime dependency of this package.
 [Package boundaries](design.md) define this separation. The
 [integration audit](upstream-integration.md) records preserved ABACUS
 features, integrated ATST fixes and reader-instance isolation.

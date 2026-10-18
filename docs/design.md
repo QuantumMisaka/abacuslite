@@ -1,7 +1,7 @@
-# Independent ASE plugin
+# Independent ASE calculator package
 
 The maintainer approved establishing `QuantumMisaka/abacuslite` and continuing
-implementation on 2026-10-16. This repository owns the installable plugin;
+implementation on 2026-10-16. This repository owns the installable calculator package;
 ABACUS retains engine integration tests, and ATST and Forge consume its package.
 
 The initial implementation preserves `Abacus`, `AbacusProfile`, `AbacusSocketIO`,
@@ -9,6 +9,9 @@ and the existing `abacuslite.io` and `abacuslite.utils` module paths. Source
 layout changes must not be combined with an unrelated API rewrite. Preserve
 upstream socket support and diagnostics while merging ATST's general-purpose
 SCF frame, Fermi-level and point-KPT corrections.
+
+See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
+the old ASE fork and the current lifecycle.
 
 I/O functions remain independent of engine execution. Output parsing is
 read-only and repeatable. A calculator's choice of legacy/latest output reader

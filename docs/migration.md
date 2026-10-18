@@ -1,6 +1,6 @@
 # Installing and migrating to independent abacuslite
 
-The independent package retains the ABACUS plugin's ASE calculator design and
+The independent package retains the ABACUS ASE interface design and
 module responsibilities. The `src` layout separates installable code from
 examples and test assets; consumers still import `abacuslite`.
 
@@ -69,7 +69,7 @@ Verify `python -m pip check` after installing consumer dependencies as well.
 | `abacuslite.io.generalio`, `legacyio`, `latestio` | Keep module paths and explicitly selected reader functions |
 | ATST workflow API / CLI | Keep ATST as the workflow entry; verify it selects the installed external package |
 | Direct `atst_tools.external.ASE_interface.abacuslite...` import | Maintainer migration is required: use ATST's adapter for calculators/profile policy, or `abacuslite.io...` for pure I/O |
-| Forge collection | Keep the explicit optional parser selection and native default; validate the supported plugin/Forge pair |
+| Forge collection | Keep the explicit optional parser selection and native default; validate the supported package/Forge pair |
 | Running tests from the old production modules | Use `pytest` against `tests/`; fixtures and examples ship in sdist, not the runtime wheel |
 | Examples relying on ABACUS's parent-directory layout | Set `ABACUS_PP_ORB` and `ABACUS_COMMAND`; install the package before running |
 

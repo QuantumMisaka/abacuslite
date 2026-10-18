@@ -59,7 +59,7 @@ all ABACUS versions.
 
 General parser/calculator fixes should become tests and fixes here. Engine
 format changes belong in ABACUS and should carry a minimal output fixture and
-a linked plugin compatibility change. ATST owns workflow and launcher policy.
+a linked abacuslite compatibility change. ATST owns workflow and launcher policy.
 While upstream migration is pending, record necessary backports by source
 commit and behavior; neither automatically overwrite another repository nor
 maintain an untracked alternative implementation.
