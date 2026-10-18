@@ -31,7 +31,10 @@ from abacuslite.io.generalio import (
     write_kpt
 )
 
-from abacuslite.core import (switch_io_backend_version, AbacusProfile, AbacusTemplate, Abacus, AbacusSocketIO, __LEGACYIO__)
+from abacuslite.core import (
+    switch_io_backend_version, AbacusProfile, AbacusTemplate, Abacus,
+    AbacusSocketIO, SOCKET_METADATA_SCHEMA, __LEGACYIO__,
+)
 
 
 class TestAbacusProfileAssetDefaults(unittest.TestCase):
@@ -81,6 +84,9 @@ class TestAbacusCalculator(unittest.TestCase):
 
     here = Path(__file__).resolve().parents[1] / 'fixtures/io'
     pporb = Path(os.environ.get('ABACUS_PP_ORB', 'missing-PP_ORB'))
+
+    def test_socket_metadata_schema_is_v1(self):
+        self.assertEqual(SOCKET_METADATA_SCHEMA, 'abacus.socket.properties.v1')
 
     def test_socketio_species_order_mapping(self):
         atoms = Atoms(symbols=['Si', 'O', 'C', 'Si', 'O', 'C'])

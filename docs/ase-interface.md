@@ -60,4 +60,6 @@ ASE property request
 - ABACUS supplies the engine; ATST and Forge own higher-level workflows.
 
 See [migration](migration.md) for caller changes, [supported versions](supported-versions.md)
-for tested engines, and [UPSTREAM.md](../UPSTREAM.md) for source attribution.
+for tested engines, [the socket adapter contract](socket-contract.md) for the
+engine/adapter boundary, and [UPSTREAM.md](../UPSTREAM.md) for source
+attribution.

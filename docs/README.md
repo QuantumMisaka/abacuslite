@@ -28,6 +28,7 @@ cover use, compatibility and maintenance.
 | [Contributing](../CONTRIBUTING.md) | Development setup, tests, packaging and review |
 | [Design](design.md) | Package responsibilities and architectural constraints |
 | [From ase-abacus to abacuslite](ase-interface.md) | Differences from the old ASE fork and the current architecture |
+| [Socket adapter contract](socket-contract.md) | Engine/adapter schema, property masks and compatibility |
 | [Module reference](reference.md) | Public API and output-format details |
 | [Source provenance](../UPSTREAM.md) | Original authorship, imported revisions and adaptations |
 | [Upstream integration audit](upstream-integration.md) | Source comparison and reader-isolation rationale |

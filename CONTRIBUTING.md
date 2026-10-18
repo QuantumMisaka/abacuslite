@@ -89,7 +89,8 @@ compatibility guide.
 ## Cross-repository changes
 
 Shared contracts include the ASE calculator API, ABACUS output formats and the
-socket protocol. For a change that crosses repositories:
+socket protocol ([adapter contract](docs/socket-contract.md)). For a change
+that crosses repositories:
 
 1. Agree on the compatibility and version rule first; additive changes and
    breaking changes need different rollout paths.

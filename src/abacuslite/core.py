@@ -62,6 +62,9 @@ from abacuslite.io.generalio import (
 )
 
 __LEGACYIO__ = True
+SOCKET_METADATA_SCHEMA = 'abacus.socket.properties.v1'
+
+
 def _uses_legacy_io(version: str) -> bool:
     """Resolve a format without mutating another calculator's reader."""
     match = re.match(
@@ -1290,7 +1293,7 @@ class AbacusSocketIO(SocketIOCalculator):
             raise ValueError('ABACUS socket extras are not valid UTF-8 JSON') from error
         if not isinstance(metadata, dict):
             raise ValueError('ABACUS socket extras must be a JSON object')
-        if metadata.get('schema') != 'abacus.socket.properties.v1':
+        if metadata.get('schema') != SOCKET_METADATA_SCHEMA:
             raise ValueError('unsupported ABACUS socket extras schema')
         present = metadata.get('present')
         if not isinstance(present, list):

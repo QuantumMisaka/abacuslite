@@ -4,16 +4,20 @@
 ABACUS releases. The table lists the snapshots covered by real-engine checks; it
 is not a guarantee for every commit or build configuration.
 
-| ABACUS snapshot | Output format | Reader | Socket | Checks |
-| --- | --- | --- | --- | --- |
-| develop `73cd094` (v3.11.0-beta10) | latest | `latestio` | yes | 9/9 |
-| LTS `725bf47` (v3.10.1) | legacy | `legacyio` | no | 9/9 |
+| ABACUS snapshot | Output format | Reader | Socket | Schema | Checks |
+| --- | --- | --- | --- | --- | --- |
+| develop `73cd094` (v3.11.0-beta10) | latest | `latestio` | yes | v1 | 9/9 |
+| LTS `725bf47` (v3.10.1) | legacy | `legacyio` | no | — | 9/9 |
 
 Both snapshots pass nine real-engine checks, including socket on develop and a
 seeded native-MD case on LTS. The checks cover SCF, ASE relaxation/MD, native
 MD, band structure, magnetic moments and socket handoff. They are interface
 checks, not convergence studies. See
 [compatibility and CI](compatibility-ci.md) for evidence.
+
+Socket support uses `abacus.socket.properties.v1`; the adapter rejects unknown
+schemas. See the [socket adapter contract](socket-contract.md) for the
+engine/adapter boundary.
 
 ## Reader selection
 
