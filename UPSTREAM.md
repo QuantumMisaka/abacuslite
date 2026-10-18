@@ -11,6 +11,11 @@ This is a snapshot import; the original Git history is linked, not rewritten
 or claimed as newly authored. Original author notices are retained. The root
 LICENSE is copied from the same ABACUS commit. ATST adaptations are recorded below with their source and regression evidence.
 
+The fixed-cell i-PI socket driver and `AbacusSocketIO` were introduced in
+ABACUS PR #7609 (`4c9547460c2b25855b3c78900dfc1ecca0c8f40d`, Jianrui Geng)
+and refactored in PR #7939 (`87d500b1fbcf0945374dc9d59cfde9fc32ae9c84`).
+Both changes are included in the `4b92455` snapshot.
+
 ## Integrated ATST adaptations
 
 Source: https://github.com/QuantumMisaka/atst-tools/tree/45d8c78de8a605c127cd4c36742d0c9525a0a6b6

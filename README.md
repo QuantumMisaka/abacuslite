@@ -120,6 +120,11 @@ for assets, engine features, cleanup behavior and the complete table.
 - [Yike Huang (@kirk0830)](https://github.com/kirk0830)
 - [Zhaoqing Liu (@QuantumMisaka)](https://github.com/QuantumMisaka)
 
+## Contributors
+
+- [Jianrui Geng (@Phorbol)](https://github.com/Phorbol) — fixed-cell i-PI
+  socket driver and `AbacusSocketIO` (ABACUS #7609).
+
 ## Acknowledgments
 
 Thanks to the ABACUS community for their support and contributions.
