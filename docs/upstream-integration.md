@@ -68,10 +68,12 @@ Record necessary backports by source commit and behavior; neither repository
 automatically overwrites the other or maintains an untracked alternative
 implementation.
 
-ABACUS does not vendor this package or include it as a git submodule. Its ASE
-workflow installs a published or reviewed wheel and runs the engine-side
-harness in `interfaces/ASE_interface/tests`; this repository's scheduled engine
-jobs build ABACUS develop and LTS heads. A socket schema or wire-format break
+[ABACUS PR #8175](https://github.com/deepmodeling/abacus-develop/pull/8175)
+implements the agreed external-only direction and remains pending upstream.
+Its ASE workflow installs a published or reviewed wheel and runs the engine-side
+harness in `interfaces/ASE_interface/tests`; it does not add a submodule or
+vendor this package. This repository's scheduled engine jobs build ABACUS
+develop and LTS heads. A socket schema or wire-format break
 requires linked PRs and a versioned transition in both repositories.
 
 ## Architecture and portability follow-up

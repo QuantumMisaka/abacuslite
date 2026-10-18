@@ -8,9 +8,10 @@ file I/O must work without an ABACUS executable.
 
 - ASE owns calculator contracts and optimization/MD/NEB algorithms.
 - ABACUS owns the engine, output formats, assets and engine-side tests. Support
-  develop and LTS readers, bound to each calculator. ABACUS keeps only the
-  engine-side compatibility harness under `interfaces/ASE_interface`; this
-  package is the maintained calculator and parser implementation.
+  develop and LTS readers, bound to each calculator. The agreed external-only
+  target keeps the engine-side harness under `interfaces/ASE_interface`;
+  upstream adoption is tracked in ABACUS PR #8175. This package owns the
+  calculator and parser implementation.
 - ATST and Forge consume this package and own workflow, launcher and result
   contracts. Neither is a runtime dependency.
 - Keep general parser/calculator fixes here. Adapters may forward, but do not

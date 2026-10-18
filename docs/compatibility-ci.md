@@ -23,9 +23,9 @@ engine-side candidates remains separate.
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
 | Wheel/sdist and offline contracts | Release source `94a26e4` passed local/hosted checks; exact tag artifacts published and indexed install verified | Release acceptance complete for 1.1.0 |
-| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; final ATST candidate also passes its six hosted jobs | Consumer main-branch adoption and a new ATST release remain separate |
+| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; ATST adoption merged at `49c8626` with six successful hosted jobs | ATST 2.3.0 publication remains pending |
 | Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass locally and remotely; the engine-side harness is ready for external-only adoption | Upstream ABACUS PR and its required-check configuration |
-| Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | Upstream ATST adoption and required-check configuration |
+| Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | ATST required-check configuration remains a separate maintenance decision |
 
 Exact revisions, environments, raw-output links and earlier GPU/consumer runs
 are in the [acceptance record](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md).

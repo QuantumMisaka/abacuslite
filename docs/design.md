@@ -28,10 +28,11 @@ abacustest/abacusforge.
 ## Boundaries
 
 ATST owns workflow configuration and launcher policy. Forge owns its native
-default, optional parser and fact projection. ABACUS keeps only the engine-side
-compatibility harness under `interfaces/ASE_interface`; this package is the
-maintained calculator and parser implementation. ABACUS is not a submodule
-consumer and does not vendor this source.
+default, optional parser and fact projection. The agreed external-only target
+keeps ABACUS's engine-side harness under `interfaces/ASE_interface` and uses
+this package for the calculator and parser. The upstream implementation is
+pending in [ABACUS PR #8175](https://github.com/deepmodeling/abacus-develop/pull/8175);
+it installs the package without vendoring it or adding a submodule.
 
 Package, engine and output-format versions are distinct. See the
 [compatibility record](compatibility-ci.md) for tested snapshots.
