@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.1
 
 - Write ASE atom masses to STRU for each chemical species, including isotope
   masses; reject different masses within one species before creating the file.

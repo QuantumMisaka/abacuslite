@@ -39,6 +39,8 @@ cover use, compatibility and maintenance.
 Dated plans and evidence describe what was tested at a particular revision.
 They are historical records; use the guides above for current behavior.
 
+- [1.1.1 release](superpowers/plans/2026-10-19-1.1.1-release.md):
+  candidate artifacts, verification and pending publication gates.
 - [Post-release ATST and engine integration](superpowers/plans/2026-10-18-atst-next-actions.md):
   external-only consumers, dual-engine builds and hosted checks.
 - [1.1.0 release](superpowers/plans/2026-10-17-1.1.0-release.md):
