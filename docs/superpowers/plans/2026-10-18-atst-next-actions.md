@@ -1,5 +1,9 @@
 # Post-release ATST and engine integration
 
+> Status (2026-10-19): ATST external-only integration merged to `main` at
+> `49c8626` (2.3.0); merged candidate branches were removed. ABACUS
+> external-only adoption and the socket contract remain a separate upstream PR.
+
 ## Scope and decisions
 
 The maintainer requested continuation with `subagent-driven-development` on
@@ -184,13 +188,11 @@ community PR delivery and the next Forge work remain separate follow-ups.
 | ABACUS develop harness and candidate lanes | `e446bda12f852a29d9cffd883ef29642e83cc6a6` | [39058538488](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39058538488): bundled and external each 9/9 |
 | ABACUS LTS external-harness workflow | `00028595fad799370e9cd1d5fe35abffa3b0ed75` | [39059239649](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649): external legacy 9/9 |
 
-Public branches are `integrate/dual-engine-external-consumers` (plugin),
-`integrate/abacuslite-external-only` (ATST), and
-`integrate/abacuslite-portable-ci` / `integrate/abacuslite-lts-ci` (personal
-ABACUS fork). The plugin PR pin remains the reviewed ATST runner `07aba237`;
-subsequent ATST commits only retain the separately executed runtime harness.
-Its production wheel files are unchanged from `8246d68`. The schedule follows
-the public external-only candidate branch until it reaches main.
+The ATST candidate was merged to `main` at `49c8626`; the plugin workflow now
+pins that commit and the weekly schedule follows `main`. The ABACUS harness
+candidates remain `integrate/abacuslite-portable-ci` and
+`integrate/abacuslite-lts-ci` on the personal fork until the external-only
+upstream PR is reviewed.
 
 ### Local and returned-artifact verification
 

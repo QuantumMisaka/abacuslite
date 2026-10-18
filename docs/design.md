@@ -28,9 +28,10 @@ abacustest/abacusforge.
 ## Boundaries
 
 ATST owns workflow configuration and launcher policy. Forge owns its native
-default, optional parser and fact projection. ABACUS's bundled
-`interfaces/ASE_interface` is the historical source; this package is the
-maintained implementation and is expected to replace it.
+default, optional parser and fact projection. ABACUS keeps only the engine-side
+compatibility harness under `interfaces/ASE_interface`; this package is the
+maintained calculator and parser implementation. ABACUS is not a submodule
+consumer and does not vendor this source.
 
 Package, engine and output-format versions are distinct. See the
 [compatibility record](compatibility-ci.md) for tested snapshots.

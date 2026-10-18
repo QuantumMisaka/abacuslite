@@ -64,9 +64,15 @@ all ABACUS versions.
 General parser/calculator fixes should become tests and fixes here. Engine
 format changes belong in ABACUS and should carry a minimal output fixture and
 a linked abacuslite compatibility change. ATST owns workflow and launcher policy.
-While upstream migration is pending, record necessary backports by source
-commit and behavior; neither automatically overwrite another repository nor
-maintain an untracked alternative implementation.
+Record necessary backports by source commit and behavior; neither repository
+automatically overwrites the other or maintains an untracked alternative
+implementation.
+
+ABACUS does not vendor this package or include it as a git submodule. Its ASE
+workflow installs a published or reviewed wheel and runs the engine-side
+harness in `interfaces/ASE_interface/tests`; this repository's scheduled engine
+jobs build ABACUS develop and LTS heads. A socket schema or wire-format break
+requires linked PRs and a versioned transition in both repositories.
 
 ## Architecture and portability follow-up
 
