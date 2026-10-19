@@ -130,7 +130,11 @@ fully external: no submodule and no vendored plugin. `interfaces/ASE_interface`
 keeps only the engine-side harness, and CI installs the published 1.2.0 wheel
 or a reviewed candidate. The harness passed all nine develop checks and the
 LTS external lane in the earlier candidate `e446bda`; that candidate also
-exercised a now-retired bundled lane. The
+exercised a now-retired bundled lane. The current `tests/engine-refs.json`
+tuple pins the harness and the develop engine to the reviewed ABACUS PR #8175
+head `1bf602a` as a pre-merge candidate, with `engine_repository` still
+`deepmodeling/abacus-develop`; both must be rebound to the merged upstream
+commit after #8175 merges. The
 [LTS hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649)
 passed its external lane, and all 425 retained raw-file hashes were checked
 after download. External-only ABACUS adoption is a separate upstream PR.
