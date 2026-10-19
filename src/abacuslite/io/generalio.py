@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from io import TextIOWrapper
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Mapping
 
 import numpy as np
 from ase.atoms import Atoms
@@ -14,6 +14,20 @@ from ase.build import bulk
 from ase.constraints import FixAtoms, FixCartesian
 from ase.data import chemical_symbols, atomic_masses
 ATOM_MASS = dict(zip(chemical_symbols, atomic_masses.tolist()))
+
+
+def energy_components(ener: Mapping[str, float]) -> Dict[str, float]:
+    """Return standard ASE energy components from an ABACUS energy table.
+
+    ABACUS prints both ``E_KohnSham`` and ``E_entropy(-TS)``.  ASE uses
+    ``energy`` for the total energy and ``free_energy`` for the
+    force-consistent energy; the latter subtracts the entropy term.
+    """
+    e_kohn_sham = float(ener['E_KohnSham'])
+    e_entropy = float(ener.get('E_entropy(-TS)', 0.0))
+    return {
+        'free_energy': e_kohn_sham - e_entropy,
+    }
 
 def load_pseudo(pseudo_dir: str) -> Dict[str, str]:
     '''load the pseudopotential mapping from the pseudo_dir'''

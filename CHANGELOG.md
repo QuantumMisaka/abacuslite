@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Report `free_energy = E_KohnSham - E_entropy(-TS)` and keep
+  `energy = E_KohnSham`. This preserves the force-consistent energy required
+  by FCP v2 and ATST constant-potential calculations on smeared systems.
+
 ## 1.2.0
 
 Published on [PyPI](https://pypi.org/project/abacuslite/1.2.0/) on
