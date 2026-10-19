@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.2.1
+
+Released on 2026-10-20.
 
 ### Fixed
 

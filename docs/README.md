@@ -41,6 +41,8 @@ They are historical records; use the guides above for current behavior.
 
 - [1.2.0 release](superpowers/plans/2026-10-19-1.2.0-release.md):
   candidate artifacts, verification and pending publication gates.
+- [1.2.1 release](superpowers/plans/2026-10-20-1.2.1-release.md):
+  entropy-aware `free_energy` fix and publication record.
 - [Post-release ATST and engine integration](superpowers/plans/2026-10-18-atst-next-actions.md):
   external-only consumers, dual-engine builds and hosted checks.
 - [1.1.0 release](superpowers/plans/2026-10-17-1.1.0-release.md):

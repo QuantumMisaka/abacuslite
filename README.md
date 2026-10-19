@@ -11,13 +11,13 @@ ABACUS files without launching an engine. The current develop output format
 and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
-**Stable release:** [1.2.0 on PyPI](https://pypi.org/project/abacuslite/1.2.0/).
-It adds the `ABACUS_PP_PATH`/`ABACUS_ORB_PATH` profile defaults and three
-calculator and restart corrections on top of `1.1.0`; the 1.x line was tested
-with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
+**Stable release:** [1.2.1 on PyPI](https://pypi.org/project/abacuslite/1.2.1/).
+It fixes the entropy-aware `free_energy` handoff used by FCP v2 and ATST
+constant-potential calculations; `energy` remains `E_KohnSham`. The 1.x line
+was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
 [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
 for the exact snapshots and current checks, and the
-[release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-19-1.2.0-release.md)
+[release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-20-1.2.1-release.md)
 for artifact and publication status.
 
 ### Key features
@@ -38,7 +38,7 @@ Requires **Python 3.10+** and **ASE 3.28+ (<4)**:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install 'abacuslite==1.2.0'
+python -m pip install 'abacuslite==1.2.1'
 python -m pip check
 ```
 
