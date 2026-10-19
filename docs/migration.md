@@ -19,8 +19,8 @@ source-level detail.
 ## Install one implementation
 
 Use a fresh virtual environment, following README.md.
-Install the [published stable package](https://pypi.org/project/abacuslite/1.1.0/)
-with `pip install 'abacuslite==1.1.0'`. For development use `pip install -e .`.
+Install the [published stable package](https://pypi.org/project/abacuslite/1.2.0/)
+with `pip install 'abacuslite==1.2.0'`. For development use `pip install -e .`.
 
 Do not run consumer validation from a directory containing another top-level
 `abacuslite` source tree. In a virtual environment, verify the installed import
