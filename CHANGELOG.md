@@ -2,6 +2,9 @@
 
 ## 1.2.0
 
+Published on [PyPI](https://pypi.org/project/abacuslite/1.2.0/) on
+2026-10-19 (UTC+08:00).
+
 ### Added
 
 - Default `pseudo_dir` and `orbital_dir` to `ABACUS_PP_PATH` and

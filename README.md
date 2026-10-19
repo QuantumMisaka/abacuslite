@@ -11,8 +11,8 @@ ABACUS files without launching an engine. The current develop output format
 and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
-**Release line:** `1.2.0` (candidate; publication pending authorization). It
-adds the `ABACUS_PP_PATH`/`ABACUS_ORB_PATH` profile defaults and three
+**Stable release:** [1.2.0 on PyPI](https://pypi.org/project/abacuslite/1.2.0/).
+It adds the `ABACUS_PP_PATH`/`ABACUS_ORB_PATH` profile defaults and three
 calculator and restart corrections on top of `1.1.0`; the 1.x line was tested
 with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
 [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
