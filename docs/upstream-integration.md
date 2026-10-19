@@ -1,7 +1,7 @@
 # ABACUS and ATST integration audit
 
 This audit records the source comparison performed when the independent
-package was created. The maintained package is now version 1.1.0, published
+package was created. The maintained package is now version 1.2.0, published
 on PyPI; later changes and validation are recorded in
 [CHANGELOG.md](../CHANGELOG.md) and the
 [compatibility guide](compatibility-ci.md).
