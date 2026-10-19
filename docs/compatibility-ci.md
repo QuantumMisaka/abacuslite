@@ -5,25 +5,26 @@
 For a short user-facing summary of tested engines and limitations, see
 [supported versions](supported-versions.md).
 
-As recorded on 2026-10-18 (UTC+08:00), stable `1.1.0` is
-[published on PyPI](https://pypi.org/project/abacuslite/1.1.0/). Both registry
-file digests match the verified tag artifacts; a fresh indexed install passed
-dependency checks and 148 offline tests (19 engine/consumer opt-in skips).
-See the [release record](superpowers/plans/2026-10-17-1.1.0-release.md) for
-artifact identities and retained evidence. Local package, consumer and real-engine
-acceptance exists. Package and installed-consumer checks have passed remotely
-on `v1.1.0` ([tag run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39036505393));
-the post-release candidate also passed the complete
-[dual-engine and external-consumer gate](https://github.com/QuantumMisaka/abacuslite/actions/runs/39059543765)
-at `6de3b83`. Plugin main now requires the GitHub Actions `compatibility-gate`,
+As recorded on 2026-10-19 (UTC+08:00), stable `1.2.0` is
+[published on PyPI](https://pypi.org/project/abacuslite/1.2.0/). Both registry
+file digests match the verified tag artifacts, and a fresh indexed install
+passed dependency checks. See the
+[1.2.0 release record](superpowers/plans/2026-10-19-1.2.0-release.md) for
+artifact identities and retained evidence. Local package, consumer and
+real-engine acceptance exists. Both package lanes, both ABACUS engine lanes and
+the installed-consumer lanes passed remotely on `v1.2.0`
+([tag run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39195082709)),
+and the verified artifact pair was uploaded by the
+[publish run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39195873721).
+Plugin main now requires the GitHub Actions `compatibility-gate`,
 including for administrators, with branches required to be up to date. The API
 configuration has been verified. Community adoption of the consumer and
 engine-side candidates remains separate.
 
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
-| Wheel/sdist and offline contracts | Release source `94a26e4` passed local/hosted checks; exact tag artifacts published and indexed install verified | Release acceptance complete for 1.1.0 |
-| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; ATST adoption merged at `49c8626` with six successful hosted jobs | ATST 2.3.0 publication remains pending |
+| Wheel/sdist and offline contracts | `1.2.0` tag run passed both package lanes and the aggregate gate; published PyPI digests match the tag artifacts and a fresh indexed install passed | Release acceptance complete for 1.2.0 |
+| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; pins moved to ATST `v2.3.0` tag commit `b8c3218` (requires `abacuslite>=1.2.0,<2`) and Forge `d8d1a74` (`[abacuslite]` extra pins `1.2.0`) | Keep consumer pins aligned with abacuslite releases |
 | Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass locally and remotely; the engine-side harness is ready for external-only adoption | Upstream ABACUS PR and its required-check configuration |
 | Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | ATST required-check configuration remains a separate maintenance decision |
 
@@ -82,11 +83,11 @@ Ordinary pytest skips consumers; explicit opt-in must fail if a consumer is
 missing. Consumer dependencies do not become plugin runtime dependencies.
 See [Contributing](../CONTRIBUTING.md) for package setup and verification.
 
-PR jobs pin ATST `main` at the 2.3.0 merge commit `49c8626` and a reviewed
-Forge commit in `.github/workflows/tests.yml`. Weekly checks follow ATST and
-Forge `main`; manual runs accept `atst_ref` and `forge_ref` for coordinated
-candidates. Candidate pins must be publicly fetchable before a hosted run is
-accepted. Weekly checks supplement PR checks.
+PR jobs pin the ATST `v2.3.0` tag commit `b8c3218` and Forge `d8d1a74` in
+`.github/workflows/tests.yml`. Weekly checks follow ATST and Forge `main`;
+manual runs accept `atst_ref` and `forge_ref` for coordinated candidates.
+Candidate pins must be publicly fetchable before a hosted run is accepted.
+Weekly checks supplement PR checks.
 
 ## Develop and LTS engine coverage
 
@@ -126,10 +127,14 @@ documented boundary, not a substitute for one of those checks.
 The ABACUS target defined in
 [issue #8165](https://github.com/deepmodeling/abacus-develop/issues/8165) is
 fully external: no submodule and no vendored plugin. `interfaces/ASE_interface`
-keeps only the engine-side harness, and CI installs the published 1.1.0 wheel
+keeps only the engine-side harness, and CI installs the published 1.2.0 wheel
 or a reviewed candidate. The harness passed all nine develop checks and the
 LTS external lane in the earlier candidate `e446bda`; that candidate also
-exercised a now-retired bundled lane. The
+exercised a now-retired bundled lane. The current `tests/engine-refs.json`
+tuple pins the harness and the develop engine to the reviewed ABACUS PR #8175
+head `1bf602a` as a pre-merge candidate, with `engine_repository` still
+`deepmodeling/abacus-develop`; both must be rebound to the merged upstream
+commit after #8175 merges. The
 [LTS hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649)
 passed its external lane, and all 425 retained raw-file hashes were checked
 after download. External-only ABACUS adoption is a separate upstream PR.
@@ -190,7 +195,7 @@ changes that could remove the gate. If merge queues are introduced, add the
 branch-protection details were unavailable to the inspecting account, so its
 required-check enforcement remains unconfirmed. The plugin protection change belongs to this post-release
 CI rollout. The separate GitHub `pypi` environment still only accepts
-deployments from main; published 1.1.0 artifacts and its tag are unchanged.
+deployments from main; published 1.2.0 artifacts and its tag are unchanged.
 
 GitHub references:
 [required checks and skipped workflows](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks),

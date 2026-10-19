@@ -3,11 +3,11 @@
   "engine_repository": "deepmodeling/abacus-develop",
   "harness": {
     "repository": "QuantumMisaka/abacus-develop",
-    "ref": "e446bda12f852a29d9cffd883ef29642e83cc6a6"
+    "ref": "1bf602a0b75800087a269e4f2935538093e699a1"
   },
   "engines": {
     "develop": {
-      "ref": "73cd094361f77574f9b28e825913e00f1d2c742a",
+      "ref": "1bf602a0b75800087a269e4f2935538093e699a1",
       "expected_format": "latest",
       "binary": "abacus_basic_para"
     },
@@ -19,7 +19,7 @@
   },
   "assets": {
     "repository": "deepmodeling/abacus-develop",
-    "ref": "73cd094361f77574f9b28e825913e00f1d2c742a",
+    "ref": "1bf602a0b75800087a269e4f2935538093e699a1",
     "directory": "tests/PP_ORB",
     "required_sha256": {
       "Si_ONCV_PBE-1.0.upf": "481a5fae1167fd712d4e8e2e4df33f8bfc1e7d2abbc0565290d39fbba9dccb41",
