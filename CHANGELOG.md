@@ -6,9 +6,12 @@ Release candidate prepared on 2026-10-20; publication pending.
 
 ### Fixed
 
-- Report `free_energy = E_KohnSham - E_entropy(-TS)` and keep
-  `energy = E_KohnSham`. This preserves the force-consistent energy required
-  by FCP v2 and ATST constant-potential calculations on smeared systems.
+- Preserve `energy = free_energy = E_KohnSham`, the force-consistent ABACUS
+  functional, and expose `energy_without_entropy = E_KohnSham - E_entropy(-TS)`
+  separately when the entropy term is present. This repairs the missing
+  no-entropy handoff needed by ATST's reference-only FCP v2 comparison without
+  changing ASE optimizer energies. Both legacy and latest readers retain
+  frame-local metadata through the file-backed calculator.
 
 ## 1.2.0
 

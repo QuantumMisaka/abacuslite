@@ -17,16 +17,22 @@ ATOM_MASS = dict(zip(chemical_symbols, atomic_masses.tolist()))
 
 
 def energy_components(ener: Mapping[str, float]) -> Dict[str, float]:
-    """Return standard ASE energy components from an ABACUS energy table.
+    """Return optional energy metadata from one ABACUS energy table.
 
-    ABACUS prints both ``E_KohnSham`` and ``E_entropy(-TS)``.  ASE uses
-    ``energy`` for the total energy and ``free_energy`` for the
-    force-consistent energy; the latter subtracts the entropy term.
+    ``E_KohnSham`` already includes ``E_entropy(-TS)`` and remains the
+    force-consistent ASE energy. The separate no-entropy value is metadata,
+    not an ASE ``free_energy`` replacement. Missing entropy stays unknown.
+
+    Args:
+        ener: Frame-local ABACUS energies in eV.
+
+    Returns:
+        The no-entropy energy in eV when its entropy term is available.
     """
-    e_kohn_sham = float(ener['E_KohnSham'])
-    e_entropy = float(ener.get('E_entropy(-TS)', 0.0))
+    if 'E_entropy(-TS)' not in ener:
+        return {}
     return {
-        'free_energy': e_kohn_sham - e_entropy,
+        'energy_without_entropy': float(ener['E_KohnSham']) - float(ener['E_entropy(-TS)']),
     }
 
 def load_pseudo(pseudo_dir: str) -> Dict[str, str]:

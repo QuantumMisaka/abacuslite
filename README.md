@@ -11,9 +11,10 @@ ABACUS files without launching an engine. The current develop output format
 and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
-**Stable release:** [1.2.1 on PyPI](https://pypi.org/project/abacuslite/1.2.1/).
-It fixes the entropy-aware `free_energy` handoff used by FCP v2 and ATST
-constant-potential calculations; `energy` remains `E_KohnSham`. The 1.x line
+**Release candidate:** 1.2.1 (publication pending); the latest published
+package is [1.2.0](https://pypi.org/project/abacuslite/1.2.0/).
+The candidate exposes explicit no-entropy energy metadata for ATST reference
+comparisons while preserving standard ASE energy values. The 1.x line
 was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
 [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
 for the exact snapshots and current checks, and the
@@ -38,7 +39,7 @@ Requires **Python 3.10+** and **ASE 3.28+ (<4)**:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install 'abacuslite==1.2.1'
+python -m pip install 'abacuslite==1.2.0'
 python -m pip check
 ```
 

@@ -327,17 +327,18 @@ class TestLegacyIO(unittest.TestCase):
                 self.assertIn(k, e_ry)
                 self.assertAlmostEqual(ei_ev, e_ry[k] * Ry / eV, delta=1e-2)
 
-    def test_read_abacus_out_exposes_entropy_corrected_energy(self):
-        """Expose E_KohnSham and the entropy-corrected free energy."""
+    def test_read_abacus_out_preserves_free_energy_and_exposes_internal_energy(self):
+        """Keep force-consistent energy and expose the separate no-entropy value."""
         source = Path(__file__).resolve().parents[1] / 'fixtures/multiframe_md_legacy/running_md.log'
         atoms = read_abacus_out(source)[-1]
 
         self.assertAlmostEqual(atoms.get_potential_energy(), -1940.5509086572, delta=1e-9)
         self.assertAlmostEqual(
             atoms.get_potential_energy(force_consistent=True),
-            -1940.3851061129,
+            -1940.5509086572,
             delta=1e-9,
         )
+        self.assertAlmostEqual(atoms.info["energy_without_entropy"], -1940.3851061129, delta=1e-9)
 
     def test_read_kpoints_from_running_log(self):
         fn = self.testfiles / 'lcao-symm0-nspin2-multik-cellrelax_'

@@ -42,3 +42,8 @@ leaves the existing reader unchanged. For output-only work, call
 
 See [compatibility and CI](compatibility-ci.md) for revisions, environments
 and retained evidence.
+
+## Energy metadata (1.2.1)
+
+Both file readers preserve standard ASE energy values and expose the separate
+no-entropy energy when available. See the [energy reference](reference.md#energy-metadata-121).

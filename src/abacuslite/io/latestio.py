@@ -507,9 +507,9 @@ def read_abacus_out(fileobj,
         # in this case, we set them to None
         frs  = None if is_invalid_arr(frs)  else frs[ind]
         strs = None if is_invalid_arr(strs) else full_3x3_to_voigt_6_stress(strs)
-        components = energy_components(ener)
+        atoms.info.update(energy_components(ener))
         calc = SinglePointDFTCalculator(atoms=atoms, energy=ener['E_KohnSham'],
-                                        free_energy=components['free_energy'],
+                                        free_energy=ener['E_KohnSham'],
                                         forces=frs, stress=strs,
                                         magmoms=mag[ind], efermi=ener.get('E_Fermi'),
                                         ibzkpts=kvecd, dipole=None)
