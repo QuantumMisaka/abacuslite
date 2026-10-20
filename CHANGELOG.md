@@ -2,7 +2,7 @@
 
 ## 1.2.1
 
-Released on 2026-10-20.
+Release candidate prepared on 2026-10-20; publication pending.
 
 ### Fixed
 
