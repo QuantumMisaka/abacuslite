@@ -6,16 +6,11 @@ calculator usage and examples are in [the usage guide](usage.md).
 
 ## Public API
 
-The supported user-facing entry points are:
-
-- `abacuslite.Abacus`, `abacuslite.AbacusProfile`, `abacuslite.AbacusSocketIO`
-- `abacuslite.io.generalio.read_input`, `read_stru`, `read_kpt`,
-  `write_input`, `write_stru`, `write_kpt`
-- `abacuslite.io.legacyio.read_abacus_out`, `abacuslite.io.latestio.read_abacus_out`
-- `abacuslite.utils.ksampling` helpers
-
-Other names are implementation details. The format tables below are primarily
-for maintainers and consumers that need to understand a specific output file.
+The [public API contract](public-api.md) defines supported calculator, pure-I/O,
+selected running-log and k-point entry points, result semantics, historical
+compatibility helpers and change rules. That document is the canonical caller
+contract. The format tables below describe the implementation's input formats;
+they do not make every internal parser helper public.
 
 ## Runtime modules
 

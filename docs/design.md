@@ -28,11 +28,16 @@ abacustest/abacusforge.
 ## Boundaries
 
 ATST owns workflow configuration and launcher policy. Forge owns its native
-default, optional parser and fact projection. The agreed external-only target
+default, optional parser and fact projection. The current external-only PR
 keeps ABACUS's engine-side harness under `interfaces/ASE_interface` and uses
 this package for the calculator and parser. The upstream implementation is
 pending in [ABACUS PR #8175](https://github.com/deepmodeling/abacus-develop/pull/8175);
 it installs the package without vendoring it or adding a submodule.
+
+The [public API contract](public-api.md) is independent of source hosting.
+The latest review reopened maintenance ownership; the
+[maintenance options](maintenance-options.md) remain a discussion proposal,
+not an appointment or an upstream acceptance decision.
 
 Package, engine and output-format versions are distinct. See the
 [compatibility record](compatibility-ci.md) for tested snapshots.

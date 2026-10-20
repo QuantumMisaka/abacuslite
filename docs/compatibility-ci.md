@@ -2,6 +2,15 @@
 
 ## Current checkpoint
 
+The 1.2.2 release candidate adds the [public API contract](public-api.md),
+installed-package behavior tests and a noncollinear result-projection repair.
+Its engine harness is pinned to `7efe6422e` in the maintainer's ABACUS fork;
+engine and asset refs remain unchanged. This harness uses public interfaces,
+keeps independent raw-output assertions and needs no ASE registry patch.
+Local evidence and publication progress are in the
+[1.2.2 release record](superpowers/plans/2026-10-20-1.2.2-release.md).
+The published-version results below are 1.2.1 evidence, not candidate CI.
+
 Release 1.2.1 is [published on PyPI](https://pypi.org/project/abacuslite/1.2.1/)
 (2026-10-20, UTC+08:00). It preserves standard ASE energy values and adds
 explicit no-entropy metadata for ATST's reference-only comparison. Both
@@ -116,21 +125,27 @@ hashes. Weekly runs resolve develop/LTS heads once; manual runs may select
 `develop_ref`, `lts_ref` and `harness_ref`. The harness accepts an explicit
 engine, MPI command, assets, format, wheel, report directory and installed
 Python environment. It rejects wrong module origins, wheel/runtime mismatch,
-wrong reader selection and incomplete case execution. LTS requires its eight
+engine-version/format mismatches and incomplete case execution. Reader
+compatibility is verified by observable results rather than private state.
+Reports use schema v2, without the old private reader-selection fields.
+LTS requires its eight
 ordinary checks plus the seeded native-MD case; absent socket support is a
 documented boundary, not a substitute for one of those checks.
 
 The ABACUS target defined in
 [issue #8165](https://github.com/deepmodeling/abacus-develop/issues/8165) is
 fully external: no submodule and no vendored plugin. `interfaces/ASE_interface`
-keeps only the engine-side harness, and CI installs the published 1.2.0 wheel
-or a reviewed candidate. The harness passed all nine develop checks and the
+keeps only the engine-side harness. The open PR's workflow currently defaults
+to published 1.1.0 or accepts a reviewed candidate; the public-interface
+follow-up requires the noncollinear fix in 1.2.2 and a coordinated stable
+version/hash update before upstream integration. The harness passed all nine develop checks and the
 LTS external lane in the earlier candidate `e446bda`; that candidate also
 exercised a now-retired bundled lane. The current `tests/engine-refs.json`
-tuple pins the harness and the develop engine to the reviewed ABACUS PR #8175
-head `1bf602a` as a pre-merge candidate, with `engine_repository` still
-`deepmodeling/abacus-develop`; both must be rebound to the merged upstream
-commit after #8175 merges. The
+tuple keeps the develop engine at ABACUS PR #8175 head `1bf602a`, and pins
+the public-interface harness separately to `7efe6422e` in
+`QuantumMisaka/abacus-develop`. These are pre-merge candidates, with
+`engine_repository` still `deepmodeling/abacus-develop`; the harness must
+be rebound to an appropriate upstream revision after adoption. The
 [LTS hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649)
 passed its external lane, and all 425 retained raw-file hashes were checked
 after download. External-only ABACUS adoption is a separate upstream PR.

@@ -398,21 +398,17 @@ def read_abacus_out(fileobj,
     -> read_results()
     -> read_abacus_out() *here*
 
-    To use this function as a standalone one, the fileobj should be
-    the return of the open() function, which is a TextIOWrapper object:
-    >>> with open(fn) as fileobj:
-    ...     read_abacus_out(fileobj)
+    For standalone use, pass a Path so companion files can be located:
+    >>> read_abacus_out(Path("OUT.ABACUS/running_scf.log"), index=-1)
 
     Parameters
     ----------
-    fileobj : str | Path | TextIOWrapper
-        The file object to read.
-    index : slice
+    fileobj : Path
+        Running-log path; strings and open streams are not supported.
+    index : int or slice
         The index of the frames to read.
     results_required : bool
-        Whether the results are required. If True, the results will be
-        returned. If False, the results will not be returned. This parameter
-        is not used.
+        Retained for compatibility; currently has no effect.
     sort_atoms_with: Optional[List[int]]
         The sort order of the atoms. If not None, the atoms will be sorted
         according to the order in the list.

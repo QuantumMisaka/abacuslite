@@ -35,6 +35,7 @@ import re
 import shutil
 import tempfile
 import unittest
+from copy import copy
 from pathlib import Path
 from typing import Dict, Optional, List
 
@@ -847,7 +848,25 @@ class AbacusTemplate(CalculatorTemplate):
         # mapping so file-backed ABACUS evaluations do not lose this value at
         # the GenericFileIOCalculator boundary.  Older ASE snapshots store it
         # on ``eFermi``; tolerate that spelling as well.
-        results = dict(atoms.calc.properties())
+        # ASE's Properties schema accepts scalar magnetic moments only,
+        # although SinglePointDFTCalculator supports vector moments. Project
+        # other properties through ASE and retain vectors as result metadata,
+        # without changing ASE's process-global output definitions.
+        singlepoint = atoms.calc
+        vector_moments = {
+            name: singlepoint.results[name]
+            for name, shape in (('magmom', (3,)), ('magmoms', (len(atoms), 3)))
+            if name in singlepoint.results
+            and np.shape(singlepoint.results[name]) == shape
+        }
+        if vector_moments:
+            singlepoint = copy(singlepoint)
+            singlepoint.results = {name: value for name, value in singlepoint.results.items()
+                                   if name not in vector_moments}
+        results = dict(singlepoint.properties())
+        results.update(vector_moments)
+        if vector_moments:
+            results.setdefault('natoms', len(atoms))
         if 'energy_without_entropy' in atoms.info:
             results['energy_without_entropy'] = atoms.info['energy_without_entropy']
         efermi = results.get("efermi", results.get("fermi_level"))

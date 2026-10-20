@@ -30,6 +30,8 @@ cover use, compatibility and maintenance.
 | [From ase-abacus to abacuslite](ase-interface.md) | Differences from the old ASE fork and the current architecture |
 | [Socket adapter contract](socket-contract.md) | Engine/adapter schema, property masks and compatibility |
 | [Module reference](reference.md) | Public API and output-format details |
+| [Public API contract](public-api.md) | Stable entry points, result semantics, compatibility and behavior checks |
+| [Maintenance options](maintenance-options.md) | Community discussion proposal; ownership and appointments remain undecided |
 | [Source provenance](../UPSTREAM.md) | Original authorship, imported revisions and adaptations |
 | [Upstream integration audit](upstream-integration.md) | Source comparison and reader-isolation rationale |
 | [Internal conventions](../AGENTS.md) | Repository-specific automation and agent conventions |
@@ -39,6 +41,10 @@ cover use, compatibility and maintenance.
 Dated plans and evidence describe what was tested at a particular revision.
 They are historical records; use the guides above for current behavior.
 
+- [1.2.2 release](superpowers/plans/2026-10-20-1.2.2-release.md):
+  public API contract, noncollinear result repair and publication progress.
+- [Public API and maintenance follow-up](superpowers/plans/2026-10-20-public-api-and-maintenance.md):
+  local behavior evidence, independent review and maintenance discussion.
 - [1.2.0 release](superpowers/plans/2026-10-19-1.2.0-release.md):
   candidate artifacts, verification and pending publication gates.
 - [1.2.1 release](superpowers/plans/2026-10-20-1.2.1-release.md):
