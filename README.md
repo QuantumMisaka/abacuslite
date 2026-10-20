@@ -11,14 +11,16 @@ ABACUS files without launching an engine. The current develop output format
 and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
-**Stable release:** [1.2.1 on PyPI](https://pypi.org/project/abacuslite/1.2.1/).
+**Stable release:** [1.2.2 on PyPI](https://pypi.org/project/abacuslite/1.2.2/).
 Publication evidence and artifacts are tracked in the release record below.
-Version 1.2.1 exposes explicit no-entropy energy metadata for ATST reference
-comparisons while preserving standard ASE energy values. The 1.x line
-was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the
+Version 1.2.2 fixes noncollinear magnetic-result projection without modifying
+ASE's global definitions and documents the
+[public API contract](docs/public-api.md). Existing energy conventions,
+including optional no-entropy metadata, are preserved. The release was tested
+with ABACUS develop `v3.11.0-beta11` and LTS `v3.10.1`. See the
 [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
 for the exact snapshots and current checks, and the
-[release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-20-1.2.1-release.md)
+[release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-20-1.2.2-release.md)
 for artifact and publication status.
 
 ### Key features
@@ -39,7 +41,7 @@ Requires **Python 3.10+** and **ASE 3.28+ (<4)**:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install 'abacuslite==1.2.1'
+python -m pip install 'abacuslite==1.2.2'
 python -m pip check
 ```
 

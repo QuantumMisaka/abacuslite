@@ -2,16 +2,20 @@
 
 ## Current checkpoint
 
-The 1.2.2 release candidate adds the [public API contract](public-api.md),
+Release [1.2.2](https://pypi.org/project/abacuslite/1.2.2/) adds the [public API contract](public-api.md),
 installed-package behavior tests and a noncollinear result-projection repair.
 Its engine harness is pinned to `7efe6422e` in the maintainer's ABACUS fork;
 engine and asset refs remain unchanged. This harness uses public interfaces,
 keeps independent raw-output assertions and needs no ASE registry patch.
-Local evidence and publication progress are in the
+The exact tag's [Package tests run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39384404829)
+passed both installed-package lanes, both consumer lanes, and all nine checks
+on each cold-built engine. The
+[publish run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39385887617)
+uploaded that run's distributions without rebuilding; both PyPI hashes match.
+Local evidence and publication details are in the
 [1.2.2 release record](superpowers/plans/2026-10-20-1.2.2-release.md).
-The published-version results below are 1.2.1 evidence, not candidate CI.
 
-Release 1.2.1 is [published on PyPI](https://pypi.org/project/abacuslite/1.2.1/)
+The previous release, 1.2.1, is [published on PyPI](https://pypi.org/project/abacuslite/1.2.1/)
 (2026-10-20, UTC+08:00). It preserves standard ASE energy values and adds
 explicit no-entropy metadata for ATST's reference-only comparison. Both
 installed-package lanes, both ATST/Forge consumer lanes and the develop/LTS
@@ -28,9 +32,9 @@ adoption remains a separate open PR.
 
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
-| Wheel/sdist and offline contracts | `1.2.1` tag run passed both package lanes and the aggregate gate; published PyPI digests match the tag artifacts and a fresh indexed install passed | Release acceptance complete for 1.2.1 |
+| Wheel/sdist and offline contracts | `1.2.2` tag run passed both package lanes and the aggregate gate; published PyPI digests match the tag artifacts | Publication complete; indexed-install evidence is in the release record |
 | Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; pins moved to ATST `v2.3.0` tag commit `b8c3218` (requires `abacuslite>=1.2.0,<2`) and Forge `d8d1a74` (`[abacuslite]` extra pins `1.2.0`) | Keep consumer pins aligned with abacuslite releases |
-| Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass locally and remotely; the engine-side harness is ready for external-only adoption | Upstream ABACUS PR and its required-check configuration |
+| Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass using public-interface harness `7efe6422e`, without private reader probes or ASE registry patches | Upstream ABACUS adoption, stable plugin pin update and its required-check configuration |
 | Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | ATST required-check configuration remains a separate maintenance decision |
 
 Exact revisions, environments, raw-output links and earlier GPU/consumer runs

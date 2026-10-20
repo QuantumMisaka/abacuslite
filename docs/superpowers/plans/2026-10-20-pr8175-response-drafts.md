@@ -1,52 +1,59 @@
 # PR #8175 response drafts
 
-Local drafts, not posted. The implementation is retained on local branches
-`fix/public-api-contract` (abacuslite) and `fix/8175-public-api-contract`
-(ABACUS). Before posting, make the reviewed commits accessible and attach
-their exact links plus the relevant CI evidence. Do not present local changes
-as already available in the upstream PR or as a published release.
+Drafts, not posted. abacuslite 1.2.2 is published, with implementation merged
+through [PR #11](https://github.com/QuantumMisaka/abacuslite/pull/11).
+The [paired ABACUS harness](https://github.com/QuantumMisaka/abacus-develop/commit/7efe6422e6b3cf304cdd868885fbf434f0bfd17f)
+is public on `fix/8175-public-api-contract` in the maintainer's fork. It has
+not yet been applied to upstream PR #8175, whose default workflow still pins
+1.1.0. The replies distinguish the published plugin from that pending update.
 
 ## Public API and behavior testing
 
 Reply to [Growl1234's review](https://github.com/deepmodeling/abacus-develop/pull/8175#pullrequestreview-5574377766):
 
 I agree that external integration tests need a supported API rather than
-knowledge of the plugin's implementation. I have prepared a follow-up with
-the contract and behavioral tests owned by abacuslite, and the real-engine
-integration checks retained under `interfaces/ASE_interface`.
+knowledge of the plugin's implementation. I have published
+[abacuslite 1.2.2](https://pypi.org/project/abacuslite/1.2.2/) with the contract
+and behavioral tests owned by the plugin, and prepared a paired follow-up
+with real-engine integration checks retained under `interfaces/ASE_interface`.
 
-The plugin contract now names the supported calculator/profile, pure I/O,
+The [plugin contract](https://github.com/QuantumMisaka/abacuslite/blob/v1.2.2/docs/public-api.md)
+now names the supported calculator/profile, pure I/O,
 selected running-log and k-point interfaces, including units, atom order,
 missing values and deprecation rules. New tests exercise actual parsers and
 calculator handoffs through public calls, including mixed engine formats in
 one process and noncollinear results.
 
-The ABACUS harness no longer inspects private reader switches or ASE
+The [paired harness follow-up](https://github.com/QuantumMisaka/abacus-develop/commit/7efe6422e6b3cf304cdd868885fbf434f0bfd17f)
+no longer inspects private reader switches or ASE
 server/process objects, invokes asset-discovery helpers, or patches ASE's
 global magnetic-property definitions. Independent raw-output comparisons
 and numerical thresholds are preserved. Removing the registry patch exposed
 a noncollinear result-projection defect, which is now fixed in the plugin
 with a regression test.
 
-Local validation of the unpublished 1.2.2.dev0 candidate passed: 231 source
-and CI-helper tests, 185 installed-package tests in each of two environments,
-10 installed consumer contracts, 20 harness checks, and 9 real-engine tests
-on each of the retained develop and LTS snapshots. The develop run includes
-socket handoff. These are local results, not hosted CI on the latest engine.
-The detailed record identifies the exact revisions and artifacts.
+The exact release tag's
+[full CI run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39384404829)
+passed both installed-package and consumer lanes, plus nine real-engine tests
+on each cold-built snapshot: develop `1bf602a` (beta11) and LTS `725bf475`
+(3.10.1). The develop run includes socket handoff; both use the new harness.
+The [release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-20-1.2.2-release.md)
+identifies the source, artifact and validation evidence.
 
-The harness follow-up depends on the paired plugin fix. The current workflow
-default, abacuslite 1.1.0, is not an acceptance target for these changes; a
-reviewed candidate-pair CI run and a release/version/hash update are required
-before integrating the follow-up.
+The harness follow-up depends on the plugin fix now available in 1.2.2. It is
+public in my fork but has not yet been applied to this PR. This PR's workflow
+still defaults to 1.1.0; the follow-up must update that stable version/hash
+and validate the paired configuration before integration.
 
 ## Sustainable maintenance
 
 Reply to [kirk0830's comment](https://github.com/deepmodeling/abacus-develop/pull/8175#issuecomment-6271080809):
 
 I agree that moving the code into a personal repository does not by itself
-provide sustainable maintenance. I have prepared a concrete options document
-alongside the API and test changes, with three possible arrangements:
+provide sustainable maintenance. Alongside the published API and test changes,
+I have prepared a
+[concrete options document](https://github.com/QuantumMisaka/abacuslite/blob/v1.2.2/docs/maintenance-options.md)
+with three possible arrangements:
 
 1. Keep the current repository for now, with willing additional maintainers,
    agreed review/release access and an explicit handover route.

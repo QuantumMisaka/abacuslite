@@ -2,7 +2,8 @@
 
 ## 1.2.2
 
-Release candidate; publication evidence is tracked in the
+Published on [PyPI](https://pypi.org/project/abacuslite/1.2.2/) on
+2026-10-20 (UTC+08:00). Publication evidence is tracked in the
 [release record](docs/superpowers/plans/2026-10-20-1.2.2-release.md).
 
 - Define the public calculator/I/O contract and the retained compatibility
