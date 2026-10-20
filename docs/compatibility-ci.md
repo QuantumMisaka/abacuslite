@@ -139,10 +139,12 @@ documented boundary, not a substitute for one of those checks.
 The ABACUS target defined in
 [issue #8165](https://github.com/deepmodeling/abacus-develop/issues/8165) is
 fully external: no submodule and no vendored plugin. `interfaces/ASE_interface`
-keeps only the engine-side harness. The open PR's workflow currently defaults
-to published 1.1.0 or accepts a reviewed candidate; the public-interface
-follow-up requires the noncollinear fix in 1.2.2 and a coordinated stable
-version/hash update before upstream integration. The harness passed all nine develop checks and the
+keeps only the engine-side harness. The open PR's workflow now defaults
+to published 1.2.2 with its verified wheel hash, or accepts a reviewed
+candidate. Its public-interface follow-up is included in PR head `ac64e83f7`;
+current-head verification and the maintenance discussion are tracked in the
+[review-response record](superpowers/plans/2026-10-20-pr8175-response-drafts.md).
+The harness passed all nine develop checks and the
 LTS external lane in the earlier candidate `e446bda`; that candidate also
 exercised a now-retired bundled lane. The current `tests/engine-refs.json`
 tuple keeps the develop engine at ABACUS PR #8175 head `1bf602a`, and pins
