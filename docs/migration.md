@@ -20,7 +20,7 @@ source-level detail.
 
 Use a fresh virtual environment, following README.md.
 Install a released version from [PyPI](https://pypi.org/project/abacuslite/),
-for example `pip install 'abacuslite==1.2.1'` once its publication is complete.
+for example `pip install 'abacuslite==1.2.1'`.
 For development use `pip install -e .`.
 
 Do not run consumer validation from a directory containing another top-level

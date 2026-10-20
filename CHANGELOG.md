@@ -2,7 +2,8 @@
 
 ## 1.2.1
 
-Release candidate prepared on 2026-10-20; publication pending.
+Published on [PyPI](https://pypi.org/project/abacuslite/1.2.1/) on
+2026-10-20 (UTC+08:00).
 
 ### Fixed
 
