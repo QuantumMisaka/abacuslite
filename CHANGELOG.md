@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Define the public calculator/I/O contract and the retained compatibility
+  surface; add installed-package behavior checks using real output fixtures.
+- Preserve noncollinear vector moments in file-backed calculator results
+  without requiring callers to modify ASE's global property registry. Ordinary
+  energies, bands and collinear results retain their existing semantics.
+
 ## 1.2.1
 
 Published on [PyPI](https://pypi.org/project/abacuslite/1.2.1/) on

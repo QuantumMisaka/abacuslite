@@ -68,6 +68,10 @@ Fixture or example-startup success alone is not real-engine acceptance.
 
 ## Changes and review
 
+Use the [public API contract](docs/public-api.md) to distinguish stable behavior
+from implementation details. Public-boundary tests must not require downstream
+callers to patch ASE or inspect the plugin's template/global reader state.
+
 Add a regression for the observable bug, with a small attributed fixture when
 output formats matter. Preserve units,
 atom ordering, missing-value meaning, readonly parsing and public imports.

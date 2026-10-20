@@ -30,6 +30,8 @@ cover use, compatibility and maintenance.
 | [From ase-abacus to abacuslite](ase-interface.md) | Differences from the old ASE fork and the current architecture |
 | [Socket adapter contract](socket-contract.md) | Engine/adapter schema, property masks and compatibility |
 | [Module reference](reference.md) | Public API and output-format details |
+| [Public API contract](public-api.md) | Stable entry points, result semantics, compatibility and behavior checks |
+| [Maintenance options](maintenance-options.md) | Community discussion proposal; ownership and appointments remain undecided |
 | [Source provenance](../UPSTREAM.md) | Original authorship, imported revisions and adaptations |
 | [Upstream integration audit](upstream-integration.md) | Source comparison and reader-isolation rationale |
 | [Internal conventions](../AGENTS.md) | Repository-specific automation and agent conventions |
