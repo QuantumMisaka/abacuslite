@@ -6,7 +6,7 @@ is not a guarantee for every commit or build configuration.
 
 | ABACUS snapshot | Output format | Reader | Socket | Schema | Checks |
 | --- | --- | --- | --- | --- | --- |
-| develop `73cd094` (v3.11.0-beta10) | latest | `latestio` | yes | v1 | 9/9 |
+| develop `1bf602a` (v3.11.0-beta11) | latest | `latestio` | yes | v1 | 9/9 |
 | LTS `725bf47` (v3.10.1) | legacy | `legacyio` | no | — | 9/9 |
 
 Both snapshots pass nine real-engine checks, including socket on develop and a

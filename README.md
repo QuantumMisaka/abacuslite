@@ -11,8 +11,8 @@ ABACUS files without launching an engine. The current develop output format
 and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
-**Version:** 1.2.1. Publication status and artifacts are tracked in the release
-record below.
+**Stable release:** [1.2.1 on PyPI](https://pypi.org/project/abacuslite/1.2.1/).
+Publication evidence and artifacts are tracked in the release record below.
 Version 1.2.1 exposes explicit no-entropy energy metadata for ATST reference
 comparisons while preserving standard ASE energy values. The 1.x line
 was tested with ABACUS develop `v3.11.0-beta10` and LTS `v3.10.1`. See the

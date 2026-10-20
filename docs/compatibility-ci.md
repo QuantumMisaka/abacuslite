@@ -2,34 +2,24 @@
 
 ## Current checkpoint
 
-The 1.2.1 candidate preserves the existing ASE energy contract and adds an
-explicit no-entropy result for ATST's reference-only comparison. See the
-[1.2.1 closeout](superpowers/plans/2026-10-20-1.2.1-release.md) for the review
-correction and revision-bound verification; historical engine runs below do
-not certify the corrected candidate.
-
-For a short user-facing summary of tested engines and limitations, see
-[supported versions](supported-versions.md).
-
-As recorded on 2026-10-19 (UTC+08:00), stable `1.2.0` is
-[published on PyPI](https://pypi.org/project/abacuslite/1.2.0/). Both registry
-file digests match the verified tag artifacts, and a fresh indexed install
-passed dependency checks. See the
-[1.2.0 release record](superpowers/plans/2026-10-19-1.2.0-release.md) for
-artifact identities and retained evidence. Local package, consumer and
-real-engine acceptance exists. Both package lanes, both ABACUS engine lanes and
-the installed-consumer lanes passed remotely on `v1.2.0`
-([tag run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39195082709)),
-and the verified artifact pair was uploaded by the
-[publish run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39195873721).
-Plugin main now requires the GitHub Actions `compatibility-gate`,
-including for administrators, with branches required to be up to date. The API
-configuration has been verified. Community adoption of the consumer and
-engine-side candidates remains separate.
+Release 1.2.1 is [published on PyPI](https://pypi.org/project/abacuslite/1.2.1/)
+(2026-10-20, UTC+08:00). It preserves standard ASE energy values and adds
+explicit no-entropy metadata for ATST's reference-only comparison. Both
+installed-package lanes, both ATST/Forge consumer lanes and the develop/LTS
+real-engine checks passed on the exact release tag
+([39358708884](https://github.com/QuantumMisaka/abacuslite/actions/runs/39358708884)).
+The [publish run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39359654717)
+uploaded that run's artifacts without rebuilding; both PyPI hashes match.
+See the [1.2.1 record](superpowers/plans/2026-10-20-1.2.1-release.md) for
+source, artifact, review and indexed-install evidence. The
+[1.2.0 record](superpowers/plans/2026-10-19-1.2.0-release.md) remains historical.
+Plugin main requires the GitHub Actions `compatibility-gate`, including for
+administrators, with branches required to be up to date. Upstream ABACUS
+adoption remains a separate open PR.
 
 | Layer | Local candidate state | Remaining work |
 | --- | --- | --- |
-| Wheel/sdist and offline contracts | `1.2.0` tag run passed both package lanes and the aggregate gate; published PyPI digests match the tag artifacts and a fresh indexed install passed | Release acceptance complete for 1.2.0 |
+| Wheel/sdist and offline contracts | `1.2.1` tag run passed both package lanes and the aggregate gate; published PyPI digests match the tag artifacts and a fresh indexed install passed | Release acceptance complete for 1.2.1 |
 | Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; pins moved to ATST `v2.3.0` tag commit `b8c3218` (requires `abacuslite>=1.2.0,<2`) and Forge `d8d1a74` (`[abacuslite]` extra pins `1.2.0`) | Keep consumer pins aligned with abacuslite releases |
 | Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass locally and remotely; the engine-side harness is ready for external-only adoption | Upstream ABACUS PR and its required-check configuration |
 | Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | ATST required-check configuration remains a separate maintenance decision |
