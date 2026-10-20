@@ -2,6 +2,12 @@
 
 ## Current checkpoint
 
+The 1.2.1 candidate preserves the existing ASE energy contract and adds an
+explicit no-entropy result for ATST's reference-only comparison. See the
+[1.2.1 closeout](superpowers/plans/2026-10-20-1.2.1-release.md) for the review
+correction and revision-bound verification; historical engine runs below do
+not certify the corrected candidate.
+
 For a short user-facing summary of tested engines and limitations, see
 [supported versions](supported-versions.md).
 

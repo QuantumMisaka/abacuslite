@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from io import TextIOWrapper
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Mapping
 
 import numpy as np
 from ase.atoms import Atoms
@@ -14,6 +14,26 @@ from ase.build import bulk
 from ase.constraints import FixAtoms, FixCartesian
 from ase.data import chemical_symbols, atomic_masses
 ATOM_MASS = dict(zip(chemical_symbols, atomic_masses.tolist()))
+
+
+def energy_components(ener: Mapping[str, float]) -> Dict[str, float]:
+    """Return optional energy metadata from one ABACUS energy table.
+
+    ``E_KohnSham`` already includes ``E_entropy(-TS)`` and remains the
+    force-consistent ASE energy. The separate no-entropy value is metadata,
+    not an ASE ``free_energy`` replacement. Missing entropy stays unknown.
+
+    Args:
+        ener: Frame-local ABACUS energies in eV.
+
+    Returns:
+        The no-entropy energy in eV when its entropy term is available.
+    """
+    if 'E_entropy(-TS)' not in ener:
+        return {}
+    return {
+        'energy_without_entropy': float(ener['E_KohnSham']) - float(ener['E_entropy(-TS)']),
+    }
 
 def load_pseudo(pseudo_dir: str) -> Dict[str, str]:
     '''load the pseudopotential mapping from the pseudo_dir'''

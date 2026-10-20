@@ -127,3 +127,13 @@ This compatibility launcher runs the extracted offline tests. From the repositor
 root use `bash src/abacuslite/xtest.sh`, or use `python -m pytest tests/unit -q`
 directly. Tests are no longer embedded in the runtime source files. The launcher
 is a source-checkout convenience, not an installed console entry point.
+
+## Energy metadata (1.2.1)
+
+Both file readers keep `energy` and force-consistent `free_energy` equal to
+ABACUS `E_KohnSham`, which already includes the printed `E_entropy(-TS)` term.
+When that term is present, `Atoms.info["energy_without_entropy"]` contains
+`E_KohnSham - E_entropy(-TS)` in eV. The file-backed `Abacus` calculator
+forwards it in `calc.results["energy_without_entropy"]` from the selected frame.
+It is not a standard ASE property or a replacement for `free_energy`; absent
+entropy means absent metadata. The socket contract is unchanged.

@@ -70,6 +70,21 @@ class TestLatestIO(unittest.TestCase):
         self.assertFalse(np.any(atoms.pbc))
         self.assertTrue(np.allclose(atoms.calc.results['magmoms'], [10.0, 30.0, 20.0]))
 
+    def test_read_abacus_out_preserves_free_energy_and_exposes_internal_energy(self):
+        """Keep force-consistent energy and expose the separate no-entropy value."""
+        fixture = Path(__file__).resolve().parents[1] / 'fixtures' / 'multiframe_md_latest'
+        frames = read_abacus_out(fixture / 'running_md.log')
+        last = frames[-1]
+
+        self.assertAlmostEqual(last.get_potential_energy(), -1940.6311063727, delta=1e-9)
+        self.assertAlmostEqual(
+            last.get_potential_energy(force_consistent=True),
+            -1940.6311063727,
+            delta=1e-9,
+        )
+        self.assertAlmostEqual(last.info["energy_without_entropy"], -1940.4234898941, delta=1e-9)
+        self.assertAlmostEqual(frames[0].info["energy_without_entropy"], -1940.4285121056, delta=1e-9)
+
     def test_native_md_dump_cell_units_at_atoms_boundary(self):
         """MD_dump vectors are in alat; positions and energies are already physical."""
         fixture = Path(__file__).resolve().parents[1] / 'fixtures' / 'multiframe_md_latest'

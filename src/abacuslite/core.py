@@ -848,6 +848,8 @@ class AbacusTemplate(CalculatorTemplate):
         # the GenericFileIOCalculator boundary.  Older ASE snapshots store it
         # on ``eFermi``; tolerate that spelling as well.
         results = dict(atoms.calc.properties())
+        if 'energy_without_entropy' in atoms.info:
+            results['energy_without_entropy'] = atoms.info['energy_without_entropy']
         efermi = results.get("efermi", results.get("fermi_level"))
         if efermi is None:
             for attribute in ("efermi", "eFermi", "fermi_level"):

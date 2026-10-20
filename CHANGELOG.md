@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.1
+
+Release candidate prepared on 2026-10-20; publication pending.
+
+### Fixed
+
+- Preserve `energy = free_energy = E_KohnSham`, the force-consistent ABACUS
+  functional, and expose `energy_without_entropy = E_KohnSham - E_entropy(-TS)`
+  separately when the entropy term is present. This repairs the missing
+  no-entropy handoff needed by ATST's reference-only FCP v2 comparison without
+  changing ASE optimizer energies. Both legacy and latest readers retain
+  frame-local metadata through the file-backed calculator.
+
 ## 1.2.0
 
 Published on [PyPI](https://pypi.org/project/abacuslite/1.2.0/) on

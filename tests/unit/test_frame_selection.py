@@ -306,6 +306,26 @@ def test_scf_read_results_preserves_backend_neutral_efermi(tmp_path):
     assert results["fermi_level"] == pytest.approx(results["efermi"])
 
 
+def test_scf_entropy_metadata_follows_selected_frame(tmp_path):
+    """Select energy metadata from the matching geometry, not the final trial."""
+    log = (GOLD / "running_scf.log").read_text()
+    for energy, entropy in [("-2898.0000000000", "-0.1"), ("-2898.4000000000", "-0.2"),
+                            ("-2898.8000000000", "-0.3"), ("-2898.6000000000", "-0.4")]:
+        log = re.sub(r"( E_KohnSham[^\n]*" + re.escape(energy) + r"[^\n]*\n)",
+                     r"\1 E_entropy(-TS) -0.01 " + entropy + "\n", log)
+    results = _template().read_results(_read_results_fixture(tmp_path, log_text=log))
+    assert results["energy"] == pytest.approx(-2898.0)
+    assert results["free_energy"] == pytest.approx(-2898.0)
+    assert results["energy_without_entropy"] == pytest.approx(-2897.9)
+
+
+def test_missing_entropy_is_not_fabricated(tmp_path):
+    """Absent entropy remains unknown while standard energies are preserved."""
+    results = _template().read_results(_read_results_fixture(tmp_path))
+    assert results["free_energy"] == results["energy"]
+    assert "energy_without_entropy" not in results
+
+
 def test_scf_read_results_fails_closed_when_no_frame_matches(tmp_path):
     """无匹配帧：STRU 与 running log 全部帧不一致时 fail-closed（含 log 路径/帧数/差异摘要）。"""
     stru_text = (
@@ -371,6 +391,8 @@ def test_native_md_legacy_keeps_last_frame_semantics_real_gold(tmp_path):
     results = _template(calc="md", atomorder=[0, 1]).read_results(directory)
     assert np.allclose(results["forces"], MD_LEGACY_FORCES, atol=1e-12)
     assert results["energy"] == pytest.approx(MD_LEGACY_ENERGY)
+    assert results["free_energy"] == pytest.approx(MD_LEGACY_ENERGY)
+    assert results["energy_without_entropy"] == pytest.approx(-1940.3851061129, abs=1e-9)
 
 
 def test_native_md_latestio_md_dump_keeps_last_frame_semantics(tmp_path, monkeypatch):
@@ -383,6 +405,8 @@ def test_native_md_latestio_md_dump_keeps_last_frame_semantics(tmp_path, monkeyp
     results = _template(calc="md", atomorder=[0, 1]).read_results(directory)
     assert np.allclose(results["forces"], MD_LATEST_FORCES, atol=1e-12)
     assert results["energy"] == pytest.approx(MD_LATEST_ENERGY)
+    assert results["free_energy"] == pytest.approx(MD_LATEST_ENERGY)
+    assert results["energy_without_entropy"] == pytest.approx(-1940.4234898941, abs=1e-9)
 
 
 def test_latestio_md_eig_occ_repeatable_read(tmp_path, monkeypatch):
