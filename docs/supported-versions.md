@@ -15,12 +15,12 @@ MD, band structure, magnetic moments and socket handoff. They are interface
 checks, not convergence studies. See
 [compatibility and CI](compatibility-ci.md) for evidence.
 
-The table above records the published 1.2.1 acceptance. The 1.2.2 candidate
-adds the [public API contract](public-api.md) and fixes noncollinear result
-projection without caller-side ASE registry changes. Its local paired-harness
-checks passed against develop `73cd094` (beta10) and the same LTS snapshot.
-The release workflow checks develop `1bf602a` (beta11) and LTS using the new
-public-interface harness `7efe6422e`; its result is recorded separately in the
+The table records the published 1.2.2 acceptance. This release adds the
+[public API contract](public-api.md) and fixes noncollinear result projection
+without caller-side ASE registry changes. The tag workflow passed all nine
+checks per engine using public-interface harness `7efe6422e`. Earlier local
+paired-harness checks used develop `73cd094` (beta10) and the same LTS snapshot.
+Exact source, artifact and hosted evidence is recorded in the
 [1.2.2 release record](superpowers/plans/2026-10-20-1.2.2-release.md).
 
 Socket support uses `abacus.socket.properties.v1`; the adapter rejects unknown
