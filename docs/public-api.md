@@ -73,6 +73,10 @@ than selecting an unrelated last trial frame. It uses an absolute `1e-5`
 Angstrom tolerance for cell components and periodic position residuals, with
 no relative tolerance. Malformed or unmatched structure handoffs raise
 `RuntimeError`. Native relaxation/MD collection selects the final frame.
+For a single-frame LTS 3.10.1 SCF log whose cell was rounded to six significant
+digits, a same-run `abacus.json` can supply the cell precision after the log
+and JSON identities and results agree. The same absolute tolerance still
+applies to the precise cell; absent or inconsistent JSON does not relax it.
 File-backed results restore the caller's atom ordering after species grouping.
 
 Missing force/stress data is not replaced with fabricated zero arrays. ASE

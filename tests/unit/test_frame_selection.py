@@ -9,6 +9,7 @@ Task 4 扩充（回归矩阵）：容差两侧、md/relax/sella/ccqn 五路径�
 真实非 scf 金样（multiframe_md_legacy / multiframe_md_latest）、latestio eig_occ.txt 一次性消费（P5）。
 """
 import re
+import json
 import shutil
 from types import SimpleNamespace
 from pathlib import Path
@@ -32,6 +33,7 @@ TESTFILES = (
     Path(__file__).resolve().parents[1] / "fixtures"
 )
 GOLD = TESTFILES / "multiframe_scf_trial_last"
+LTS_ROUNDED_CELL = TESTFILES / "lts_scf_cell_rounding"
 LOG = GOLD / "running_scf.log"
 
 # 帧 0（INIT，== 当前 STRU）的力；末帧（P0 重算）力不同，用于断言"返回当前结构帧而非末帧"
@@ -171,6 +173,133 @@ def _template(calc="scf", atomorder=None):
     template.calculation = calc
     template.atomorder = [0, 1, 2] if atomorder is None else atomorder
     return template
+
+
+def _rounded_cell_run(tmp_path):
+    """Copy the attributed one-frame LTS output without modifying its geometry."""
+    shutil.copytree(LTS_ROUNDED_CELL, tmp_path, dirs_exist_ok=True)
+    template = _template(atomorder=[0])
+    return template, tmp_path
+
+
+def test_lts_scf_uses_same_run_json_precision_for_rounded_log_cell(tmp_path):
+    template, directory = _rounded_cell_run(tmp_path)
+    results = template.read_results(directory)
+    assert results["energy"] == pytest.approx(-13.5410411603)
+    np.testing.assert_allclose(results["forces"], [[0, 0, 0]], atol=1e-12)
+
+
+@pytest.mark.parametrize("scale", [1.234564321, 1.2345652])
+def test_lts_rounded_cell_nonunit_alat_and_nonorthogonal_vectors(tmp_path, scale):
+    """The precise Cartesian header, rather than its rounded Angstrom line, sets alat."""
+    template, directory = _rounded_cell_run(tmp_path)
+    # LTS prints the rounded Angstrom line with its own 0.529177 constant;
+    # at the second value this differs from rounding with ASE's Bohr value.
+    lts_printed_scale = (scale / Bohr) * 0.529177
+    vectors = np.array([[10.0000165221, 0.25, 0],
+                        [0, 11.000002299, 0.5],
+                        [0.125, 0, 11.9999880759]])
+    stru = directory / "STRU"
+    text = stru.read_text().replace(
+        "1.8897261258369282", str(scale / Bohr)
+    ).replace(
+        "10.000016522100001 0.0 0.0\n"
+        "0.0 11.000002299 0.0\n"
+        "0.0 0.0 11.999988075900001",
+        "\n".join(" ".join(map(str, row)) for row in vectors),
+    )
+    stru.write_text(text)
+
+    log_path = directory / "OUT.ABACUS" / "running_scf.log"
+    lines = log_path.read_text().splitlines()
+    header = next(i for i, line in enumerate(lines)
+                  if line.strip() ==
+                  "Lattice vectors: (Cartesian coordinate: in unit of a_0)")
+    lines[header + 1:header + 4] = [
+        " ".join(f"{value:+.6g}" for value in row) for row in vectors
+    ]
+    lines = [line.replace("lattice constant (Angstrom) = 1",
+                          f"lattice constant (Angstrom) = {lts_printed_scale:.6g}")
+             .replace("1.889726125837 Bohr ).", f"{scale / Bohr:.12f} Bohr ).")
+             for line in lines]
+    log_path.write_text("\n".join(lines) + "\n")
+
+    path = directory / "abacus.json"
+    document = json.loads(path.read_text())
+    document["output"][0]["cell"] = vectors.tolist()
+    document["output"][0]["coordinate"] = (
+        np.asarray(document["output"][0]["coordinate"]) * scale
+    ).tolist()
+    path.write_text(json.dumps(document))
+    assert abs(10 * float(f"{lts_printed_scale:.6g}") - vectors[0, 0] * scale) > 1e-5
+    results = template.read_results(directory)
+    assert results["energy"] == pytest.approx(-13.5410411603)
+
+
+@pytest.mark.parametrize("damage", [
+    "missing", "malformed", "stale_time", "wrong_version", "wrong_stru",
+    "wrong_cell", "wrong_stru_cell", "rounded_cell_disagrees", "wrong_coordinate", "wrong_energy",
+    "wrong_force", "multiple_outputs",
+])
+def test_lts_rounded_cell_rejects_untrusted_json(tmp_path, damage):
+    template, directory = _rounded_cell_run(tmp_path)
+    path = directory / "abacus.json"
+    document = json.loads(path.read_text())
+    if damage == "missing":
+        path.unlink()
+    elif damage == "malformed":
+        path.write_text("{invalid JSON")
+    else:
+        if damage == "stale_time":
+            document["general_info"]["start_time"] = "2026-10-20 02:57:40"
+        elif damage == "wrong_version":
+            document["general_info"]["version"] = "v3.11.0"
+        elif damage == "wrong_stru":
+            document["general_info"]["stru_file"] = "OTHER.STRU"
+        elif damage == "wrong_cell":
+            # Still prints +10 at six significant digits, but differs from
+            # STRU by more than the public 1e-5 Angstrom tolerance.
+            document["output"][0]["cell"][0][0] += 2e-5
+        elif damage == "wrong_stru_cell":
+            stru = directory / "STRU"
+            stru.write_text(stru.read_text().replace(
+                "10.000016522100001", "10.000056522100001"
+            ))
+        elif damage == "rounded_cell_disagrees":
+            document["output"][0]["cell"][0][0] += 1e-3
+        elif damage == "wrong_coordinate":
+            document["output"][0]["coordinate"][0][0] += 0.1
+        elif damage == "wrong_energy":
+            document["output"][0]["energy"] += 0.1
+        elif damage == "wrong_force":
+            document["output"][0]["force"][0][0] += 0.1
+        elif damage == "multiple_outputs":
+            document["output"].append(document["output"][0])
+        path.write_text(json.dumps(document))
+    with pytest.raises(RuntimeError, match="fail-closed"):
+        template.read_results(directory)
+
+
+def test_lts_rounded_cell_json_cannot_rescue_multiple_log_frames(tmp_path):
+    template, directory = _rounded_cell_run(tmp_path)
+    log = directory / "OUT.ABACUS" / "running_scf.log"
+    frames = read_abacus_out(log)
+    with pytest.raises(RuntimeError, match="fail-closed"):
+        _select_scf_frame_for_structure(
+            frames + frames, log, directory, [0], legacyio=True
+        )
+
+
+def test_write_input_backs_up_previous_abacus_json(tmp_path):
+    path = tmp_path / "abacus.json"
+    path.write_text('{"old": true}')
+    atoms = Atoms("H", positions=[[1, 2, 3]], cell=[10, 11, 12], pbc=True)
+    AbacusTemplate().write_input(
+        SimpleNamespace(pseudo_dir=None, orbital_dir=None), tmp_path, atoms,
+        parameters={"calculation": "scf"}, properties=["energy"],
+    )
+    assert not path.exists()
+    assert (tmp_path / "abacus.json.bak.0").read_text() == '{"old": true}'
 
 
 def _read_results_fixture(tmp_path, calc="scf", stru_text=None, log_text=None):

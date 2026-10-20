@@ -30,6 +30,7 @@ Refactored on 2025-12-07
 '''
 
 import json
+from datetime import datetime
 import os
 import re
 import shutil
@@ -454,6 +455,108 @@ def _normalize_scf_frame(frame, frame_index, expected, frame_is_direct, atol,
     }
 
 
+def _matches_lts_rounded_scf_cell(info, log_path, directory, expected,
+                                  cartesian_scale, stru_file, atol):
+    """Recover a one-frame LTS cell only from its corroborated same-run JSON.
+
+    LTS prints six significant digits for log lattice vectors. JSON retains
+    the input precision; it may resolve printing loss, but cannot override a
+    real cell or position mismatch under the public absolute tolerance.
+    """
+    from ase.units import Bohr
+
+    try:
+        document = json.loads((Path(directory) / 'abacus.json').read_text())
+        general = document['general_info']
+        outputs = document['output']
+        if not isinstance(outputs, list) or len(outputs) != 1:
+            return False
+        output = outputs[0]
+        log = Path(log_path).read_text()
+        versions = re.findall(r'^\s*ABACUS\s+(v\S+)\s*$', log, re.M)
+        starts = re.findall(r'^\s*Start Time is\s+(.+?)\s*$', log, re.M)
+        finishes = re.findall(r'^\s*Finish Time\s*:\s*(.+?)\s*$', log, re.M)
+        if (versions != ['v3.10.1'] or general['version'] != versions[0]
+                or len(starts) != 1 or len(finishes) != 1
+                or general['stru_file'] != str(stru_file)):
+            return False
+        for field, values in (('start_time', starts), ('end_time', finishes)):
+            timestamp = datetime.strptime(values[0], '%a %b %d %H:%M:%S %Y')
+            if general[field] != timestamp.strftime('%Y-%m-%d %H:%M:%S'):
+                return False
+
+        # The separate "lattice constant (Angstrom)" line is also rounded to
+        # six digits. The Cartesian-coordinate header retains the precise
+        # lattice constant in Bohr, which is needed for non-unit alat.
+        units = re.findall(
+            r'^\s*CARTESIAN COORDINATES\s*\(\s*UNIT\s*=\s*'
+            r'([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s+Bohr\s*\)\.\s*$',
+            log, re.M
+        )
+        if len(units) != 1:
+            return False
+        precise_scale = float(units[0]) * Bohr
+        # LTS read_atoms.cpp prints the separate Angstrom line using its
+        # rounded 0.529177 factor, not ASE's precise Bohr conversion.
+        lts_printed_scale = float(units[0]) * 0.529177
+        if (not np.isfinite(precise_scale) or precise_scale <= 0
+                or float(f'{lts_printed_scale:.6g}') != cartesian_scale):
+            return False
+
+        # Match the exact printed lattice table, rather than merely assuming
+        # that a nearby JSON cell describes this running log.
+        lines = log.splitlines()
+        headers = [i for i, line in enumerate(lines) if line.strip() ==
+                   'Lattice vectors: (Cartesian coordinate: in unit of a_0)']
+        if len(headers) != 1 or headers[0] + 3 >= len(lines):
+            return False
+        printed = [lines[headers[0] + row + 1].split() for row in range(3)]
+        if any(len(row) != 3 for row in printed):
+            return False
+        log_vectors = np.asarray(printed, dtype=float)
+        json_vectors = np.asarray(output['cell'], dtype=float)
+        if (json_vectors.shape != (3, 3)
+                or not np.isfinite(json_vectors).all()
+                or not np.isfinite(log_vectors).all()):
+            return False
+        rounded = np.asarray([[float(f'{value:.6g}') for value in row]
+                              for row in json_vectors])
+        if not np.array_equal(rounded, log_vectors):
+            return False
+        if not np.allclose(log_vectors * cartesian_scale,
+                           info['frame'].cell.array, atol=1e-12, rtol=0):
+            return False
+
+        cell = json_vectors * precise_scale
+        if not np.allclose(cell, expected['cell'], atol=atol, rtol=0):
+            return False
+        inverse = _invert_cell(cell, 'LTS JSON output cell')
+        positions = np.asarray(output['coordinate'], dtype=float)
+        forces = np.asarray(output['force'], dtype=float)
+        shape = expected['positions'].shape
+        if (positions.shape != shape or forces.shape != shape
+                or not np.isfinite(positions).all()
+                or not np.isfinite(forces).all()):
+            return False
+        order = expected['atomorder']
+        precise_cart = np.asarray(info['frame'].positions) * precise_scale
+        if not np.allclose(positions[order] * Bohr, precise_cart,
+                           atol=1e-8, rtol=0):
+            return False
+        results = info['frame'].calc.results
+        if (not np.allclose(forces[order], results['forces'], atol=1e-8, rtol=0)
+                or not np.isclose(float(output['energy']), results['energy'],
+                                  atol=1e-8, rtol=0)):
+            return False
+        delta_frac = (precise_cart - expected['positions']) @ inverse
+        periodic = (delta_frac - np.rint(delta_frac)) @ cell
+        return bool(np.isfinite(periodic).all()
+                    and np.max(np.abs(periodic)) <= atol)
+    except (OSError, KeyError, IndexError, TypeError, ValueError,
+            AttributeError, np.linalg.LinAlgError):
+        return False
+
+
 def _select_scf_frame_for_structure(
     frames, log_path, directory, atomorder, atol=1e-5, stru_file='STRU', _reference=None,
     *, legacyio=None
@@ -529,6 +632,13 @@ def _select_scf_frame_for_structure(
     for info in reversed(normalized):
         if info['matches']:
             return info['frame']
+
+    if (nframes == 1 and not frame_is_direct
+            and _matches_lts_rounded_scf_cell(
+                normalized[0], log_path, directory, expected,
+                cartesian_scale, stru_file, atol
+            )):
+        return normalized[0]['frame']
 
     last = normalized[-1]
     raw_diff = float(
@@ -679,6 +789,8 @@ class AbacusTemplate(CalculatorTemplate):
 
         # STRU
         _ = file_safe_backup(directory / self.stru_file)
+        # An old JSON must not be mistaken for this run if ABACUS omits JSON.
+        _ = file_safe_backup(directory / 'abacus.json')
         # group atoms by first-occurrence species order. Keep the reverse map so
         # that we will recover the order in function read_results()
         ind = species_group_indices(atoms.get_chemical_symbols())

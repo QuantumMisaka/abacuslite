@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Recover LTS 3.10.1 single-frame SCF results when six-significant-digit
+  lattice vectors in the running log alone exceed the structure-matching
+  tolerance. A same-run `abacus.json` must corroborate version, run times,
+  STRU name, printed vectors, coordinates, energy and forces; its precise
+  cell still must match STRU within the unchanged `1e-5` Angstrom limit.
+  Missing, stale or inconsistent JSON remains a failed handoff. Previous JSON
+  is backed up before a new calculation to prevent accidental reuse.
+
 ## 1.2.2
 
 Published on [PyPI](https://pypi.org/project/abacuslite/1.2.2/) on
