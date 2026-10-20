@@ -3,7 +3,7 @@
   "engine_repository": "deepmodeling/abacus-develop",
   "harness": {
     "repository": "QuantumMisaka/abacus-develop",
-    "ref": "1bf602a0b75800087a269e4f2935538093e699a1"
+    "ref": "7efe6422e6b3cf304cdd868885fbf434f0bfd17f"
   },
   "engines": {
     "develop": {

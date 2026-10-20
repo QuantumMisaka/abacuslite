@@ -2,6 +2,10 @@
 
 ## Authorization and scope
 
+Subsequent authorization: the maintainer approved publication after the
+readiness audit. See the [1.2.2 release continuation](2026-10-20-1.2.2-release.md).
+The local-only boundary below records the original implementation phase.
+
 The maintainer approved this work in the 2026-10-20 conversation following
 ABACUS PR #8175 reviews: implement the public interface contract, behavioral
 tests and engine-side integration corrections; prepare concrete maintenance

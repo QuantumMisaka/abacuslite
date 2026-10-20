@@ -63,7 +63,7 @@ quantities with the following semantics:
 | `eigenvalues`, `occupations` | Available band arrays in `(nspins, nkpts, nbands)` order; eigenvalues in eV |
 
 Noncollinear result projection needs no caller changes to ASE's global
-property definitions (fixed in the unreleased changes after 1.2.1). The vector
+property definitions (fixed in 1.2.2). The vector
 `magmoms` value is available in `results`; this does not expand ASE's
 `Properties` schema or promise that every ASE magnetic-property method accepts
 vector moments.

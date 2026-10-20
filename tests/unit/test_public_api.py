@@ -119,8 +119,8 @@ def test_output_readers_are_repeatable_indexed_and_read_only(tmp_path, name, rea
 ])
 def test_noncollinear_results_need_no_global_ase_patch(tmp_path, name, version, reader):
     source = FIXTURES / "noncollinear_scf" / name
-    # A public reader supplies the recorded structure; public ASE getters
-    # supply independent values before the file-backed handoff is exercised.
+    # Compare the public reader's values with the file-backed handoff.
+    # Independent raw-table assertions belong to the real-engine harness.
     frame = reader(source / "running_scf.log", index=-1)
     moments = frame.get_magnetic_moments()
     assert moments.shape == (2, 3)

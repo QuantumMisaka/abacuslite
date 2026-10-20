@@ -41,6 +41,10 @@ cover use, compatibility and maintenance.
 Dated plans and evidence describe what was tested at a particular revision.
 They are historical records; use the guides above for current behavior.
 
+- [1.2.2 release](superpowers/plans/2026-10-20-1.2.2-release.md):
+  public API contract, noncollinear result repair and publication progress.
+- [Public API and maintenance follow-up](superpowers/plans/2026-10-20-public-api-and-maintenance.md):
+  local behavior evidence, independent review and maintenance discussion.
 - [1.2.0 release](superpowers/plans/2026-10-19-1.2.0-release.md):
   candidate artifacts, verification and pending publication gates.
 - [1.2.1 release](superpowers/plans/2026-10-20-1.2.1-release.md):

@@ -1,12 +1,17 @@
 # Changelog
 
-## Unreleased
+## 1.2.2
+
+Release candidate; publication evidence is tracked in the
+[release record](docs/superpowers/plans/2026-10-20-1.2.2-release.md).
 
 - Define the public calculator/I/O contract and the retained compatibility
   surface; add installed-package behavior checks using real output fixtures.
 - Preserve noncollinear vector moments in file-backed calculator results
   without requiring callers to modify ASE's global property registry. Ordinary
   energies, bands and collinear results retain their existing semantics.
+- Run the engine compatibility matrix through public APIs without inspecting
+  private reader state or patching ASE's magnetic-property definitions.
 
 ## 1.2.1
 
