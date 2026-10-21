@@ -189,6 +189,18 @@ def test_lts_scf_uses_same_run_json_precision_for_rounded_log_cell(tmp_path):
     np.testing.assert_allclose(results["forces"], [[0, 0, 0]], atol=1e-12)
 
 
+def test_lts_scf_accepts_small_json_finish_time_skew(tmp_path):
+    """JSON may be written shortly before the log's process-level Finish Time."""
+    template, directory = _rounded_cell_run(tmp_path)
+    path = directory / "abacus.json"
+    document = json.loads(path.read_text())
+    document["general_info"]["end_time"] = "2026-10-21 02:57:44"
+    path.write_text(json.dumps(document))
+
+    results = template.read_results(directory)
+    assert results["energy"] == pytest.approx(-13.5410411603)
+
+
 @pytest.mark.parametrize("scale", [1.234564321, 1.2345652])
 def test_lts_rounded_cell_nonunit_alat_and_nonorthogonal_vectors(tmp_path, scale):
     """The precise Cartesian header, rather than its rounded Angstrom line, sets alat."""
@@ -239,7 +251,8 @@ def test_lts_rounded_cell_nonunit_alat_and_nonorthogonal_vectors(tmp_path, scale
 @pytest.mark.parametrize("damage", [
     "missing", "malformed", "stale_time", "wrong_version", "wrong_stru",
     "wrong_cell", "wrong_stru_cell", "rounded_cell_disagrees", "wrong_coordinate", "wrong_energy",
-    "wrong_force", "multiple_outputs",
+    "wrong_force", "multiple_outputs", "finish_after_log", "finish_too_far_before_log",
+    "finish_before_start", "noncanonical_start_time", "noncanonical_end_time",
 ])
 def test_lts_rounded_cell_rejects_untrusted_json(tmp_path, damage):
     template, directory = _rounded_cell_run(tmp_path)
@@ -252,6 +265,22 @@ def test_lts_rounded_cell_rejects_untrusted_json(tmp_path, damage):
     else:
         if damage == "stale_time":
             document["general_info"]["start_time"] = "2026-10-20 02:57:40"
+        elif damage == "finish_after_log":
+            document["general_info"]["end_time"] = "2026-10-21 02:57:47"
+        elif damage == "finish_too_far_before_log":
+            log_path = directory / "OUT.ABACUS" / "running_scf.log"
+            log_path.write_text(log_path.read_text().replace(
+                "Finish Time  : Wed Oct 21 02:57:46 2026",
+                "Finish Time  : Wed Oct 21 02:58:47 2026",
+            ))
+            document["general_info"]["end_time"] = "2026-10-21 02:57:44"
+        elif damage == "finish_before_start":
+            document["general_info"]["end_time"] = "2026-10-21 02:57:39"
+        elif damage == "noncanonical_start_time":
+            document["general_info"]["start_time"] = "2026-10-21 2:57:40"
+            document["general_info"]["end_time"] = "2026-10-21 02:57:44"
+        elif damage == "noncanonical_end_time":
+            document["general_info"]["end_time"] = "2026-10-21 2:57:44"
         elif damage == "wrong_version":
             document["general_info"]["version"] = "v3.11.0"
         elif damage == "wrong_stru":
