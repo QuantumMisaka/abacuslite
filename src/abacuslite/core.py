@@ -65,6 +65,7 @@ from abacuslite.io.generalio import (
 
 __LEGACYIO__ = True
 SOCKET_METADATA_SCHEMA = 'abacus.socket.properties.v1'
+LTS_SCF_FINISH_TIME_TOLERANCE_SECONDS = 60
 
 
 def _uses_legacy_io(version: str) -> bool:
@@ -480,10 +481,29 @@ def _matches_lts_rounded_scf_cell(info, log_path, directory, expected,
                 or len(starts) != 1 or len(finishes) != 1
                 or general['stru_file'] != str(stru_file)):
             return False
-        for field, values in (('start_time', starts), ('end_time', finishes)):
-            timestamp = datetime.strptime(values[0], '%a %b %d %H:%M:%S %Y')
-            if general[field] != timestamp.strftime('%Y-%m-%d %H:%M:%S'):
-                return False
+        log_start = datetime.strptime(starts[0], '%a %b %d %H:%M:%S %Y')
+        log_finish = datetime.strptime(finishes[0], '%a %b %d %H:%M:%S %Y')
+        raw_json_start = general['start_time']
+        raw_json_finish = general['end_time']
+        json_start = datetime.strptime(
+            raw_json_start, '%Y-%m-%d %H:%M:%S'
+        )
+        json_finish = datetime.strptime(
+            raw_json_finish, '%Y-%m-%d %H:%M:%S'
+        )
+        if (
+            json_start.strftime('%Y-%m-%d %H:%M:%S') != raw_json_start
+            or json_finish.strftime('%Y-%m-%d %H:%M:%S') != raw_json_finish
+            or json_start != log_start
+            or not (json_start <= json_finish <= log_finish)
+        ):
+            return False
+        # ABACUS can write abacus.json just before the process-level
+        # "Finish Time" line. Require the same run without demanding the
+        # teardown timestamp to be byte-identical.
+        finish_skew = (log_finish - json_finish).total_seconds()
+        if not (0 <= finish_skew <= LTS_SCF_FINISH_TIME_TOLERANCE_SECONDS):
+            return False
 
         # The separate "lattice constant (Angstrom)" line is also rounded to
         # six digits. The Cartesian-coordinate header retains the precise

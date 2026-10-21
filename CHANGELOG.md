@@ -9,6 +9,10 @@
   cell still must match STRU within the unchanged `1e-5` Angstrom limit.
   Missing, stale or inconsistent JSON remains a failed handoff. Previous JSON
   is backed up before a new calculation to prevent accidental reuse.
+- Accept a bounded process-finish timestamp skew (up to 60 seconds) when a
+  same-run `abacus.json` corroborates an LTS rounded-cell SCF frame. ABACUS
+  may write JSON before the log's `Finish Time`; start time, printed lattice,
+  precise cell, coordinates, forces and energy remain strict.
 
 ## 1.2.2
 

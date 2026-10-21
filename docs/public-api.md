@@ -77,6 +77,9 @@ For a single-frame LTS 3.10.1 SCF log whose cell was rounded to six significant
 digits, a same-run `abacus.json` can supply the cell precision after the log
 and JSON identities and results agree. The same absolute tolerance still
 applies to the precise cell; absent or inconsistent JSON does not relax it.
+The JSON `end_time` may precede the log's process-level `Finish Time` by a
+bounded teardown interval; start time, printed lattice, precise cell,
+coordinates, forces and energy remain strict.
 File-backed results restore the caller's atom ordering after species grouping.
 
 Missing force/stress data is not replaced with fabricated zero arrays. ASE
