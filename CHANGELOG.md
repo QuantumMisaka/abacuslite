@@ -2,17 +2,17 @@
 
 ## Unreleased
 
-- Recover LTS 3.10.1 single-frame SCF results when six-significant-digit
-  lattice vectors in the running log alone exceed the structure-matching
-  tolerance. A same-run `abacus.json` must corroborate version, run times,
-  STRU name, printed vectors, coordinates, energy and forces; its precise
-  cell still must match STRU within the unchanged `1e-5` Angstrom limit.
-  Missing, stale or inconsistent JSON remains a failed handoff. Previous JSON
-  is backed up before a new calculation to prevent accidental reuse.
-- Accept a bounded process-finish timestamp skew (up to 60 seconds) when a
-  same-run `abacus.json` corroborates an LTS rounded-cell SCF frame. ABACUS
-  may write JSON before the log's `Finish Time`; start time, printed lattice,
-  precise cell, coordinates, forces and energy remain strict.
+- Match SCF frames with an absolute `1e-4` Angstrom tolerance for cell
+  components and periodic residuals (default restored; `1e-5` was in force
+  since the ATST 2.2.9 alignment). ABACUS prints lattice vectors at six
+  significant digits, so a component in `[10, 100)` Angstrom can differ from
+  the exact STRU cell by up to `5e-5` Angstrom. The `1e-5` bound sat below
+  that print resolution and rejected correct single-frame SCF results; a real
+  geometry difference is still rejected.
+- Stop consuming `abacus.json`. The rounded-cell JSON corroboration path and
+  its run-timestamp checks are removed: the running log alone identifies the
+  SCF frame. A previous JSON is still backed up before a new calculation so
+  downstream completion markers cannot treat a stale file as a finished run.
 
 ## 1.2.2
 

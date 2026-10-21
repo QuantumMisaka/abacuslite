@@ -9,7 +9,6 @@ Task 4 扩充（回归矩阵）：容差两侧、md/relax/sella/ccqn 五路径�
 真实非 scf 金样（multiframe_md_legacy / multiframe_md_latest）、latestio eig_occ.txt 一次性消费（P5）。
 """
 import re
-import json
 import shutil
 from types import SimpleNamespace
 from pathlib import Path
@@ -182,23 +181,20 @@ def _rounded_cell_run(tmp_path):
     return template, tmp_path
 
 
-def test_lts_scf_uses_same_run_json_precision_for_rounded_log_cell(tmp_path):
+def test_lts_rounded_log_cell_matches_without_abacus_json(tmp_path):
+    """Six-significant-digit lattice rounding stays inside the default tolerance.
+
+    abacus.json is not consulted at all: the recomputed frame matches the STRU
+    once the tolerance covers the log's own printing resolution.
+    """
     template, directory = _rounded_cell_run(tmp_path)
+    untouched = directory / "abacus.json"
+    assert untouched.is_file()
+    untouched.unlink()
+
     results = template.read_results(directory)
     assert results["energy"] == pytest.approx(-13.5410411603)
     np.testing.assert_allclose(results["forces"], [[0, 0, 0]], atol=1e-12)
-
-
-def test_lts_scf_accepts_small_json_finish_time_skew(tmp_path):
-    """JSON may be written shortly before the log's process-level Finish Time."""
-    template, directory = _rounded_cell_run(tmp_path)
-    path = directory / "abacus.json"
-    document = json.loads(path.read_text())
-    document["general_info"]["end_time"] = "2026-10-21 02:57:44"
-    path.write_text(json.dumps(document))
-
-    results = template.read_results(directory)
-    assert results["energy"] == pytest.approx(-13.5410411603)
 
 
 @pytest.mark.parametrize("scale", [1.234564321, 1.2345652])
@@ -236,86 +232,25 @@ def test_lts_rounded_cell_nonunit_alat_and_nonorthogonal_vectors(tmp_path, scale
              for line in lines]
     log_path.write_text("\n".join(lines) + "\n")
 
-    path = directory / "abacus.json"
-    document = json.loads(path.read_text())
-    document["output"][0]["cell"] = vectors.tolist()
-    document["output"][0]["coordinate"] = (
-        np.asarray(document["output"][0]["coordinate"]) * scale
-    ).tolist()
-    path.write_text(json.dumps(document))
     assert abs(10 * float(f"{lts_printed_scale:.6g}") - vectors[0, 0] * scale) > 1e-5
     results = template.read_results(directory)
     assert results["energy"] == pytest.approx(-13.5410411603)
 
 
-@pytest.mark.parametrize("damage", [
-    "missing", "malformed", "stale_time", "wrong_version", "wrong_stru",
-    "wrong_cell", "wrong_stru_cell", "rounded_cell_disagrees", "wrong_coordinate", "wrong_energy",
-    "wrong_force", "multiple_outputs", "finish_after_log", "finish_too_far_before_log",
-    "finish_before_start", "noncanonical_start_time", "noncanonical_end_time",
-])
-def test_lts_rounded_cell_rejects_untrusted_json(tmp_path, damage):
-    template, directory = _rounded_cell_run(tmp_path)
-    path = directory / "abacus.json"
-    document = json.loads(path.read_text())
-    if damage == "missing":
-        path.unlink()
-    elif damage == "malformed":
-        path.write_text("{invalid JSON")
-    else:
-        if damage == "stale_time":
-            document["general_info"]["start_time"] = "2026-10-20 02:57:40"
-        elif damage == "finish_after_log":
-            document["general_info"]["end_time"] = "2026-10-21 02:57:47"
-        elif damage == "finish_too_far_before_log":
-            log_path = directory / "OUT.ABACUS" / "running_scf.log"
-            log_path.write_text(log_path.read_text().replace(
-                "Finish Time  : Wed Oct 21 02:57:46 2026",
-                "Finish Time  : Wed Oct 21 02:58:47 2026",
-            ))
-            document["general_info"]["end_time"] = "2026-10-21 02:57:44"
-        elif damage == "finish_before_start":
-            document["general_info"]["end_time"] = "2026-10-21 02:57:39"
-        elif damage == "noncanonical_start_time":
-            document["general_info"]["start_time"] = "2026-10-21 2:57:40"
-            document["general_info"]["end_time"] = "2026-10-21 02:57:44"
-        elif damage == "noncanonical_end_time":
-            document["general_info"]["end_time"] = "2026-10-21 2:57:44"
-        elif damage == "wrong_version":
-            document["general_info"]["version"] = "v3.11.0"
-        elif damage == "wrong_stru":
-            document["general_info"]["stru_file"] = "OTHER.STRU"
-        elif damage == "wrong_cell":
-            # Still prints +10 at six significant digits, but differs from
-            # STRU by more than the public 1e-5 Angstrom tolerance.
-            document["output"][0]["cell"][0][0] += 2e-5
-        elif damage == "wrong_stru_cell":
-            stru = directory / "STRU"
-            stru.write_text(stru.read_text().replace(
-                "10.000016522100001", "10.000056522100001"
-            ))
-        elif damage == "rounded_cell_disagrees":
-            document["output"][0]["cell"][0][0] += 1e-3
-        elif damage == "wrong_coordinate":
-            document["output"][0]["coordinate"][0][0] += 0.1
-        elif damage == "wrong_energy":
-            document["output"][0]["energy"] += 0.1
-        elif damage == "wrong_force":
-            document["output"][0]["force"][0][0] += 0.1
-        elif damage == "multiple_outputs":
-            document["output"].append(document["output"][0])
-        path.write_text(json.dumps(document))
-    with pytest.raises(RuntimeError, match="fail-closed"):
-        template.read_results(directory)
-
-
-def test_lts_rounded_cell_json_cannot_rescue_multiple_log_frames(tmp_path):
+def test_lts_rounded_cell_displaced_log_frame_fails_closed(tmp_path):
+    """Print rounding is absorbed; a real geometry difference is still rejected."""
     template, directory = _rounded_cell_run(tmp_path)
     log = directory / "OUT.ABACUS" / "running_scf.log"
     frames = read_abacus_out(log)
+    assert _select_scf_frame_for_structure(
+        frames, log, directory, [0], legacyio=True
+    ) is frames[0]
+
+    displaced = frames[0].copy()
+    displaced.positions = displaced.positions + np.array([0.0, 0.0, 0.05])
     with pytest.raises(RuntimeError, match="fail-closed"):
         _select_scf_frame_for_structure(
-            frames + frames, log, directory, [0], legacyio=True
+            [displaced], log, directory, [0], legacyio=True
         )
 
 
@@ -702,8 +637,14 @@ def test_scf_selector_accepts_cartesian_integer_lattice_translations(tmp_path):
 
 @pytest.mark.parametrize("delta", [9e-6, 11e-6, 5e-5])
 @pytest.mark.parametrize("field", ["cell", "positions"])
-def test_default_scf_identity_tolerance_matches_atst_229(tmp_path, delta, field):
-    """Accept rounding below 1e-5 A; reject the former loose interval."""
+def test_default_scf_identity_tolerance_covers_log_print_resolution(
+    tmp_path, delta, field
+):
+    """Default 1e-4 A absorbs six-significant-digit lattice printing.
+
+    ``5e-5`` is the half-ulp a component in ``[10, 100)`` Angstrom can pick up,
+    so the former ``1e-5`` default could never match a rounded but correct cell.
+    """
     _, cell, frac, symbols = _synthetic_direct_case(tmp_path)
     frame_cell, frame_frac = cell.copy(), frac.copy()
     if field == "cell":
@@ -711,14 +652,27 @@ def test_default_scf_identity_tolerance_matches_atst_229(tmp_path, delta, field)
     else:
         frame_frac[0] += np.array([delta, 0, 0]) @ np.linalg.inv(cell)
     frame = Atoms(symbols=symbols, positions=frame_frac, cell=frame_cell, pbc=True)
-    if delta < 1e-5:
-        assert _select_scf_frame_for_structure([frame], LOG, tmp_path, [0, 1]) is frame
+    assert _select_scf_frame_for_structure([frame], LOG, tmp_path, [0, 1]) is frame
+
+
+@pytest.mark.parametrize("field", ["cell", "positions"])
+def test_default_scf_identity_tolerance_rejects_beyond_print_resolution(
+    tmp_path, field
+):
+    """A difference above the print resolution still fails closed."""
+    delta = 2e-4
+    _, cell, frac, symbols = _synthetic_direct_case(tmp_path)
+    frame_cell, frame_frac = cell.copy(), frac.copy()
+    if field == "cell":
+        frame_cell[0, 0] += delta
     else:
-        with pytest.raises(RuntimeError):
-            _select_scf_frame_for_structure([frame], LOG, tmp_path, [0, 1])
-        assert _select_scf_frame_for_structure(
-            [frame], LOG, tmp_path, [0, 1], atol=1e-4
-        ) is frame
+        frame_frac[0] += np.array([delta, 0, 0]) @ np.linalg.inv(cell)
+    frame = Atoms(symbols=symbols, positions=frame_frac, cell=frame_cell, pbc=True)
+    with pytest.raises(RuntimeError):
+        _select_scf_frame_for_structure([frame], LOG, tmp_path, [0, 1])
+    assert _select_scf_frame_for_structure(
+        [frame], LOG, tmp_path, [0, 1], atol=1e-3
+    ) is frame
 
 
 def test_latest_coordinate_parser_uses_periodic_matcher(tmp_path, monkeypatch):
