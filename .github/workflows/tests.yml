@@ -8,7 +8,7 @@ on:
     inputs:
       atst_ref:
         description: ATST commit or refs/pull/N/merge for coordinated candidates
-        default: 'b8c3218ade7380116d3fbc2162cf11bb7a8dded8'
+        default: '033bd15701c039016a858d5709e7d86855350b2e'
         type: string
       forge_ref:
         description: Forge commit or refs/pull/N/merge for coordinated candidates
