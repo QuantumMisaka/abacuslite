@@ -159,6 +159,22 @@ class TestLatestIO(unittest.TestCase):
             self.assertIn('occ', es)
             self.assertEqual(es['occ'].shape, (1, 1, 35)) # ispin, ik, nbnd
 
+    def test_read_band_from_eig_occ_accepts_negative_mp_occupations(self):
+        """MP smearing can produce small negative occupations in latest eig_occ."""
+        lines = [
+            '# ionic step',
+            ' Electronic state energy (eV) and occupations',
+            ' Spin number 2',
+            ' spin=1 k-point=1/1 Cartesian=0.0000000 0.0000000 0.0000000 (250081 plane wave)',
+            '1 -1.0 0.5',
+            '2 -0.5 -0.0009381451611561922',
+        ]
+        elecstate = read_band_from_eig_occ(lines)
+        self.assertEqual(len(elecstate), 1)
+        self.assertEqual(elecstate[0]['e'].shape, (1, 1, 2))
+        self.assertEqual(elecstate[0]['occ'].shape, (1, 1, 2))
+        self.assertTrue(np.isclose(elecstate[0]['occ'][0, 0, 1], -0.0009381451611561922))
+
     def test_read_traj_from_running_log(self):
         traj = read_traj_from_running_log(self.testfiles / 'lcao-symm0-nspin2-multik-cellrelax')
         self.assertEqual(len(traj), 3)
