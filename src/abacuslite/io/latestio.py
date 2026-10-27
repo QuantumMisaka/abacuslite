@@ -126,8 +126,8 @@ def read_band_from_eig_occ(src: str | Path | List[str]) \
     k = k.reshape((nframe, nspin, nk, 3))
 
     ekbpat  = r'\d+\s+'
-    ekbpat += r'(-?\d+(\.\d+)?(e[+-]\d+)?)\s+'
-    ekbpat += r'(\d+(\.\d+)?(e[+-]\d+)?)'
+    ekbpat += r'(-?\d+(\.\d+)?([eE][+-]?\d+)?)\s+'
+    ekbpat += r'(-?\d+(\.\d+)?([eE][+-]?\d+)?)'
     iekb = [i for i, l in enumerate(raw) if re.match(ekbpat, l)]
     assert len(iekb) > 0, f'No band energy found'
     assert len(iekb) % (nspin*nk) == 0
