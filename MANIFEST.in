@@ -1,8 +1,9 @@
-include CONTRIBUTING.md
-include LICENSE UPSTREAM.md CHANGELOG.md AGENTS.md
-include src/abacuslite/xtest.sh
-recursive-include tests *.py *.sh
-recursive-include tests/fixtures *
-recursive-include examples *.py
-recursive-include docs *.md
+include README.md LICENSE UPSTREAM.md
+prune tests
+prune examples
+prune docs
+prune scripts
+prune .github
+exclude AGENTS.md CONTRIBUTING.md CHANGELOG.md
+exclude src/abacuslite/xtest.sh
 global-exclude __pycache__ *.py[cod]

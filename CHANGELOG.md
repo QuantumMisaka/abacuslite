@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Keep tests, recorded output, examples, development scripts and historical
+  documents out of published distributions. Test both the installed wheel and
+  a wheel rebuilt from the sdist with assets from the same source revision.
+
 - Match SCF frames with an absolute `1e-4` Angstrom tolerance for cell
   components and periodic residuals (default restored; `1e-5` was in force
   since the ATST 2.2.9 alignment). ABACUS prints lattice vectors at six
@@ -23,8 +27,8 @@
 ## 1.2.2
 
 Published on [PyPI](https://pypi.org/project/abacuslite/1.2.2/) on
-2026-10-20 (UTC+08:00). Publication evidence is tracked in the
-[release record](docs/superpowers/plans/2026-10-20-1.2.2-release.md).
+2026-10-20 (UTC+08:00). Source and release behavior are recorded at
+[release commit f8c8b04](https://github.com/QuantumMisaka/abacuslite/tree/f8c8b045fa3a76ad4c2fdd92c828fda5155f6f34).
 
 - Define the public calculator/I/O contract and the retained compatibility
   surface; add installed-package behavior checks using real output fixtures.
@@ -123,7 +127,7 @@ Published on [PyPI](https://pypi.org/project/abacuslite/1.1.0/) on
 - Raise the ASE dependency floor to 3.28 for the supported candidate matrix;
   this release does not claim the old unverified `ase>=3.22` range.
 
-Publication status and artifact identities are recorded in the
-[release record](docs/superpowers/plans/2026-10-17-1.1.0-release.md).
+Source and release behavior are recorded at
+[release commit 94a26e4](https://github.com/QuantumMisaka/abacuslite/tree/94a26e4c7f31ed817eac36c871ff74a7b7abe418).
 Existing consumers must validate their installed integration
 before removing vendored implementations or changing production dependencies.

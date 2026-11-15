@@ -1,63 +1,27 @@
 # Documentation
 
-This documentation is maintained on `main`. Start with the repository
-[README](../README.md) for installation and a quick example; the guides below
-cover use, compatibility and maintenance.
+Start with the repository [README](../README.md) for installation and a quick
+example. Use [Usage](usage.md) for calculator workflows and file reading,
+[Supported versions](supported-versions.md) for tested engine snapshots, and
+[Troubleshooting](troubleshooting.md) when setup or output reading fails.
 
-## Start here
+## User and API reference
 
-| Document | Purpose |
-| --- | --- |
-| [README](../README.md) | Installation, quick start and examples |
-| [Supported versions](supported-versions.md) | Tested ABACUS snapshots, readers and limitations |
-| [Troubleshooting](troubleshooting.md) | Common setup, asset and runtime problems |
-
-## User guides
-
-| Document | Purpose |
-| --- | --- |
-| [Usage](usage.md) | Calculator configuration, examples and output reading |
-| [Migration](migration.md) | Installing the independent package and adapting callers |
-| [Compatibility and CI](compatibility-ci.md) | Current checks, evidence and remaining gaps |
-| [Changelog](../CHANGELOG.md) | User-visible changes and release history |
+- [Public API](public-api.md): supported imports, arguments and result behavior.
+- [Module and format reference](reference.md): reader inputs and output fields.
+- [Migration](migration.md): changes from the former ASE fork.
+- [Socket contract](socket-contract.md): engine and adapter protocol.
+- [Changelog](../CHANGELOG.md): released and pending behavior changes.
 
 ## Development
 
-| Document | Purpose |
-| --- | --- |
-| [Contributing](../CONTRIBUTING.md) | Development setup, tests, packaging and review |
-| [Design](design.md) | Package responsibilities and architectural constraints |
-| [From ase-abacus to abacuslite](ase-interface.md) | Differences from the old ASE fork and the current architecture |
-| [Socket adapter contract](socket-contract.md) | Engine/adapter schema, property masks and compatibility |
-| [Module reference](reference.md) | Public API and output-format details |
-| [Public API contract](public-api.md) | Stable entry points, result semantics, compatibility and behavior checks |
-| [Maintenance options](maintenance-options.md) | Community discussion proposal; ownership and appointments remain undecided |
-| [Source provenance](../UPSTREAM.md) | Original authorship, imported revisions and adaptations |
-| [Upstream integration audit](upstream-integration.md) | Source comparison and reader-isolation rationale |
-| [Internal conventions](../AGENTS.md) | Repository-specific automation and agent conventions |
+- [Contributing](../CONTRIBUTING.md): tests, packaging, review and release steps.
+- [Design](design.md): package ownership, test scope and repository boundaries.
+- [Compatibility checks](compatibility-ci.md): current CI layers and tested
+  engine compatibility.
+- [Source provenance](../UPSTREAM.md): original authorship and imported code.
 
-## Maintainer records
-
-Dated plans and evidence describe what was tested at a particular revision.
-They are historical records; use the guides above for current behavior.
-
-- [1.2.2 release](superpowers/plans/2026-10-20-1.2.2-release.md):
-  public API contract, noncollinear result repair and publication progress.
-- [Public API and maintenance follow-up](superpowers/plans/2026-10-20-public-api-and-maintenance.md):
-  local behavior evidence, independent review and maintenance discussion.
-- [1.2.0 release](superpowers/plans/2026-10-19-1.2.0-release.md):
-  candidate artifacts, verification and pending publication gates.
-- [1.2.1 release](superpowers/plans/2026-10-20-1.2.1-release.md):
-  explicit no-entropy energy handoff and publication record.
-- [Post-release ATST and engine integration](superpowers/plans/2026-10-18-atst-next-actions.md):
-  external-only consumers, dual-engine builds and hosted checks.
-- [1.1.0 release](superpowers/plans/2026-10-17-1.1.0-release.md):
-  release artifacts and publication evidence.
-- [Dual-engine CI follow-up](superpowers/plans/2026-10-17-dual-engine-ci.md):
-  portable harness and engine-side implementation record.
-- [ABACUS/ATST integration acceptance](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md):
-  local acceptance evidence and tested revision tuples.
-- [Standalone bootstrap](superpowers/plans/2026-10-16-standalone-bootstrap.md):
-  original extraction and package-validation record.
-- [Cross-repository regressions](superpowers/plans/2026-10-16-cross-repository-regressions.md):
-  initial installed-consumer tests and source-integration evidence.
+Development plans and detailed run evidence live in the maintainer workspace
+or CI artifacts, outside this source tree. Published distributions omit
+documentation. Current behavior is defined by this guide set, the public API,
+and the changelog.

@@ -74,5 +74,5 @@ unchanged by this correction.
 
 Additional generic fixed-density, native version-probe and backup-suffix
 regressions are adapted from ATST `tests/unit/test_abacuslite_profile.py` at
-the same revision. The [integration audit](docs/upstream-integration.md) maps
-all substantive source differences to retained behavior and test ownership.
+the same revision. The current [package design](docs/design.md) describes
+ownership boundaries and the policy for focused fixtures and tests.

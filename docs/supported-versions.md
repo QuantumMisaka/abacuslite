@@ -15,13 +15,9 @@ MD, band structure, magnetic moments and socket handoff. They are interface
 checks, not convergence studies. See
 [compatibility and CI](compatibility-ci.md) for evidence.
 
-The table records the published 1.2.2 acceptance. This release adds the
-[public API contract](public-api.md) and fixes noncollinear result projection
-without caller-side ASE registry changes. The tag workflow passed all nine
-checks per engine using public-interface harness `7efe6422e`. Earlier local
-paired-harness checks used develop `73cd094` (beta10) and the same LTS snapshot.
-Exact source, artifact and hosted evidence is recorded in the
-[1.2.2 release record](superpowers/plans/2026-10-20-1.2.2-release.md).
+These snapshots were checked against published 1.2.2 using public interfaces.
+The tests cover reader behavior and real-engine handoff; they do not establish
+scientific convergence.
 
 Socket support uses `abacus.socket.properties.v1`; the adapter rejects unknown
 schemas. See the [socket adapter contract](socket-contract.md) for the
@@ -50,8 +46,3 @@ leaves the existing reader unchanged. For output-only work, call
 
 See [compatibility and CI](compatibility-ci.md) for revisions, environments
 and retained evidence.
-
-## Energy metadata (1.2.1)
-
-Both file readers preserve standard ASE energy values and expose the separate
-no-entropy energy when available. See the [energy reference](reference.md#energy-metadata-121).

@@ -1,220 +1,69 @@
-# Compatibility checks across repositories
+# Compatibility and CI
 
-## Current checkpoint
+The published [1.2.2 package](https://pypi.org/project/abacuslite/1.2.2/)
+supports the tested develop and LTS ABACUS output formats. This does not certify
+every engine revision or imply that the independent package has been adopted
+upstream. [ABACUS PR #8175](https://github.com/deepmodeling/abacus-develop/pull/8175)
+remains open; the bundled source is still maintained in the ABACUS repository.
 
-Release [1.2.2](https://pypi.org/project/abacuslite/1.2.2/) adds the [public API contract](public-api.md),
-installed-package behavior tests and a noncollinear result-projection repair.
-Its engine harness is pinned to `7efe6422e` in the maintainer's ABACUS fork;
-engine and asset refs remain unchanged. This harness uses public interfaces,
-keeps independent raw-output assertions and needs no ASE registry patch.
-The exact tag's [Package tests run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39384404829)
-passed both installed-package lanes, both consumer lanes, and all nine checks
-on each cold-built engine. The
-[publish run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39385887617)
-uploaded that run's distributions without rebuilding; both PyPI hashes match.
-Local evidence and publication details are in the
-[1.2.2 release record](superpowers/plans/2026-10-20-1.2.2-release.md).
+## What CI checks
 
-The previous release, 1.2.1, is [published on PyPI](https://pypi.org/project/abacuslite/1.2.1/)
-(2026-10-20, UTC+08:00). It preserves standard ASE energy values and adds
-explicit no-entropy metadata for ATST's reference-only comparison. Both
-installed-package lanes, both ATST/Forge consumer lanes and the develop/LTS
-real-engine checks passed on the exact release tag
-([39358708884](https://github.com/QuantumMisaka/abacuslite/actions/runs/39358708884)).
-The [publish run](https://github.com/QuantumMisaka/abacuslite/actions/runs/39359654717)
-uploaded that run's artifacts without rebuilding; both PyPI hashes match.
-See the [1.2.1 record](superpowers/plans/2026-10-20-1.2.1-release.md) for
-source, artifact, review and indexed-install evidence. The
-[1.2.0 record](superpowers/plans/2026-10-19-1.2.0-release.md) remains historical.
-Plugin main requires the GitHub Actions `compatibility-gate`, including for
-administrators, with branches required to be up to date. Upstream ABACUS
-adoption remains a separate open PR.
+The Package tests workflow runs on pushes, pull requests, merge queues, manual
+runs and a weekly schedule.
 
-| Layer | Local candidate state | Remaining work |
-| --- | --- | --- |
-| Wheel/sdist and offline contracts | `1.2.2` tag run passed both package lanes and the aggregate gate; published PyPI digests match the tag artifacts | Publication complete; indexed-install evidence is in the release record |
-| Installed ATST/Forge consumers | External-only Python 3.10/minimum and 3.12/current matrix passes locally and remotely; pins moved to ATST `v2.3.0` tag commit `b8c3218` (requires `abacuslite>=1.2.0,<2`) and Forge `d8d1a74` (`[abacuslite]` extra pins `1.2.0`) | Keep consumer pins aligned with abacuslite releases |
-| Develop/LTS real engines | Fresh Ubuntu builds and all nine required checks per engine pass using public-interface harness `7efe6422e`, without private reader probes or ASE registry patches | Upstream ABACUS adoption, stable plugin pin update and its required-check configuration |
-| Merge enforcement | Plugin main requires the successful aggregate from GitHub Actions, with strict freshness and administrator enforcement | ATST required-check configuration remains a separate maintenance decision |
+- **Installed package:** builds and checks wheel and source distributions,
+  installs each runtime artifact, and runs offline tests outside the checkout
+  on Python 3.10 with minimum dependencies and Python 3.12 with current
+  dependencies. The sdist-derived wheel is tested with test assets from the
+  same source revision. Tests, examples, recorded output and development
+  documents are excluded from both distributions.
+- **Installed consumers:** installs selected ATST and Forge revisions alongside
+  the candidate wheel and verifies the consumer suite and this package's
+  integration contracts. Consumer packages remain outside runtime dependencies.
+- **Engine compatibility:** resolves one set of ABACUS, harness and asset
+  revisions, cold-builds develop and LTS, installs the candidate package and
+  runs required cases through public interfaces.
+- **Aggregate gate:** fails if a required package, consumer, reference or engine
+  job fails or is skipped.
 
-Exact revisions, environments, raw-output links and earlier GPU/consumer runs
-are in the [acceptance record](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md).
-The [dual-engine CI plan](superpowers/plans/2026-10-17-dual-engine-ci.md) defines
-implementation and rollout steps. The [post-release execution record](superpowers/plans/2026-10-18-atst-next-actions.md)
-tracks the current candidate and separates local, hosted and upstream states. Historical failures and detailed
-run sequences stay in those records.
+Pull request runs use pinned consumer revisions; scheduled runs follow their
+main branches. Manual runs accept candidate refs for coordinated changes.
+Every compatibility result should identify the plugin, engine, harness and
+asset revisions. Reports and raw engine outputs are retained by CI, including
+failed engine jobs.
 
-## Package and installed-consumer workflow
+## Supported behavior and limits
 
-The `Package tests` workflow (`.github/workflows/tests.yml`) defines
-push/PR checks without path filters, manual candidate runs and a weekly schedule:
+Each calculator selects its reader from its configured executable and keeps
+that choice for its lifetime. The tested develop 3.11 output uses latestio;
+ABACUS 3.10.x LTS uses legacyio. See [Supported versions](supported-versions.md)
+for exact snapshots and known limits.
 
-- `installed-package` builds wheel/sdist, checks metadata, installs the wheel
-  and runs offline regressions on Python 3.10/minimum and 3.12/current
-  dependencies outside the checkout. The minimum lane pins ASE 3.28.0,
-  NumPy 1.26.0, seekpath 2.2.0 and pytest 8.0.0. It also rebuilds a wheel
-  from the sdist and tests it using the sdist's own tests/examples/configuration.
-- `installed-consumers` installs the current plugin wheel and selected ATST
-  wheel in external-only Python 3.10/minimum and 3.12/current environments.
-  The minimum consumer lane uses pytest 8.4.0 to satisfy ATST's test extra;
-  the package-only lane retains its pytest 8.0.0 floor. The runner verifies
-  full collection/outcomes, expected skip reasons, package identity and
-  deterministic output facts. It clears inherited pytest selectors and
-  rejects deselection. The runner starts outside checkouts;
-  ATST pytest uses repository fixtures with installed imports attested at both
-  ends and in child processes. Forge is installed afterward under the same
-  dependency constraints. The previous paired vendored/external acceptance
-  remains historical evidence; the new ATST candidate keeps thin import
-  forwarders and no duplicate parser implementation.
-- Plugin-owned consumer tests then run outside checkouts. They cover input
-  preparation, ordered SCF forces/Fermi values, periodic frame matching,
-  fail-closed handoff, native-MD geometry, mixed-reader isolation, repeatable
-  reads, constant-potential guards and Forge fact projection. Engine subprocesses
-  are replaced in these offline tests; parsers are not each other's oracle.
-  `.github/consumer-cases.json` lists all required case identities: missing,
-  duplicate, extra, failed or skipped cases fail the report gate.
-- `resolve-engine-refs` records one engine/harness/asset tuple for the run;
-  `engine-compatibility` cold-builds both engines on Ubuntu 24.04 with two
-  workers, installs the candidate wheel, and runs the reviewed ABACUS harness.
-  Build provenance, runtime reports and raw files are uploaded on failure too.
-- `compatibility-gate` runs even when prerequisites fail or are skipped and
-  requires successful package, consumer, ref-resolution and real-engine jobs.
-  A skipped engine lane cannot produce a passing aggregate.
+Engine-side integration tests belong to ABACUS and compare parser results with
+raw engine outputs. Package offline tests cover parser and public ASE behavior
+without launching ABACUS. Consumer tests check installed-package boundaries.
+These checks protect different behaviors; fixture tests do not certify engine
+execution, and one repository's parser must not be used as the oracle for
+another repository's parser.
 
-After installing the candidate wheel and both consumers, run the plugin-owned
-contracts from a copied test tree outside checkouts:
+LTS has no socket driver in the tested v3.10.1 build. The fixed-cell socket
+calculator therefore requires an engine build with socket support. Short
+integration cases test interface behavior and do not establish scientific
+convergence or equivalence between engine versions.
 
-```bash
-python -m pytest tests/consumers --run-consumers -q -s
-```
+## Changing a boundary
 
-Ordinary pytest skips consumers; explicit opt-in must fail if a consumer is
-missing. Consumer dependencies do not become plugin runtime dependencies.
-See [Contributing](../CONTRIBUTING.md) for package setup and verification.
+For parser changes, keep a small attributed regression in this package and
+reuse an existing output fixture when it covers the same behavior. ABACUS tests
+engine behavior through its existing engine harness and raw-property
+assertions; do not copy this package's tests or fixture logs into the ABACUS
+repository. When useful, the standalone suite can be run against the bundled
+source from outside the ABACUS checkout. For consumer changes, test installed
+wheels against explicit candidate refs. Do not submit hosted HPC runs from
+ordinary community pull requests; trusted maintainers run the engine workflow.
 
-PR jobs pin the ATST `v2.3.0` tag commit `b8c3218` and Forge `d8d1a74` in
-`.github/workflows/tests.yml`. Weekly checks follow ATST and Forge `main`;
-manual runs accept `atst_ref` and `forge_ref` for coordinated candidates.
-Candidate pins must be publicly fetchable before a hosted run is accepted.
-Weekly checks supplement PR checks.
-
-## Develop and LTS engine coverage
-
-LTS compatibility through `legacyio` is a plugin responsibility even though
-LTS has no `interfaces/` tree or ASE-plugin workflow. Calculators bind reader
-selection to their configured executable's actual version; creating a develop
-calculator must not alter an existing LTS instance. Explicit readers remain
-available for pure I/O. LTS has no socket driver; the shared harness supplies
-its legacy-format oracle.
-
-Local installed-wheel acceptance used plugin `ba65f606`:
-
-| Engine snapshot | Reader | Real CPU/MPI interface checks |
-| --- | --- | --- |
-| develop `73cd094` (v3.11.0-beta10) | `latestio` | SCF, ASE relax/MD, native MD, band, magnetic and socket: 9 passed |
-| LTS `725bf47` (v3.10.1) | `legacyio` | SCF, ASE relax/MD, native MD, band and magnetic: 8 passed |
-
-A seeded LTS native-MD case with engine-generated velocities also passed.
-Native-MD checks verify STRU velocity units, actual motion and each frame's
-raw energy, cell, positions, forces and PBC. LTS's tested engine lacks the socket
-driver. These short interface checks do not establish scientific convergence,
-equivalence between engine versions or support for every engine feature.
-See [repaired-wheel acceptance](superpowers/plans/2026-10-17-abacus-atst-integration-acceptance.md#repaired-wheel-acceptance)
-for full engine/wheel identities, failures, repairs and retained output.
-
-The new engine jobs use the stronger ABACUS-owned raw-property assertions,
-independently of this package's imported opt-in tests. The manifest
-`tests/engine-refs.json` pins engines, the reviewed harness and curated asset
-hashes. Weekly runs resolve develop/LTS heads once; manual runs may select
-`develop_ref`, `lts_ref` and `harness_ref`. The harness accepts an explicit
-engine, MPI command, assets, format, wheel, report directory and installed
-Python environment. It rejects wrong module origins, wheel/runtime mismatch,
-engine-version/format mismatches and incomplete case execution. Reader
-compatibility is verified by observable results rather than private state.
-Reports use schema v2, without the old private reader-selection fields.
-LTS requires its eight
-ordinary checks plus the seeded native-MD case; absent socket support is a
-documented boundary, not a substitute for one of those checks.
-
-The ABACUS target defined in
-[issue #8165](https://github.com/deepmodeling/abacus-develop/issues/8165) is
-fully external: no submodule and no vendored plugin. `interfaces/ASE_interface`
-keeps only the engine-side harness. The open PR's workflow now defaults
-to published 1.2.2 with its verified wheel hash, or accepts a reviewed
-candidate. Its public-interface follow-up is included in PR head `ac64e83f7`;
-current-head verification and the maintenance discussion are tracked in the
-[review-response record](superpowers/plans/2026-10-20-pr8175-response-drafts.md).
-The harness passed all nine develop checks and the
-LTS external lane in the earlier candidate `e446bda`; that candidate also
-exercised a now-retired bundled lane. The current `tests/engine-refs.json`
-tuple keeps the develop engine at ABACUS PR #8175 head `1bf602a`, and pins
-the public-interface harness separately to `7efe6422e` in
-`QuantumMisaka/abacus-develop`. These are pre-merge candidates, with
-`engine_repository` still `deepmodeling/abacus-develop`; the harness must
-be rebound to an appropriate upstream revision after adoption. The
-[LTS hosted run](https://github.com/QuantumMisaka/abacus-develop/actions/runs/39059239649)
-passed its external lane, and all 425 retained raw-file hashes were checked
-after download. External-only ABACUS adoption is a separate upstream PR.
-
-The final [ATST candidate run](https://github.com/QuantumMisaka/atst-tools/actions/runs/39060138450)
-passes all six jobs at `edfd8f4`. A separate SAI run (`1835021`) validates 13
-bounded workflow cases with installed external abacuslite, including restart
-continuity and serial/parallel NEB. Initial MD evidence is snapshotted before
-restart and checked from the returned archive. Sella, CCQN and descent IRC
-complete at one step with `converged=false`; Dimer and scientific convergence
-remain outside this acceptance. That GPU run uses the recorded `4b92455`
-engine plus a v3.10.1 legacy smoke; it does not replace the fresh CPU matrix.
-
-## Repository responsibilities
-
-Each changed repository should check its own candidate against tested partners.
-The rows below describe the target; external-only ABACUS adoption and upstream
-merge enforcement remain separate upstream decisions.
-
-| Changed repository | PR verification |
-| --- | --- |
-| abacuslite | Current PR wheel, own contracts, installed consumers and pinned develop/LTS engines |
-| ABACUS | This PR's engine, a validated plugin, and engine-owned assertions/assets; retain failed outputs |
-| ATST | This PR's ATST with the supported external plugin; profile, I/O and affected workflow checks |
-| Forge | This PR's Forge with the optional plugin; preserve native-default and read-only projection contracts |
-
-Coordinated runs select both candidate revisions explicitly. Scheduled
-engine checks follow develop/LTS heads, supplementing stable PR baselines.
-ABACUS adapters may forward imports/configuration but must not duplicate the
-parser. ATST's candidate forwards supported historical import paths to the
-installed external package, including shared module state.
-Ordinary community PRs must not submit HPC jobs; expensive workflow acceptance
-runs only through a maintainer-controlled entry on trusted infrastructure.
-
-## Coordinated changes and enforcement
-
-Preserve public imports, units, atom ordering, missing values, supported formats,
-read-only artifacts and consumer handoff. Internal refactoring is welcome;
-coverage totals and source hashes alone cannot establish correct behavior.
-Intentional breaks need an explicit contract, migration and versioning decision.
-Do not weaken tolerances or references merely to accept a refactor.
-
-Keep counterpart refs fetchable, retain resolved revision tuples and logs, and
-validate candidate pairs before changing dependency constraints. Publish the
-verified plugin before switching stable consumers to its indexed version.
-Fork PR execution stays read-only: no release/HPC secrets or privileged
-`pull_request_target` execution of candidate code.
-
-The required `compatibility-gate` covers package, consumer, resolved-ref and
-dual-engine jobs. A real hosted consumer failure produced a failed aggregate;
-the repaired run passed all eight jobs. Branch protection requires that check
-from the GitHub Actions app (ID 15368), uses strict freshness, applies to
-administrators, and disallows force pushes and branch deletion. Keep this
-configuration aligned with the workflow; a green job alone does not enforce
-merge blocking. Review workflow
-changes that could remove the gate. If merge queues are introduced, add the
-`merge_group` trigger before requiring checks there. Upstream ABACUS
-branch-protection details were unavailable to the inspecting account, so its
-required-check enforcement remains unconfirmed. The plugin protection change belongs to this post-release
-CI rollout. The separate GitHub `pypi` environment still only accepts
-deployments from main; published 1.2.0 artifacts and its tag are unchanged.
-
-GitHub references:
-[required checks and skipped workflows](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks),
-[protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches),
-[privileged PR workflow security](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target).
+Keep the external ABACUS and consumer PRs linked while behavior changes cross
+repository boundaries. Upstream ABACUS branch protection is not visible from
+this repository, so this guide makes no claim about its required checks.
+The GitHub Actions workflow and [Contributing](../CONTRIBUTING.md) are the
+current sources for CI and local verification details.

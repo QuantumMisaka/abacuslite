@@ -2,7 +2,7 @@
 
 General ASE calculator and ABACUS I/O fixes belong in this package. ABACUS
 owns the engine and its integration harness; ATST owns workflow and launcher
-policy. See the [integration audit](docs/upstream-integration.md) and
+policy. See [Package design](docs/design.md) and the
 [cross-repository CI guide](docs/compatibility-ci.md) before changing a boundary.
 
 ## Development setup
@@ -37,11 +37,14 @@ Verify that `abacuslite.__file__` resolves inside that environment; the
 [migration guide](docs/migration.md#install-one-implementation) provides the
 check. Include `examples/` because offline tests verify their startup. Repeat
 with a wheel rebuilt from the sdist when validating distribution changes.
-Use the tests, examples and configuration extracted from that sdist for the
-second run, so missing distribution files cannot be masked by the checkout.
+Use tests, examples and configuration from the same source revision for both
+runs; copy them outside the checkout without its `src/` directory. The sdist
+must rebuild the runtime wheel independently of those test assets.
 CI uses this layout for Python 3.10 with the declared direct dependency floors
-and Python 3.12 with current dependencies. Tests and examples ship in the
-sdist; the wheel contains the runtime package only.
+and Python 3.12 with current dependencies. Both distribution formats contain
+runtime code, build metadata, README, license and source attribution only.
+Tests, recorded output, examples, development scripts and historical documents
+remain in the source repository.
 Use `python -I -m pytest -q` for artifact validation: example subprocesses
 preserve isolated mode and check that a conflicting `PYTHONPATH` is ignored.
 
@@ -84,11 +87,8 @@ link paired repository PRs. Internal refactoring is welcome when the behavior
 continues to pass. Breaking public behavior needs an explicit migration and
 versioning decision; do not silently weaken existing assertions.
 
-Historical implementation evidence is retained in the
-[bootstrap record](docs/superpowers/plans/2026-10-16-standalone-bootstrap.md)
-and [installed-consumer CI record](docs/superpowers/plans/2026-10-16-cross-repository-regressions.md).
-Current engine/consumer results and subsequent plans are linked from the
-compatibility guide.
+Keep current verification instructions here and compatibility expectations in
+the compatibility guide. Store detailed run evidence outside the source tree.
 
 ## Cross-repository changes
 
@@ -127,4 +127,4 @@ After upload, compare PyPI's SHA256 digests with the workflow summary and
 verify `pip install abacuslite==VERSION` and `pip check` in a fresh environment.
 If an upload partially succeeds, inspect the registry before retrying; do not
 silently skip conflicting artifacts. Keep the release's source/run IDs and
-verification evidence in its record under `docs/superpowers/plans/`.
+verification evidence in the maintainer workspace.
