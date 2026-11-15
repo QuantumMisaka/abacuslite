@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Read paths and named text streams without closing caller-owned streams;
+  report periodic boundary conditions for both SCF and MD output. Parse STRU
+  options by keyword while preserving valid bare mobility triplets.
+
 - Keep tests, recorded output, examples, development scripts and historical
   documents out of published distributions. Test both the installed wheel and
   a wheel rebuilt from the sdist with assets from the same source revision.
@@ -15,8 +19,8 @@
   geometry difference is still rejected.
 - Stop consuming `abacus.json`. The rounded-cell JSON corroboration path and
   its run-timestamp checks are removed: the running log alone identifies the
-  SCF frame. A previous JSON is still backed up before a new calculation so
-  downstream completion markers cannot treat a stale file as a finished run.
+  SCF frame. Writing new input leaves existing JSON files untouched; downstream
+  workflows manage their own completion markers.
 - Accept signed Cartesian noncollinear moments in STRU input and keep vector
   moments in `calc.results` without mutating ASE's global property registry.
 - Export only values accepted by ASE's `Properties` schema; backend metadata

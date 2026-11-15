@@ -180,7 +180,7 @@ def test_lts_rounded_log_cell_matches_without_abacus_json(tmp_path):
 
 @pytest.mark.parametrize("scale", [1.234564321, 1.2345652])
 def test_lts_rounded_cell_nonunit_alat_and_nonorthogonal_vectors(tmp_path, scale):
-    """The precise Cartesian header, rather than its rounded Angstrom line, sets alat."""
+    """The default identity tolerance accepts rounding in the printed lattice data."""
     template, directory = _rounded_cell_run(tmp_path)
     # LTS prints the rounded Angstrom line with its own 0.529177 constant;
     # at the second value this differs from rounding with ASE's Bohr value.
@@ -235,7 +235,7 @@ def test_lts_rounded_cell_displaced_log_frame_fails_closed(tmp_path):
         )
 
 
-def test_write_input_backs_up_previous_abacus_json(tmp_path):
+def test_write_input_leaves_existing_abacus_json_untouched(tmp_path):
     path = tmp_path / "abacus.json"
     path.write_text('{"old": true}')
     atoms = Atoms("H", positions=[[1, 2, 3]], cell=[10, 11, 12], pbc=True)
@@ -243,8 +243,8 @@ def test_write_input_backs_up_previous_abacus_json(tmp_path):
         SimpleNamespace(pseudo_dir=None, orbital_dir=None), tmp_path, atoms,
         parameters={"calculation": "scf"}, properties=["energy"],
     )
-    assert not path.exists()
-    assert (tmp_path / "abacus.json.bak.0").read_text() == '{"old": true}'
+    assert path.read_text() == '{"old": true}'
+    assert not (tmp_path / "abacus.json.bak.0").exists()
 
 
 def _read_results_fixture(tmp_path, calc="scf", stru_text=None, log_text=None):
@@ -363,7 +363,7 @@ def test_multiframe_scf_read_results_returns_current_structure_force(tmp_path):
 
 
 def test_scf_read_results_preserves_backend_neutral_efermi(tmp_path):
-    """The Fermi level survives the file-I/O boundary under the CP result key."""
+    """The Fermi level is retained under the existing efermi result alias."""
     directory = _read_results_fixture(tmp_path)
     results = _template().read_results(directory)
 
