@@ -66,15 +66,20 @@ Noncollinear result projection needs no caller changes to ASE's global
 property definitions (fixed in 1.2.2). The vector
 `magmoms` value is available in `results`; this does not expand ASE's
 `Properties` schema or promise that every ASE magnetic-property method accepts
-vector moments.
+vector moments. `Abacus.export_properties()` therefore exports only values
+accepted by the installed ASE schema; backend metadata and vector moments
+remain available in `calc.results`.
 
 SCF collection matches the written STRU, including periodic equivalence, rather
 than selecting an unrelated last trial frame. It uses an absolute `1e-4`
 Angstrom tolerance for cell components and periodic position residuals, with
-no relative tolerance. That bound covers the six-significant-digit lattice
-header written to running logs: the half-ulp is up to `5e-5` Angstrom for
-components in `[10, 100)` Angstrom, so a smaller default could not match a
-rounded but correct cell. Malformed or unmatched structure handoffs raise
+no relative tolerance. With a lattice constant near 1 Angstrom, printing
+vectors in `[10, 100)` to six significant digits can lose up to `5e-5`
+Angstrom per component. A saved LTS run exceeds the old `1e-5` bound but
+matches at `1e-4`. This is a structure-identity tolerance, not a convergence
+threshold or a universal bound: larger cells, separately rounded lattice
+constants and skewed-cell coordinate transformations can accumulate more
+error. Malformed or unmatched structure handoffs raise
 `RuntimeError`. Native relaxation/MD collection selects the final frame.
 The reader does not consume `abacus.json`; the running log alone identifies
 the SCF frame.

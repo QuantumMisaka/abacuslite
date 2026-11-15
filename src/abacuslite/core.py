@@ -475,10 +475,14 @@ def _select_scf_frame_for_structure(
     atol : float
         Absolute Angstrom bound for cell components and periodic Cartesian
         residuals, with no relative tolerance. Explicit overrides are retained.
-        The ``1e-4`` default matches the six-significant-digit lattice header
-        ABACUS writes to running logs: the half-ulp is up to ``5e-5`` Angstrom
-        for cell components in ``[10, 100)``, so ``1e-5`` sits below the print
-        resolution and a rounded-but-correct frame could never match.
+        The ``1e-4`` default accommodates ordinary running-log rounding:
+        with a lattice constant near 1 Angstrom, six-significant-digit
+        vectors in ``[10, 100)`` can lose up to ``5e-5`` Angstrom per
+        component. A ``1e-5`` bound rejected valid recorded LTS output.
+        This fixed absolute bound is not a universal printing-error budget:
+        larger cells, independently rounded lattice constants and skewed
+        cells can accumulate more error. It does not change an SCF or
+        optimization convergence threshold.
 
     Raises
     ------

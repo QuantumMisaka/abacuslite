@@ -13,6 +13,12 @@
   its run-timestamp checks are removed: the running log alone identifies the
   SCF frame. A previous JSON is still backed up before a new calculation so
   downstream completion markers cannot treat a stale file as a finished run.
+- Accept signed Cartesian noncollinear moments in STRU input and keep vector
+  moments in `calc.results` without mutating ASE's global property registry.
+- Export only values accepted by ASE's `Properties` schema; backend metadata
+  such as `efermi` and `energy_without_entropy` remains available in
+  `calc.results`. Remove the obsolete global-schema workaround from examples
+  and magnetic integration tests.
 
 ## 1.2.2
 

@@ -20,7 +20,6 @@ EXAMPLES = Path(__file__).resolve().parents[2] / "examples"
 def test_example_configuration_uses_own_directory_and_engine_settings(name, override_command, tmp_path):
     assets = tmp_path / "assets with spaces"
     assets.mkdir()
-    # A subprocess contains the SOC example's ASE global-property changes.
     # Replace the calculator constructor before version detection or execution.
     # Use a copied script so example cleanup cannot touch checkout artifacts.
     example = tmp_path / f"{name}.py"

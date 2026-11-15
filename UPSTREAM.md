@@ -54,11 +54,14 @@ single-file `running_md.log` trajectories remain supported when `MD_dump` is
 absent. Existing SCF/relax geometry assembly remains on the legacy running-log
 path.
 
-The default SCF identity tolerance is aligned with ATST 2.2.9 at
-`1081b9d1fed06842ee1d95dfbeb542ed81c57d49`: `1e-5` Angstrom, no relative
-tolerance, with explicit caller overrides retained. Boundary regressions
-exercise cell and position differences of `9e-6`, `11e-6` and `5e-5` Angstrom.
-Other implementation differences are not overwritten by this synchronization.
+The earlier ATST 2.2.9 synchronization used a `1e-5` Angstrom absolute
+SCF identity tolerance. This was superseded by the recorded LTS rounding
+evidence: the current default is `1e-4` Angstrom, with no relative tolerance
+and explicit caller overrides retained. A valid recorded run has a maximum
+cell discrepancy of `1.65221e-5` Angstrom, which demonstrates why the old
+bound rejected a correct frame. This fixed identity tolerance is not a
+universal error budget for arbitrary cell sizes or lattice constants.
+Result parsing does not read `abacus.json`.
 
 The latest-format native MD cell conversion in `src/abacuslite/io/latestio.py`
 is an independent abacuslite correction made after the attributed ABACUS
