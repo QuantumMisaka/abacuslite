@@ -116,21 +116,23 @@ read_abacus_out(fileobj, index=slice(None), results_required=True,
                 sort_atoms_with=None)
 ```
 
-Use a `pathlib.Path` to the running log in both formats. The latest reader
-requires it to locate companion files; the legacy reader additionally retains
-support for string paths and text file handles. An integer index returns one ASE `Atoms`;
-a slice returns a list. The default returns all available frames.
+Pass a `str` or `pathlib.Path` to the running log, or an open text stream with
+a filesystem path in its `name` attribute. Both readers use that path to find
+companion files. An unnamed stream raises `ValueError`; the reader does not
+close a caller-owned stream. An integer index returns one ASE `Atoms`; a slice
+returns a list. The default returns all available frames.
 `sort_atoms_with` is a full permutation of output atom indices, applied to
 atoms, forces and magnetic moments. Callers must supply a valid permutation.
 `results_required` is retained but currently has no effect.
 
 Parsing is read-only and repeatable, including `eig_occ.txt`; no file is
 consumed. Latest-format output requires its companion band file. Native MD
-uses `MD_dump` for physical Angstrom geometry and PBC; the legacy reader can
-also read a complete log-only trajectory. Raw non-MD readers retain legacy
-log-coordinate conventions and do not guarantee normalized Cartesian geometry
-or PBC. The file-backed calculator performs its own structure normalization
-and matching; do not infer a universal geometry contract from raw-reader `Atoms`.
+uses `MD_dump` when present for native-MD geometry; the legacy reader can also
+read a complete log-only MD trajectory. Parsed frames set periodic boundary
+conditions in all directions. Coordinate units follow the source format:
+MD dump Cartesian positions are in Angstrom, dump cell vectors are in alat,
+and running-log coordinates follow that reader's format. SCF matching in the
+file-backed calculator separately normalizes these coordinates against STRU.
 
 Parsed single-point calculators expose available ASE energy, force, stress,
 Fermi and band getters. Optional no-entropy metadata is in

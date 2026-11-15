@@ -1,49 +1,51 @@
-# Independent ASE calculator package
+# Package design
 
-This repository owns the installable ASE calculator and I/O package. ABACUS
-retains engine integration tests; ATST and Forge consume this package.
+abacuslite owns the installable ASE calculator and the ABACUS input/output
+readers. It depends on ASE and supports the tested develop and LTS output
+formats. Output parsing is read-only and repeatable; each calculator keeps its
+reader selection. See the [public API](public-api.md) for caller-visible
+behavior and [supported versions](supported-versions.md) for tested snapshots.
 
-The package preserves `Abacus`, `AbacusProfile`, `AbacusSocketIO`, and the
-`abacuslite.io` and `abacuslite.utils` module paths. Keep source layout changes
-separate from unrelated API rewrites. Preserve upstream socket support and
-diagnostics while carrying the general SCF frame, Fermi-level and point-KPT
-corrections.
+## Responsibilities
 
-See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
-the old ASE fork and the current lifecycle.
+- ASE owns calculator contracts and optimization, MD and NEB algorithms.
+- ABACUS owns the engine, input/output formats, assets and engine integration tests.
+- This package owns the ASE calculator and general input/output parsing.
+- ATST and Forge own their workflow, launcher and result-projection policies;
+  they are consumers, not runtime dependencies.
 
-I/O functions are independent of engine execution. Output parsing is read-only
-and repeatable. A calculator keeps its reader choice when another calculator is
-constructed. Existing reader functions remain available for explicit selection.
+General parser or calculator fixes belong here. Engine format changes belong
+in ABACUS and should be checked against this package. Cross-repository changes
+use linked candidate revisions and the checks in [compatibility and CI](compatibility-ci.md).
 
-## Asset handling
+ABACUS PR [#8175](https://github.com/deepmodeling/abacus-develop/pull/8175)
+proposes installing this package in the engine repository. It remains open, so
+current ownership and the bundled source remain unchanged until upstream
+maintainers decide otherwise. The package and its tests continue to be
+maintained here.
 
-`abacuslite` consumes explicit pseudopotential/orbital directories and file
-mappings. `AbacusProfile` falls back to `ABACUS_PP_PATH` and `ABACUS_ORB_PATH`
-only when the corresponding argument is omitted; these are the package's only
-asset-directory environment defaults. Dataset download, `element.json`
-matching, copy/symlink and batch preparation belong to
-abacustest/abacusforge.
+## Tests and fixtures
 
-## Boundaries
+Tests should establish a specific public behavior or protect a parser rule that
+would otherwise be difficult to reproduce. Prefer existing integration or
+synthetic fixtures when they cover the same format and failure. Add a recorded
+output fixture only when a real formatting or unit detail matters; keep the
+smallest input that reproduces that behavior and identify its source. Do not
+copy tests to reproduce the same assertion at multiple layers unless each layer
+protects a distinct contract.
 
-ATST owns workflow configuration and launcher policy. Forge owns its native
-default, optional parser and fact projection. The current external-only PR
-keeps ABACUS's engine-side harness under `interfaces/ASE_interface` and uses
-this package for the calculator and parser. The upstream implementation is
-pending in [ABACUS PR #8175](https://github.com/deepmodeling/abacus-develop/pull/8175);
-it installs the package without vendoring it or adding a submodule.
+Offline package tests validate the installed parser and calculator without an
+engine. Opt-in engine tests validate real calculator interaction with a named
+engine and assets. Installed-consumer checks validate the public package
+boundary. The separate checks answer different questions; one does not replace
+the others. Published wheel and sdist artifacts contain runtime code and
+necessary package metadata, not tests, recorded logs, examples or development
+history. See [Contributing](../CONTRIBUTING.md) for artifact verification.
 
-The [public API contract](public-api.md) is independent of source hosting.
-The latest review reopened maintenance ownership; the
-[maintenance options](maintenance-options.md) remain a discussion proposal,
-not an appointment or an upstream acceptance decision.
+## Assets and provenance
 
-Package, engine and output-format versions are distinct. See the
-[compatibility record](compatibility-ci.md) for tested snapshots.
-
-Use one source implementation. Existing consumers should migrate direct
-vendored imports; compatibility modules should forward to this package rather
-than keep a second implementation.
-
-Source provenance is recorded in [UPSTREAM.md](../UPSTREAM.md).
+Profiles accept explicit pseudopotential and orbital directories. When an
+argument is omitted, only ABACUS_PP_PATH and ABACUS_ORB_PATH provide package
+defaults. Dataset downloads, element matching and asset preparation belong to
+abacustest or abacusforge. Original authorship and imported source revisions
+are recorded in [UPSTREAM.md](../UPSTREAM.md).

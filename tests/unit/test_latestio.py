@@ -29,46 +29,8 @@ class TestLatestIO(unittest.TestCase):
     '''
     here = Path(__file__).resolve().parents[1] / 'fixtures/io'
     testfiles = here / 'testfiles'
+    latest_md = Path(__file__).resolve().parents[1] / 'fixtures' / 'multiframe_md_latest'
 
-    def test_read_abacus_out_reorders_calculator_magmoms(self):
-        import tempfile
-        from unittest.mock import patch
-
-        frame = {
-            'elem': ['Na', 'Na', 'Cl'],
-            'coords': np.array([[0.0, 0.0, 0.0],
-                                [1.0, 0.0, 0.0],
-                                [2.0, 0.0, 0.0]]),
-            'cell': np.eye(3),
-        }
-        elecstate = [{
-            'k': np.zeros((1, 1, 3)),
-            'e': np.zeros((1, 1, 1)),
-            'occ': np.ones((1, 1, 1)),
-        }]
-        energies = [{'E_KohnSham': -1.0, 'E_Fermi': 0.0}]
-        kpoints = ((np.zeros((1, 3)), np.ones(1), None), None, None, None, None)
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            running_log = Path(tmpdir) / 'running_scf.log'
-            running_log.write_text('')
-            (Path(tmpdir) / 'eig_occ.txt').write_text('')
-            with patch('abacuslite.io.latestio' + '.read_esolver_type_from_running_log', return_value='ksdft'), \
-                 patch('abacuslite.io.latestio' + '.read_traj_from_running_log', return_value=[frame]), \
-                 patch('abacuslite.io.latestio' + '.read_band_from_eig_occ', return_value=elecstate), \
-                 patch('abacuslite.io.latestio' + '.read_forces_from_running_log', return_value=[]), \
-                 patch('abacuslite.io.latestio' + '.read_stress_from_running_log', return_value=[]), \
-                 patch('abacuslite.io.latestio' + '.read_kpoints_from_running_log', return_value=kpoints), \
-                 patch('abacuslite.io.latestio' + '.read_energies_from_running_log', return_value=([], [])), \
-                 patch('abacuslite.io.latestio' + '.read_iter_header_from_running_log', return_value=[]), \
-                 patch('abacuslite.io.latestio' + '.find_final_info_with_iter_header', return_value=energies), \
-                 patch('abacuslite.io.latestio' + '.read_magmom_from_running_log', return_value=[np.array([10.0, 20.0, 30.0])]):
-                atoms = read_abacus_out(running_log, sort_atoms_with=[0, 2, 1])[0]
-
-        self.assertEqual(atoms.get_chemical_symbols(), ['Na', 'Cl', 'Na'])
-        self.assertTrue(np.allclose(atoms.cell.array, np.eye(3)))
-        self.assertFalse(np.any(atoms.pbc))
-        self.assertTrue(np.allclose(atoms.calc.results['magmoms'], [10.0, 30.0, 20.0]))
 
     def test_read_abacus_out_preserves_free_energy_and_exposes_internal_energy(self):
         """Keep force-consistent energy and expose the separate no-entropy value."""
@@ -147,7 +109,7 @@ class TestLatestIO(unittest.TestCase):
         )
 
     def test_read_band_from_eig_occ(self):
-        fn = self.testfiles / 'nspin4-gamma-eigocc'
+        fn = self.latest_md / 'eig_occ.txt'
         elecstate = read_band_from_eig_occ(fn)
         # 2 frames, 1 spin channel (nspin 4), 1 kpoint, 35 bands
         self.assertEqual(len(elecstate), 2)
@@ -238,19 +200,19 @@ class TestLatestIO(unittest.TestCase):
         for s, ref in zip(stresses, reference):
             self.assertTrue(np.allclose(s, -0.1 * GPa * ref))
 
-    def test_read_abacus_out_string(self):
+    def test_read_abacus_out_string_reports_missing_companion_file(self):
         fn = self.testfiles / 'pw-symm0-nspin4-gamma-md'
-        # the case that does not give the instance of Path
-        with self.assertRaises(AssertionError):
+        # String paths are accepted; this fixture lacks its companion band file.
+        with self.assertRaisesRegex(FileNotFoundError, "eig_occ.txt"):
             read_abacus_out(str(fn))
 
     def test_read_pw_symm0_nspin4_gamma_md(self):
         # make files ready
         shutil.copy(self.testfiles / 'pw-symm0-nspin4-gamma-md',
                     self.testfiles / 'running_md.log')
-        shutil.copy(self.testfiles / 'nspin4-gamma-eigocc',
+        shutil.copy(self.latest_md / 'eig_occ.txt',
                     self.testfiles / 'eig_occ.txt')
-        shutil.copy(self.testfiles / 'nspin4-gamma-mddump',
+        shutil.copy(self.latest_md / 'MD_dump',
                     self.testfiles / 'MD_dump')
 
         res = read_abacus_out(self.testfiles / 'running_md.log')

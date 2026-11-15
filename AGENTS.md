@@ -8,10 +8,10 @@ file I/O must work without an ABACUS executable.
 
 - ASE owns calculator contracts and optimization/MD/NEB algorithms.
 - ABACUS owns the engine, output formats, assets and engine-side tests. Support
-  develop and LTS readers, bound to each calculator. The agreed external-only
-  target keeps the engine-side harness under `interfaces/ASE_interface`;
-  upstream adoption is tracked in ABACUS PR #8175. This package owns the
-  calculator and parser implementation.
+  develop and LTS readers, bound to each calculator. ABACUS PR #8175 proposes
+  installing this package and keeping the engine-side harness under
+  `interfaces/ASE_interface`; adoption remains pending upstream review. This
+  repository continues to own the calculator, parser and package tests.
 - ATST and Forge consume this package and own workflow, launcher and result
   contracts. Neither is a runtime dependency.
 - Keep general parser/calculator fixes here. Adapters may forward, but do not
@@ -33,9 +33,9 @@ file I/O must work without an ABACUS executable.
 
 ## Workflow
 
-1. Read `docs/README.md` and the guide for the affected area. Reuse an
-   applicable plan; update it before changing a public or cross-repository
-   boundary.
+1. Read `docs/README.md` and the guide for the affected area. Reuse and update
+   a relevant plan in the maintainer workspace before changing a public or
+   cross-repository boundary.
 2. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, packaging and
    release. Default tests are offline; engine and consumer checks need
    explicit assets.
@@ -46,5 +46,6 @@ file I/O must work without an ABACUS executable.
    or replace a published artifact; PyPI publication needs validated
    artifacts and explicit authorization.
 
-Plans and dated evidence live in `docs/superpowers/plans/`; historical results
-apply only to their recorded revisions and environments.
+Development plans and detailed run evidence live in the maintainer workspace,
+outside the source distribution. For current behavior, use the guides and
+`CHANGELOG.md`.

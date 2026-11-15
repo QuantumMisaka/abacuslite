@@ -12,9 +12,8 @@ The ASE inheritance remains `AbacusProfile(BaseProfile)`,
 K-point helpers remain in their modules. ATST owns workflow and launcher
 policy; this package adds no scheduler or service layer.
 
-See [From ase-abacus to abacuslite](ase-interface.md) for the differences from
-the old ASE fork and [the integration audit](upstream-integration.md) for
-source-level detail.
+See [From ase-abacus to abacuslite](ase-interface.md) for differences from
+the old ASE fork and [Package design](design.md) for current ownership.
 
 ## Install one implementation
 
@@ -55,7 +54,7 @@ Verify `python -m pip check` after installing consumer dependencies as well.
 | ATST workflow API / CLI | Keep ATST as the workflow entry; verify it selects the installed external package |
 | Direct `atst_tools.external.ASE_interface.abacuslite...` import | Migrate to ATST's adapter for calculators/profile policy, or use `abacuslite.io...` for pure I/O |
 | Forge collection | Keep the explicit optional parser selection and native default; validate the supported package/Forge pair |
-| Running tests from the old production modules | Use `pytest` against `tests/`; fixtures and examples ship in sdist, not the runtime wheel |
+| Running tests from the old production modules | Use `pytest` against `tests/`; fixtures and examples stay in the source checkout, outside published distributions |
 | Examples relying on ABACUS's parent-directory layout | Set `ABACUS_PP_ORB` and `ABACUS_COMMAND`; install the package before running |
 
 ATST versions that depend on abacuslite use `abacuslite>=1.1,<2` and thin
@@ -79,8 +78,7 @@ rather than add a second parser or move ATST launcher policy here.
 - Missing Fermi levels remain missing; available values are retained as
   `efermi`. Point-KPT decimal parsing and Cartesian matching units are corrected.
 
-Source attribution and the two upstreams' optimization dispositions are in
-[UPSTREAM.md](../UPSTREAM.md) and the [integration audit](upstream-integration.md).
+Source attribution is in [UPSTREAM.md](../UPSTREAM.md).
 
 ## Validation scope
 

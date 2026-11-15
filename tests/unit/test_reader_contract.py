@@ -65,9 +65,11 @@ def test_read_abacus_out_reorders_calculator_magmoms_with_atoms(module, missing_
     atoms = module.read_abacus_out(running_log, sort_atoms_with=[0, 2, 1])[0]
 
     assert atoms.get_chemical_symbols() == ["Na", "Cl", "Na"]
+    np.testing.assert_allclose(atoms.cell.array, np.eye(3))
+    assert np.all(atoms.pbc)
     np.testing.assert_allclose(atoms.get_initial_magnetic_moments(), [10.0, 30.0, 20.0])
     np.testing.assert_allclose(atoms.calc.results["magmoms"], [10.0, 30.0, 20.0])
-    # 力与原子重排一致（帧选择依赖 results 与 atoms 同序，spec P3 ①）
+    # Forces must follow the same atom ordering as the returned Atoms object.
     np.testing.assert_allclose(
         atoms.calc.results["forces"],
         [[1.0, 0.0, 0.0], [3.0, 0.0, 0.0], [2.0, 0.0, 0.0]],

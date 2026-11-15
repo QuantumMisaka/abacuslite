@@ -194,40 +194,6 @@ class TestLegacyIO(unittest.TestCase):
                 '2 0.5 0.0',
             ])
 
-    def test_read_abacus_out_reorders_calculator_magmoms(self):
-        import tempfile
-        from unittest.mock import patch
-
-        frame = {
-            'elem': ['Na', 'Na', 'Cl'],
-            'coords': np.array([[0.0, 0.0, 0.0],
-                                [1.0, 0.0, 0.0],
-                                [2.0, 0.0, 0.0]]),
-            'cell': np.eye(3),
-        }
-        elecstate = [{
-            'k': np.zeros((1, 1, 3)),
-            'e': np.zeros((1, 1, 1)),
-            'occ': np.ones((1, 1, 1)),
-        }]
-        energies = [{'E_KohnSham': -1.0, 'E_Fermi': 0.0}]
-        kpoints = ((np.zeros((1, 3)), np.ones(1), None), None, None, None, None)
-
-        with tempfile.NamedTemporaryFile(mode='w') as f:
-            with patch('abacuslite.io.legacyio' + '.read_esolver_type_from_running_log', return_value='ksdft'), \
-                 patch('abacuslite.io.legacyio' + '.read_traj_from_running_log', return_value=[frame]), \
-                 patch('abacuslite.io.legacyio' + '.read_band_from_running_log', return_value=elecstate), \
-                 patch('abacuslite.io.legacyio' + '.read_forces_from_running_log', return_value=[]), \
-                 patch('abacuslite.io.legacyio' + '.read_stress_from_running_log', return_value=[]), \
-                 patch('abacuslite.io.legacyio' + '.read_kpoints_from_running_log', return_value=kpoints), \
-                 patch('abacuslite.io.legacyio' + '.read_energies_from_running_log', return_value=([], [])), \
-                 patch('abacuslite.io.legacyio' + '.read_iter_header_from_running_log', return_value=[]), \
-                 patch('abacuslite.io.legacyio' + '.find_final_info_with_iter_header', return_value=energies), \
-                 patch('abacuslite.io.legacyio' + '.read_magmom_from_running_log', return_value=[np.array([10.0, 20.0, 30.0])]):
-                atoms = read_abacus_out(f.name, sort_atoms_with=[0, 2, 1])[0]
-
-        self.assertEqual(atoms.get_chemical_symbols(), ['Na', 'Cl', 'Na'])
-        self.assertTrue(np.allclose(atoms.calc.results['magmoms'], [10.0, 30.0, 20.0]))
 
     def test_read_traj_from_running_log(self):
         fn = self.testfiles / 'lcao-symm1-nspin1-multik-scf_'
@@ -273,7 +239,7 @@ class TestLegacyIO(unittest.TestCase):
             self.assertEqual(d['coords'].shape, (4, 3))
 
     def test_read_traj_from_md_dump(self):
-        fn = self.testfiles / 'nspin4-gamma-mddump'
+        fn = Path(__file__).resolve().parents[1] / 'fixtures' / 'multiframe_md_latest' / 'MD_dump'
         data = read_traj_from_md_dump(fn)
         self.assertIsInstance(data, list)
         self.assertEqual(len(data), 2)

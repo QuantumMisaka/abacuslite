@@ -12,16 +12,13 @@ and the 3.10.x LTS format are supported. The fixed-cell socket calculator
 requires an ABACUS build with the socket driver.
 
 **Stable release:** [1.2.2 on PyPI](https://pypi.org/project/abacuslite/1.2.2/).
-Publication evidence and artifacts are tracked in the release record below.
 Version 1.2.2 fixes noncollinear magnetic-result projection without modifying
 ASE's global definitions and documents the
-[public API contract](docs/public-api.md). Existing energy conventions,
+[public API contract](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/public-api.md). Existing energy conventions,
 including optional no-entropy metadata, are preserved. The release was tested
 with ABACUS develop `v3.11.0-beta11` and LTS `v3.10.1`. See the
 [compatibility record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/compatibility-ci.md)
-for the exact snapshots and current checks, and the
-[release record](https://github.com/QuantumMisaka/abacuslite/blob/main/docs/superpowers/plans/2026-10-20-1.2.2-release.md)
-for artifact and publication status.
+for the tested snapshots and current checks.
 
 ### Key features
 

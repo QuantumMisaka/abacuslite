@@ -66,7 +66,7 @@ archived = calc.fixed_density(kpts, inp={"read_file_dir": "CHARGE_ARCHIVE"})
 
 ## Run the examples
 
-The scripts live in the source checkout and sdist, not the runtime wheel.
+The scripts live in the source checkout; published distributions contain the runtime package only.
 From the repository root, with the package installed:
 
 ```bash
