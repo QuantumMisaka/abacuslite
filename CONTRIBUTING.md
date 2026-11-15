@@ -75,6 +75,11 @@ Use the [public API contract](docs/public-api.md) to distinguish stable behavior
 from implementation details. Public-boundary tests must not require downstream
 callers to patch ASE or inspect the plugin's template/global reader state.
 
+Assert observable results, rejection of invalid input and required side effects.
+Keep numerical and protocol expectations independent of the implementation; do
+not bind tests to diagnostic wording unless that text is a documented contract.
+Diagnostics may still be checked for actionable context, such as the input path.
+
 Add a regression for the observable bug, with a small attributed fixture when
 output formats matter. Preserve units,
 atom ordering, missing-value meaning, readonly parsing and public imports.
