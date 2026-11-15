@@ -30,6 +30,10 @@ class TestAbacusCalculatorIOUtil(unittest.TestCase):
             self.assertDictEqual(data, data_)
         # will automatically delete the file after the context manager
 
+    def test_read_stru_accepts_signed_noncollinear_moment(self):
+        atom = _parse_coord_line('0 0 0 mag 1.0 -1.0 0.0')
+        self.assertEqual(atom['mag'], ('Cartesian', [1.0, -1.0, 0.0]))
+
     def test_file_safe_backup_rotates_numbered_backups(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             workdir = Path(tmpdir)
