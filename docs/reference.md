@@ -41,14 +41,16 @@ species because a single species record cannot represent them.
 Both readers return ASE `Atoms` objects with available single-point results.
 They accept a path or caller-owned text stream with a filesystem name; that name
 is used to locate companion files. Streams without a filesystem name are not
-supported, and caller streams remain open.
+supported. Caller streams remain open and are read from their current position;
+seek to the start explicitly before rereading.
 
 Latest-format eigenvalues and occupations come from `eig_occ.txt`. Native MD
 uses `MD_dump` when present. Its positions are Cartesian Angstrom values and
 its lattice vectors are in alat units. Legacy native MD accepts complete
 `running_md.log` trajectories and prefers `MD_dump` when available. Parsed
-frames have periodic boundaries enabled in all directions; source geometry
-coordinates still follow the relevant output format. See [output reading](usage.md#read-files-without-an-engine)
+ASE frames have Cartesian Angstrom positions/cells and periodic boundaries
+enabled in all directions, including molecules in vacuum. Raw dictionaries
+retain the source coordinate convention; the ASE readers normalize it once. See [output reading](usage.md#read-files-without-an-engine)
 and the [public API](public-api.md) for companion-file and result details.
 
 All readers preserve source files and support repeatable reads. Missing or
