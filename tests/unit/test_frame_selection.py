@@ -224,14 +224,14 @@ def test_lts_rounded_cell_displaced_log_frame_fails_closed(tmp_path):
     log = directory / "OUT.ABACUS" / "running_scf.log"
     frames = read_abacus_out(log)
     assert _select_scf_frame_for_structure(
-        frames, log, directory, [0], legacyio=True
+        frames, log, directory, [0]
     ) is frames[0]
 
     displaced = frames[0].copy()
     displaced.positions = displaced.positions + np.array([0.0, 0.0, 0.05])
     with pytest.raises(RuntimeError):
         _select_scf_frame_for_structure(
-            [displaced], log, directory, [0], legacyio=True
+            [displaced], log, directory, [0]
         )
 
 
@@ -339,7 +339,7 @@ def test_golden_last_frame_differs_from_current_structure():
     """The final fixture frame is displaced from the input STRU."""
     frames = read_abacus_out(LOG, sort_atoms_with=None)
     stru = read_stru(GOLD / "STRU")
-    last_cart = frames[-1].positions @ np.asarray(frames[-1].cell)
+    last_cart = frames[-1].positions
     current_cart = _stru_positions_cartesian(stru, frames[-1].cell)
     assert not np.allclose(last_cart, current_cart, atol=1e-4)
 
@@ -348,7 +348,7 @@ def test_golden_first_frame_is_current_structure():
     """The initial fixture frame matches the input STRU."""
     frames = read_abacus_out(LOG, sort_atoms_with=None)
     stru = read_stru(GOLD / "STRU")
-    first_cart = frames[0].positions @ np.asarray(frames[0].cell)
+    first_cart = frames[0].positions
     current_cart = _stru_positions_cartesian(stru, frames[0].cell)
     assert np.allclose(first_cart, current_cart, atol=1e-4)
 
@@ -432,7 +432,7 @@ def test_frame_selection_tolerance_both_sides(tmp_path):
     # Within tolerance, return the frame matching the current structure.
     selected = _select_scf_frame_for_structure(frames, log, directory, [0, 1, 2], atol=1e-4)
     assert selected is frames[0]
-    assert np.allclose(selected.positions @ np.asarray(selected.cell), expected, atol=1e-4)
+    assert np.allclose(selected.positions, expected, atol=1e-4)
 
     # Beyond tolerance, reject the displaced frame and report the unmatched log.
     with pytest.raises(RuntimeError) as excinfo:
@@ -516,19 +516,20 @@ def test_scf_frame_selection_cartesian_log_branch(tmp_path):
 
 @pytest.mark.parametrize("legacyio", [True, False])
 def test_cartesian_frame_matching_scales_lattice_constant(tmp_path, legacyio):
-    """Both log readers expose Cartesian coordinates in units of alat."""
+    """Raw Cartesian logs use alat while public Atoms use Angstrom."""
     from abacuslite.io import legacyio as legacy, latestio as latest
 
     directory = _read_results_fixture(tmp_path, log_text=_cartesian_log_text(alat=2.0))
     log = directory / "OUT.ABACUS" / "running_scf.log"
     reader = legacy if legacyio else latest
     trajectory = reader.read_traj_from_running_log(log)
-    frames = [Atoms("H2Au", positions=item["coords"], cell=item["cell"], pbc=True)
+    frames = [Atoms("H2Au", positions=item["coords"] * 2., cell=item["cell"], pbc=True)
               for item in trajectory]
     assert trajectory[0]["alat_in_angstrom"] == 2.0
-    assert np.allclose(frames[0].positions[0], [2.0, 2.5, 2.5])
+    assert np.allclose(trajectory[0]["coords"][0], [2.0, 2.5, 2.5])
+    assert np.allclose(frames[0].positions[0], [4., 5., 5.])
     selected = _select_scf_frame_for_structure(
-        frames, log, directory, [0, 1, 2], legacyio=legacyio
+        frames, log, directory, [0, 1, 2]
     )
     assert selected is frames[0]
     if legacyio:
@@ -550,9 +551,9 @@ def test_scf_selector_accepts_independent_integer_lattice_translations_and_lates
     shifts = np.array([[1, -2, 0], [-1, 0, 3]], dtype=float)
     latest_shifts = np.array([[-2, 1, 1], [3, -1, -2]], dtype=float)
     frames = [
-        Atoms(symbols=symbols, positions=frac, cell=cell, pbc=True),
-        Atoms(symbols=symbols, positions=frac + shifts, cell=cell, pbc=True),
-        Atoms(symbols=symbols, positions=frac + latest_shifts, cell=cell, pbc=True),
+        Atoms(symbols=symbols, positions=frac @ cell, cell=cell, pbc=True),
+        Atoms(symbols=symbols, positions=(frac + shifts) @ cell, cell=cell, pbc=True),
+        Atoms(symbols=symbols, positions=(frac + latest_shifts) @ cell, cell=cell, pbc=True),
     ]
 
     selected = _select_scf_frame_for_structure(
@@ -602,7 +603,7 @@ def test_default_scf_identity_tolerance_covers_log_print_resolution(
         frame_cell[0, 0] += delta
     else:
         frame_frac[0] += np.array([delta, 0, 0]) @ np.linalg.inv(cell)
-    frame = Atoms(symbols=symbols, positions=frame_frac, cell=frame_cell, pbc=True)
+    frame = Atoms(symbols=symbols, positions=frame_frac @ frame_cell, cell=frame_cell, pbc=True)
     assert _select_scf_frame_for_structure([frame], LOG, tmp_path, [0, 1]) is frame
 
 
@@ -618,7 +619,7 @@ def test_default_scf_identity_tolerance_rejects_beyond_print_resolution(
         frame_cell[0, 0] += delta
     else:
         frame_frac[0] += np.array([delta, 0, 0]) @ np.linalg.inv(cell)
-    frame = Atoms(symbols=symbols, positions=frame_frac, cell=frame_cell, pbc=True)
+    frame = Atoms(symbols=symbols, positions=frame_frac @ frame_cell, cell=frame_cell, pbc=True)
     with pytest.raises(RuntimeError):
         _select_scf_frame_for_structure([frame], LOG, tmp_path, [0, 1])
     assert _select_scf_frame_for_structure(
@@ -644,7 +645,7 @@ def test_latest_coordinate_parser_uses_periodic_matcher(tmp_path, monkeypatch):
     )
     frame = Atoms(
         symbols=symbols,
-        positions=frac + np.array([[1, 0, -2], [-1, 2, 1]], dtype=float),
+        positions=(frac + np.array([[1, 0, -2], [-1, 2, 1]], dtype=float)) @ cell,
         cell=cell,
         pbc=True,
     )
@@ -658,7 +659,7 @@ def test_scf_selector_uses_fractional_residual_for_triclinic_cell(tmp_path):
     """A triclinic cell must compare lattice coordinates, not Cartesian-axis modulo."""
     stru, cell, frac, symbols = _synthetic_direct_case(tmp_path)
     shift = np.array([[1, -1, 2], [-2, 3, -1]], dtype=float)
-    frame = Atoms(symbols=symbols, positions=frac + shift, cell=cell, pbc=True)
+    frame = Atoms(symbols=symbols, positions=(frac + shift) @ cell, cell=cell, pbc=True)
 
     assert _select_scf_frame_for_structure(
         [frame], LOG, stru.parent, [0, 1], atol=1e-10
@@ -668,12 +669,12 @@ def test_scf_selector_uses_fractional_residual_for_triclinic_cell(tmp_path):
 def test_scf_selector_skips_valid_position_and_cell_mismatches(tmp_path):
     """Finite valid trial frames may mismatch while an earlier valid frame remains selectable."""
     _, cell, frac, symbols = _synthetic_direct_case(tmp_path)
-    matching = Atoms(symbols=symbols, positions=frac, cell=cell, pbc=True)
+    matching = Atoms(symbols=symbols, positions=frac @ cell, cell=cell, pbc=True)
     different_cell = cell.copy()
     different_cell[0, 0] += 0.25
     valid_mismatch = Atoms(
         symbols=symbols,
-        positions=frac + np.array([[0.17, 0.0, 0.0], [0.0, -0.23, 0.0]]),
+        positions=(frac + np.array([[0.17, 0.0, 0.0], [0.0, -0.23, 0.0]])) @ different_cell,
         cell=different_cell,
         pbc=True,
     )
@@ -693,8 +694,8 @@ def test_scf_selector_rejects_corrupt_frame_even_after_earlier_match(
 ):
     """A corrupt later frame must fail the whole SCF instead of hiding behind an earlier match."""
     _, cell, frac, symbols = _synthetic_direct_case(tmp_path)
-    matching = Atoms(symbols=symbols, positions=frac, cell=cell, pbc=True)
-    corrupt_positions = frac.copy()
+    matching = Atoms(symbols=symbols, positions=frac @ cell, cell=cell, pbc=True)
+    corrupt_positions = frac @ cell
     corrupt_cell = cell.copy()
     corrupt_symbols = symbols
     if kind == "positions-shape":
@@ -708,7 +709,7 @@ def test_scf_selector_rejects_corrupt_frame_even_after_earlier_match(
     elif kind == "cell-singular":
         corrupt_cell[1] = corrupt_cell[0]
     elif kind == "atom-count":
-        corrupt_positions = np.vstack([frac, [[0.2, 0.3, 0.4]]])
+        corrupt_positions = np.vstack([frac @ cell, [[0.2, 0.3, 0.4]]])
         corrupt_symbols = [*symbols, "H"]
     elif kind == "symbols":
         corrupt_symbols = ["H", "H"]
@@ -727,7 +728,7 @@ def test_scf_selector_rejects_corrupt_frame_even_after_earlier_match(
 def test_scf_selector_does_not_mutate_candidate_atoms_or_stru(tmp_path):
     """Normalization must leave positions, cell, forces, and STRU bytes untouched."""
     _, cell, frac, symbols = _synthetic_direct_case(tmp_path)
-    frame = Atoms(symbols=symbols, positions=frac, cell=cell, pbc=True)
+    frame = Atoms(symbols=symbols, positions=frac @ cell, cell=cell, pbc=True)
     forces = np.array([[1.2, -0.3, 0.7], [-1.2, 0.3, -0.7]])
     frame.calc = SinglePointCalculator(frame, energy=-2.0, forces=forces)
     positions_before = frame.positions.copy()
@@ -826,3 +827,29 @@ def test_write_input_tracks_custom_stru_file_for_scf_selection(tmp_path):
     np.testing.assert_allclose(
         results["forces"], STRU_FRAME_FORCES[[0, 2, 1]], atol=1e-12
     )
+
+
+def test_scf_read_results_rejects_negative_logged_lattice_constant(tmp_path):
+    """A malformed negative alat must not become an otherwise invertible cell."""
+    template, directory = _rounded_cell_run(tmp_path)
+    template.read_results(directory)
+    log = directory / 'OUT.ABACUS' / 'running_scf.log'
+    text = log.read_text()
+    text, count = re.subn(r'(?i)(lattice constant \(Angstrom\)\s*=\s*)([0-9.]+)',
+                          r'\g<1>-\2', text)
+    assert count == 1
+    # Reverse both dimensionless vectors and tau so physical geometry still
+    # matches; rejection must come from invalid scale rather than a mismatch.
+    lines = text.splitlines()
+    header = next(i for i, line in enumerate(lines)
+                  if line.strip() == 'Lattice vectors: (Cartesian coordinate: in unit of a_0)')
+    for index in range(header + 1, header + 4):
+        lines[index] = ' '.join(str(-float(value)) for value in lines[index].split())
+    for index, line in enumerate(lines):
+        if line.startswith('tauc_'):
+            row = line.split()
+            row[1:4] = [str(-float(value)) for value in row[1:4]]
+            lines[index] = ' '.join(row)
+    log.write_text('\n'.join(lines) + '\n')
+    with pytest.raises(RuntimeError):
+        template.read_results(directory)

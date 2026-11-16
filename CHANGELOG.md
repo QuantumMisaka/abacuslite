@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Normalize running-log geometry to Cartesian Angstrom in both public ASE
+  readers, including Direct SCF/relax output. Keep raw trajectory dictionaries
+  file-native and remove the calculator matcher's compensating conversion.
+  Callers that manually rescaled returned `Atoms.positions` must stop doing so.
+- Clarify that output `pbc=True` describes the simulation box even for molecules
+  in vacuum; nonperiodic analysis requires an explicit caller-selected copy.
+  Named streams are read at their current position without rewinding.
+
 - Read paths and named text streams without closing caller-owned streams;
   report periodic boundary conditions for both SCF and MD output. Parse STRU
   options by keyword while preserving valid bare mobility triplets.

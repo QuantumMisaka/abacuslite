@@ -8,7 +8,7 @@ on:
     inputs:
       atst_ref:
         description: ATST commit or refs/pull/N/merge for coordinated candidates
-        default: '3cae374a20337cdb11e8a54c815937cd009be75b'
+        default: '057ec4e3fb91cc3b77b65456abaae44cada5abbd'
         type: string
       forge_ref:
         description: Forge commit or refs/pull/N/merge for coordinated candidates
@@ -120,7 +120,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: QuantumMisaka/atst-tools
-          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '3cae374a20337cdb11e8a54c815937cd009be75b' }}
+          ref: ${{ github.event_name == 'schedule' && 'main' || inputs.atst_ref || '057ec4e3fb91cc3b77b65456abaae44cada5abbd' }}
           path: consumer-sources/atst
           persist-credentials: false
       - name: Require the selected ATST consumer runner

@@ -119,7 +119,9 @@ read_abacus_out(fileobj, index=slice(None), results_required=True,
 Pass a `str` or `pathlib.Path` to the running log, or an open text stream with
 a filesystem path in its `name` attribute. Both readers use that path to find
 companion files. An unnamed stream raises `ValueError`; the reader does not
-close a caller-owned stream. An integer index returns one ASE `Atoms`; a slice
+close or rewind a caller-owned stream. Reading starts at its current position;
+call `stream.seek(0)` before rereading a seekable stream. An integer index
+returns one ASE `Atoms`; a slice
 returns a list. The default returns all available frames.
 `sort_atoms_with` is a full permutation of output atom indices, applied to
 atoms, forces and magnetic moments. Callers must supply a valid permutation.
@@ -128,11 +130,26 @@ atoms, forces and magnetic moments. Callers must supply a valid permutation.
 Parsing is read-only and repeatable, including `eig_occ.txt`; no file is
 consumed. Latest-format output requires its companion band file. Native MD
 uses `MD_dump` when present for native-MD geometry; the legacy reader can also
-read a complete log-only MD trajectory. Parsed frames set periodic boundary
-conditions in all directions. Coordinate units follow the source format:
-MD dump Cartesian positions are in Angstrom, dump cell vectors are in alat,
-and running-log coordinates follow that reader's format. SCF matching in the
-file-backed calculator separately normalizes these coordinates against STRU.
+read a complete log-only MD trajectory. Returned ASE `Atoms.positions` and
+`Atoms.cell` are always Cartesian Angstrom values: Direct positions are
+multiplied by the cell, and format-specific Cartesian/alat scales are applied
+once at the reader boundary. Raw trajectory dictionaries retain their original
+coordinate conventions. SCF matching consumes the normalized ASE geometry.
+
+Both output readers represent the logged simulation box with `pbc=True` in all
+three directions, including molecules in vacuum and slabs. This is a public
+behavior change for SCF output; it describes the simulation box, not the
+physical dimensionality of the system. Readers do not infer isolation from
+vacuum thickness or restore an input ASE object's `pbc` flags. For explicitly
+nonperiodic geometry analysis, use an analysis copy and set its intended flags:
+
+```python
+geometry = atoms.copy()
+geometry.pbc = False  # Nonperiodic analysis chosen by the caller.
+```
+
+This changes analysis semantics, not the boundary conditions of the completed
+ABACUS calculation. The copy does not carry the parsed single-point calculator.
 
 Parsed single-point calculators expose available ASE energy, force, stress,
 Fermi and band getters. Optional no-entropy metadata is in

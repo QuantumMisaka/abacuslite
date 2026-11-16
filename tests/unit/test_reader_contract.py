@@ -19,6 +19,8 @@ def _mock_reader_data():
             ]
         ),
         "cell": np.eye(3),
+        "coordinate": "Cartesian",
+        "alat_in_angstrom": 1.0,
     }
     elecstate = [
         {
