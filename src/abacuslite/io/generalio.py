@@ -486,8 +486,7 @@ def _parse_coord_line(line):
             expected = (3,)
         # A complete property may be followed by the legacy bare triplet.
         # For mag, use its vector width so scalar-plus-flags stays ambiguous.
-        if len(values) == max(expected) + 3 and all(
-                value in ('0', '1') for value in values[-3:]):
+        if len(values) == max(expected) + 3 and values[-3] in ('0', '1'):
             values = values[:-3]
             idx -= 3
         if len(values) not in expected:

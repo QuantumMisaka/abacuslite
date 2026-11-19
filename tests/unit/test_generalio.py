@@ -370,11 +370,12 @@ def test_explicit_kpt_rejects_missing_weight(tmp_path):
         read_kpt(path)
 
 
-def test_stru_accepts_signed_explicit_mobility(tmp_path):
+@pytest.mark.parametrize('options', ['m +1 0 +1', 'v 0 0 0 1 -0 +1'])
+def test_stru_accepts_signed_mobility(tmp_path, options):
     atoms = Atoms("Si", cell=[5., 5., 5.])
     path = tmp_path / "STRU"
     write_stru(atoms, outdir=tmp_path, pp_file={"Si": "Si.upf"})
-    path.write_text(path.read_text().replace("m 1 1 1", "m +1 0 +1"))
+    path.write_text(path.read_text().replace("m 1 1 1 v 0.0 0.0 0.0", options))
     assert read_stru(path)["species"][0]["atom"][0]["m"] == [1, 0, 1]
 
 
