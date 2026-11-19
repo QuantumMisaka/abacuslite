@@ -70,17 +70,11 @@ vector moments. `Abacus.export_properties()` therefore exports only values
 accepted by the installed ASE schema; backend metadata and vector moments
 remain available in `calc.results`.
 
-Single-point SCF collection requires one running-log geometry record and one
-parsed result. The calculator checks the atom count, element order, cell and
-periodic positions against the written STRU before restoring ASE atom order.
-This check requires explicit `LATTICE_VECTORS` as written by the calculator.
-The lattice scale and dimensionless vectors are compared at the running
-log's six-significant-digit precision. The periodic Cartesian positions are
-compared using the written cell with an absolute `1e-4` Angstrom tolerance.
-Missing, multiple, malformed or mismatched SCF geometry records raise
-`RuntimeError`. Native relaxation and MD collection selects the final frame.
-The SCF check uses the written STRU and running log. File-backed results
-restore the caller's atom ordering after species grouping.
+Single-point SCF collection requires exactly one parsed result. The calculator
+raises `RuntimeError` if the reader returns zero or multiple results. Native
+relaxation and MD collection select the final result. File-backed collection
+uses ABACUS output files and restores the caller's atom ordering with the
+mapping created when writing the inputs.
 
 Missing force/stress data is not replaced with fabricated zero arrays. ASE
 property access can raise `PropertyNotImplementedError` when unavailable.

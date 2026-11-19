@@ -4,7 +4,7 @@
 
 - Normalize running-log geometry to Cartesian Angstrom in both public ASE
   readers, including Direct SCF/relax output. Keep raw trajectory dictionaries
-  file-native and share normalization with the SCF geometry check.
+  file-native.
   Callers that manually rescaled returned `Atoms.positions` must stop doing so.
 - Clarify that output `pbc=True` describes the simulation box even for molecules
   in vacuum; nonperiodic analysis requires an explicit caller-selected copy.
@@ -18,15 +18,12 @@
   documents out of published distributions. Test both the installed wheel and
   a wheel rebuilt from the sdist with assets from the same source revision.
 
-- Validate the single geometry record produced by SCF before restoring ASE
-  atom order. Reject multiple geometry records at the calculator boundary.
-  Check the lattice scale and vectors at six-significant-digit log precision
-  and use the written cell for periodic position checks at `1e-4` Angstrom.
+- Collect exactly one parsed SCF result and restore the caller's atom order.
+  Result collection reads ABACUS output directly without reopening STRU.
 - Preserve fractional weights on explicit KPT read/write round trips. Accept
   signed integers in explicit STRU mobility flags.
-- SCF collection uses the written STRU and running log. Writing new input
-  leaves existing `abacus.json` files available for downstream workflows that
-  use them as completion markers.
+- Writing new input leaves existing `abacus.json` files available for
+  downstream workflows that use them as completion markers.
 - Accept signed Cartesian noncollinear moments in STRU input and keep vector
   moments in `calc.results` without mutating ASE's global property registry.
 - Export only values accepted by ASE's `Properties` schema; backend metadata
