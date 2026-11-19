@@ -22,22 +22,6 @@ def test_point_kpt_preserves_fractional_coordinates_and_weights(tmp_path):
     assert data["weights"] == [2, 3]
 
 
-def test_scf_selects_current_structure_and_retains_fermi(tmp_path, monkeypatch):
-    gold = FIXTURES / "multiframe_scf_trial_last"
-    shutil.copy(gold / "STRU", tmp_path / "STRU")
-    output = tmp_path / "OUT.ABACUS"
-    output.mkdir()
-    shutil.copy(gold / "running_scf.log", output / "running_scf.log")
-    monkeypatch.setattr(core, "__LEGACYIO__", True)
-    template = core.AbacusTemplate()
-    template.suffix = "ABACUS"
-    template.calculation = "scf"
-    template.atomorder = [0, 1, 2]
-    result = template.read_results(tmp_path)
-    np.testing.assert_allclose(result["forces"], [[-0.5, -0.01, 0], [0.5, 0.01, 0], [0, 0, 0]])
-    assert result["efermi"] == pytest.approx(-2.04)
-
-
 @pytest.mark.parametrize("order", [("legacy", "latest"), ("latest", "legacy")])
 def test_calculator_readers_remain_independent(tmp_path, monkeypatch, order):
     class VersionProfile(core.AbacusProfile):

@@ -33,3 +33,15 @@ def pytest_runtest_setup(item):
         assets = os.environ.get("ABACUS_PP_ORB")
         if not assets or not Path(assets).expanduser().is_dir():
             pytest.fail("--run-engine requires ABACUS_PP_ORB asset directory", pytrace=False)
+
+
+@pytest.fixture
+def single_point_scf_output(tmp_path_factory):
+    """Replay the first complete SCF record from the synthetic trajectory."""
+    fixtures = Path(__file__).resolve().parent / "fixtures"
+    source = fixtures / "multiframe_scf_trial_last" / "running_scf.log"
+    text, separator, _ = source.read_text().partition("# ================= Frame 2:")
+    assert separator
+    output = tmp_path_factory.mktemp("single_point_scf")
+    (output / "running_scf.log").write_text(text)
+    return output

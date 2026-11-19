@@ -62,11 +62,11 @@ def test_independent_calculators_select_formats_through_public_calls(tmp_path, o
     assert atoms["legacy"].calc.results["energy_without_entropy"] == pytest.approx(-1940.3851061129)
 
 
-def test_scf_matches_input_structure_and_restores_interleaved_atom_order(tmp_path):
+def test_scf_matches_input_structure_and_restores_interleaved_atom_order(tmp_path, single_point_scf_output):
     atoms = Atoms("HAuH", positions=[[4, 5, 5], [5, 5, 1], [6, 5, 5]],
                   cell=[10, 10, 10], pbc=True)
     atoms.calc = Abacus(
-        profile=ReplayProfile("v3.10.1", FIXTURES / "multiframe_scf_trial_last"),
+        profile=ReplayProfile("v3.10.1", single_point_scf_output),
         directory=tmp_path,
         pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
         inp={"basis_type": "pw", "gamma_only": True, "cal_force": True},
@@ -78,11 +78,11 @@ def test_scf_matches_input_structure_and_restores_interleaved_atom_order(tmp_pat
     assert "energy_without_entropy" not in atoms.calc.results
 
 
-def test_scf_refuses_output_from_a_different_structure(tmp_path):
+def test_scf_refuses_output_from_a_different_structure(tmp_path, single_point_scf_output):
     atoms = Atoms("HHAu", positions=[[1, 1, 1], [2, 2, 2], [3, 3, 3]],
                   cell=[10, 10, 10], pbc=True)
     atoms.calc = Abacus(
-        profile=ReplayProfile("v3.10.1", FIXTURES / "multiframe_scf_trial_last"),
+        profile=ReplayProfile("v3.10.1", single_point_scf_output),
         directory=tmp_path, pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
         inp={"basis_type": "pw", "gamma_only": True},
     )
