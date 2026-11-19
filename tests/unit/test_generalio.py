@@ -353,6 +353,31 @@ class TestAbacusCalculatorIOUtil(unittest.TestCase):
         self.assertEqual(stru['species'][2]['atom'][0]['mag'], ('Cartesian', [0.0, 0.0, 3.0]))
 
 
+def test_explicit_kpt_keeps_fractional_weights_on_round_trip(tmp_path):
+    path = tmp_path / "KPT"
+    path.write_text("K_POINTS\n2\nDirect\n+1e-2 0 0 0.25 # first\n.5 0 0 7.5E-1\n")
+    data = read_kpt(path)
+    assert data["kpoints"] == [(0.01, 0., 0.), (0.5, 0., 0.)]
+    assert data["weights"] == [0.25, 0.75]
+    write_kpt(data, path)
+    assert read_kpt(path) == data
+
+
+def test_explicit_kpt_rejects_missing_weight(tmp_path):
+    path = tmp_path / "KPT"
+    path.write_text("K_POINTS\n1\nDirect\n0.1 0.2 0.33\n")
+    with pytest.raises(ValueError):
+        read_kpt(path)
+
+
+def test_stru_accepts_signed_explicit_mobility(tmp_path):
+    atoms = Atoms("Si", cell=[5., 5., 5.])
+    path = tmp_path / "STRU"
+    write_stru(atoms, outdir=tmp_path, pp_file={"Si": "Si.upf"})
+    path.write_text(path.read_text().replace("m 1 1 1", "m +1 0 +1"))
+    assert read_stru(path)["species"][0]["atom"][0]["m"] == [1, 0, 1]
+
+
 @pytest.mark.parametrize('tail', ['m 1 0', 'v 1 2', 'mag 1 2',
                                  'mag 1 angle1 90', 'mag 1 angle2 0',
                                  'mag 1 angle1 90 angle2'])

@@ -81,13 +81,27 @@ def _rounded_cell_run(tmp_path):
 
 
 def test_lts_rounded_log_cell_matches_without_abacus_json(tmp_path):
-    """Six-significant-digit lattice rounding fits the default identity tolerance."""
+    """Six-significant-digit lattice rounding is accepted."""
     template, directory = _rounded_cell_run(tmp_path)
     assert not (directory / "abacus.json").exists()
 
     results = template.read_results(directory)
     assert results["energy"] == pytest.approx(-13.5410411603)
     np.testing.assert_allclose(results["forces"], [[0, 0, 0]], atol=1e-12)
+
+
+@pytest.mark.parametrize("logged_vector,matches", [("101.234", True), ("101.235", False)])
+def test_lts_large_cell_compares_at_logged_precision(tmp_path, logged_vector, matches):
+    template, directory = _rounded_cell_run(tmp_path)
+    stru = directory / "STRU"
+    stru.write_text(stru.read_text().replace("10.000016522100001", "101.23445"))
+    log = directory / "OUT.ABACUS" / "running_scf.log"
+    log.write_text(log.read_text().replace("+10 ", f"+{logged_vector} ", 1))
+    if matches:
+        assert template.read_results(directory)["energy"] == pytest.approx(-13.5410411603)
+    else:
+        with pytest.raises(RuntimeError):
+            template.read_results(directory)
 
 
 @pytest.mark.parametrize("scale", [1.234564321, 1.2345652])
@@ -197,11 +211,16 @@ def test_scf_coordinate_modes_match_periodic_geometry(tmp_path, single_point_scf
         raw_fields = raw_line.split()
         text = text.replace(raw_line,
                             " ".join([label, *map(str, wrapped), *raw_fields[4:]]))
-    log_vectors = "\n".join(" ".join(map(str, row)) for row in cell)
+    lattice_vectors = cell / (lattice_constant * Bohr)
+    logged_scale = lattice_constant * 0.529177
+    text = re.sub(r"(lattice constant \(Angstrom\)\s*=\s*)\S+",
+                  lambda match: match[1] + f"{logged_scale:.6g}", text, count=1)
+    log_vectors = "\n".join(" ".join(f"{value:+.6g}" for value in row)
+                            for row in lattice_vectors)
     text = re.sub(r"(Lattice vectors:[^\n]*\n)(?:[^\n]+\n){3}",
                   lambda match: match[1] + log_vectors + "\n", text, count=1)
     log.write_text(text)
-    stru_vectors = "\n".join(" ".join(map(str, row)) for row in cell / (lattice_constant * Bohr))
+    stru_vectors = "\n".join(" ".join(map(str, row)) for row in lattice_vectors)
     coord_lines = [" ".join(map(str, coordinate)) + " mag 0 0 1 sc 1 1 1"
                    for coordinate in coordinates[mode]]
     stru = tmp_path / "STRU"

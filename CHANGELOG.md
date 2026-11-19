@@ -20,12 +20,10 @@
 
 - Validate the single geometry record produced by SCF before restoring ASE
   atom order. Reject multiple geometry records at the calculator boundary.
-  Use an absolute `1e-4` Angstrom tolerance for cell components and periodic
-  residuals. ABACUS prints lattice vectors at six
-  significant digits, so a component in `[10, 100)` Angstrom can differ from
-  the exact STRU cell by up to `5e-5` Angstrom. The `1e-5` bound sat below
-  that print resolution and rejected correct single-frame SCF results; a real
-  geometry difference is still rejected.
+  Check the lattice scale and vectors at six-significant-digit log precision
+  and use the written cell for periodic position checks at `1e-4` Angstrom.
+- Preserve fractional weights on explicit KPT read/write round trips. Accept
+  signed integers in explicit STRU mobility flags.
 - SCF collection uses the written STRU and running log. Writing new input
   leaves existing `abacus.json` files available for downstream workflows that
   use them as completion markers.

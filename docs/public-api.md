@@ -73,14 +73,11 @@ remain available in `calc.results`.
 Single-point SCF collection requires one running-log geometry record and one
 parsed result. The calculator checks the atom count, element order, cell and
 periodic positions against the written STRU before restoring ASE atom order.
-The check uses an absolute `1e-4` Angstrom tolerance for cell components and
-periodic position residuals. With a lattice constant near 1 Angstrom, printing
-vectors in `[10, 100)` to six significant digits can lose up to `5e-5`
-Angstrom per component. A saved LTS run exceeds the old `1e-5` bound but
-matches at `1e-4`. This is a structure-identity tolerance, not a convergence
-threshold or a universal bound: larger cells, separately rounded lattice
-constants and skewed-cell coordinate transformations can accumulate more
-error. Missing, multiple, malformed or mismatched SCF geometry records raise
+This check requires explicit `LATTICE_VECTORS` as written by the calculator.
+The lattice scale and dimensionless vectors are compared at the running
+log's six-significant-digit precision. The periodic Cartesian positions are
+compared using the written cell with an absolute `1e-4` Angstrom tolerance.
+Missing, multiple, malformed or mismatched SCF geometry records raise
 `RuntimeError`. Native relaxation and MD collection selects the final frame.
 The SCF check uses the written STRU and running log. File-backed results
 restore the caller's atom ordering after species grouping.
