@@ -72,9 +72,9 @@ rather than add a second parser or move ATST launcher policy here.
   must manage their own file lifecycle.
 - Reader selection belongs to each calculator. `switch_io_backend_version()`
   changes the default of new bare templates, not existing calculators.
-- SCF matches the current STRU, including atom mapping and periodic-equivalent
-  positions, and rejects malformed frames. Retained relax/MD behavior selects
-  the final frame. This may expose previously silently accepted invalid data.
+- The SCF calculator requires one parsed result. Use `read_abacus_out()` to
+  inspect individual results in a multi-frame output. Native relaxation and
+  MD collection select the final result.
 - Missing Fermi levels remain missing; available values are retained as
   `efermi`. Point-KPT decimal parsing and Cartesian matching units are corrected.
 

@@ -62,11 +62,11 @@ def test_independent_calculators_select_formats_through_public_calls(tmp_path, o
     assert atoms["legacy"].calc.results["energy_without_entropy"] == pytest.approx(-1940.3851061129)
 
 
-def test_scf_matches_input_structure_and_restores_interleaved_atom_order(tmp_path):
+def test_scf_restores_interleaved_atom_order(tmp_path, single_point_scf_output):
     atoms = Atoms("HAuH", positions=[[4, 5, 5], [5, 5, 1], [6, 5, 5]],
                   cell=[10, 10, 10], pbc=True)
     atoms.calc = Abacus(
-        profile=ReplayProfile("v3.10.1", FIXTURES / "multiframe_scf_trial_last"),
+        profile=ReplayProfile("v3.10.1", single_point_scf_output),
         directory=tmp_path,
         pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
         inp={"basis_type": "pw", "gamma_only": True, "cal_force": True},
@@ -78,17 +78,53 @@ def test_scf_matches_input_structure_and_restores_interleaved_atom_order(tmp_pat
     assert "energy_without_entropy" not in atoms.calc.results
 
 
-def test_scf_refuses_output_from_a_different_structure(tmp_path):
-    atoms = Atoms("HHAu", positions=[[1, 1, 1], [2, 2, 2], [3, 3, 3]],
+def test_scf_rejects_multiple_parsed_results(tmp_path):
+    source = FIXTURES / "multiframe_scf_trial_last"
+    log = source / "running_scf.log"
+    count = len(legacyio.read_abacus_out(log))
+    assert count == 4
+    atoms = Atoms("HHAu", positions=[[4, 5, 5], [6, 5, 5], [5, 5, 1]],
                   cell=[10, 10, 10], pbc=True)
     atoms.calc = Abacus(
-        profile=ReplayProfile("v3.10.1", FIXTURES / "multiframe_scf_trial_last"),
+        profile=ReplayProfile("v3.10.1", source),
         directory=tmp_path, pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
         inp={"basis_type": "pw", "gamma_only": True},
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError) as error:
         atoms.get_potential_energy()
+    assert str(tmp_path / "OUT.ABACUS" / log.name) in str(error.value)
     assert not atoms.calc.results
+
+
+def test_scf_collects_results_without_rereading_stru(tmp_path, single_point_scf_output):
+    class OutputOnlyProfile(ReplayProfile):
+        def run(self, directory, inputfile, outputfile, errorfile=None, append=False):
+            super().run(directory, inputfile, outputfile, errorfile, append)
+            stru = Path(directory) / "STRU"
+            stru.rename(stru.with_suffix(".used"))
+
+    atoms = Atoms("HHAu", positions=[[4, 5, 5], [6, 5, 5], [5, 5, 1]],
+                  cell=[10, 10, 10], pbc=True)
+    atoms.calc = Abacus(
+        profile=OutputOnlyProfile("v3.10.1", single_point_scf_output),
+        directory=tmp_path, pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
+        inp={"basis_type": "pw", "gamma_only": True},
+    )
+    assert atoms.get_potential_energy() == pytest.approx(-2898.0)
+
+
+def test_calculator_preserves_existing_abacus_json(tmp_path):
+    marker = tmp_path / "abacus.json"
+    marker.write_text('{"old": true}')
+    atoms = Atoms("H", positions=[[1, 2, 3]], cell=[10, 11, 12], pbc=True)
+    calc = Abacus(
+        profile=ReplayProfile("v3.10.1", tmp_path), directory=tmp_path,
+        pseudopotentials={"H": "H.upf"},
+        inp={"basis_type": "pw", "gamma_only": True},
+    )
+    calc.write_input(atoms, properties=["energy"])
+    assert marker.read_text() == '{"old": true}'
+    assert list(tmp_path.glob("abacus.json*")) == [marker]
 
 
 @pytest.mark.parametrize("name,reader,energy", [
@@ -147,29 +183,6 @@ def test_noncollinear_results_need_no_global_ase_patch(tmp_path, name, version, 
     collinear = legacyio.read_abacus_out(
         FIXTURES / "multiframe_scf_trial_last" / "running_scf.log", index=-1)
     assert np.asarray(collinear.calc.properties()["magmoms"]).shape == (3,)
-
-
-def test_scf_handoff_accepts_negative_noncollinear_component(tmp_path):
-    source = FIXTURES / "noncollinear_scf" / "latest"
-
-    class NegativeMomentProfile(ReplayProfile):
-        def run(self, directory, inputfile, outputfile, errorfile=None, append=False):
-            super().run(directory, inputfile, outputfile, errorfile, append)
-            path = Path(directory) / "STRU"
-            path.write_text(path.read_text().replace(
-                "mag 0.0 1.0 0.0", "mag 0.0 -1.0 0.0"
-            ))
-
-    atoms = Atoms("Fe2", positions=[[0, 0, 0], [2.6, 2.6, 2.6]],
-                  cell=[5.2, 5.2, 5.2], pbc=True)
-    atoms.calc = Abacus(
-        profile=NegativeMomentProfile("v3.11.0-beta10", source),
-        directory=tmp_path,
-        pseudopotentials={"Fe": "Fe.upf"},
-        inp={"basis_type": "pw", "gamma_only": True, "nspin": 4},
-    )
-    atoms.get_potential_energy()
-    assert atoms.calc.results["magmoms"].shape == (2, 3)
 
 
 def test_input_io_without_an_engine_preserves_declared_values(tmp_path):

@@ -4,7 +4,7 @@
 
 - Normalize running-log geometry to Cartesian Angstrom in both public ASE
   readers, including Direct SCF/relax output. Keep raw trajectory dictionaries
-  file-native and remove the calculator matcher's compensating conversion.
+  file-native.
   Callers that manually rescaled returned `Atoms.positions` must stop doing so.
 - Clarify that output `pbc=True` describes the simulation box even for molecules
   in vacuum; nonperiodic analysis requires an explicit caller-selected copy.
@@ -18,17 +18,12 @@
   documents out of published distributions. Test both the installed wheel and
   a wheel rebuilt from the sdist with assets from the same source revision.
 
-- Match SCF frames with an absolute `1e-4` Angstrom tolerance for cell
-  components and periodic residuals (default restored; `1e-5` was in force
-  since the ATST 2.2.9 alignment). ABACUS prints lattice vectors at six
-  significant digits, so a component in `[10, 100)` Angstrom can differ from
-  the exact STRU cell by up to `5e-5` Angstrom. The `1e-5` bound sat below
-  that print resolution and rejected correct single-frame SCF results; a real
-  geometry difference is still rejected.
-- Stop consuming `abacus.json`. The rounded-cell JSON corroboration path and
-  its run-timestamp checks are removed: the running log alone identifies the
-  SCF frame. Writing new input leaves existing JSON files untouched; downstream
-  workflows manage their own completion markers.
+- Collect exactly one parsed SCF result and restore the caller's atom order.
+  Result collection reads ABACUS output directly without reopening STRU.
+- Preserve fractional weights on explicit KPT read/write round trips. Accept
+  signed integers in explicit STRU mobility flags.
+- Writing new input leaves existing `abacus.json` files available for
+  downstream workflows that use them as completion markers.
 - Accept signed Cartesian noncollinear moments in STRU input and keep vector
   moments in `calc.results` without mutating ASE's global property registry.
 - Export only values accepted by ASE's `Properties` schema; backend metadata
