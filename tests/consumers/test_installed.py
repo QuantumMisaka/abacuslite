@@ -70,7 +70,9 @@ def test_atst_input_preparation_uses_installed_writers(tmp_path):
     np.testing.assert_allclose(parsed["species"][0]["atom"][1]["coord"], [2, 3, 4])
 
 
-def test_atst_profile_and_ase_calculator_preserve_scf_forces_and_fermi(tmp_path, monkeypatch):
+def test_atst_profile_and_ase_calculator_preserve_scf_forces_and_fermi(
+    tmp_path, monkeypatch, single_point_scf_output
+):
     from ase import Atoms
     from atst_tools.calculators.abacuslite_backend import Abacus, ATSTAbacusProfile
 
@@ -82,7 +84,7 @@ def test_atst_profile_and_ase_calculator_preserve_scf_forces_and_fermi(tmp_path,
     def engine_output(directory, *args, **kwargs):
         output = Path(directory) / "OUT.ABACUS"
         output.mkdir(exist_ok=True)
-        shutil.copy(FIXTURES / "multiframe_scf_trial_last/running_scf.log", output)
+        shutil.copy(single_point_scf_output / "running_scf.log", output)
     monkeypatch.setattr(profile, "run", engine_output)
     calc = Abacus(profile, directory=tmp_path,
                   pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
@@ -95,35 +97,28 @@ def test_atst_profile_and_ase_calculator_preserve_scf_forces_and_fermi(tmp_path,
     assert calc.results["fermi_level"] == pytest.approx(-2.04)
 
 
-def test_atst_periodic_scf_handoff_fails_closed_on_unmatched_structure(tmp_path, monkeypatch):
+def test_atst_scf_handoff_uses_final_parsed_result(tmp_path, monkeypatch):
     from ase import Atoms
     from atst_tools.calculators.abacuslite_backend import Abacus, ATSTAbacusProfile
 
     profile = ATSTAbacusProfile("unused-abacus", version_command=shlex.join([
         sys.executable, "-c", "print('ABACUS v3.10.1')"
     ]))
+    source = FIXTURES / "multiframe_scf_trial_last" / "running_scf.log"
 
     def engine_output(directory, *args, **kwargs):
         output = Path(directory) / "OUT.ABACUS"
         output.mkdir(exist_ok=True)
-        shutil.copy(FIXTURES / "multiframe_scf_trial_last/running_scf.log", output)
+        shutil.copy(source, output)
 
     monkeypatch.setattr(profile, "run", engine_output)
-    wrapped = Abacus(profile, directory=tmp_path / "wrapped",
-                     pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
-                     basissets={"H": "H.orb", "Au": "Au.orb"})
-    atoms = Atoms("HAuH", positions=[[14, 5, 5], [5, 5, 1], [-4, 5, 5]],
-                  cell=[10, 10, 10], pbc=True, calculator=wrapped)
+    calc = Abacus(profile, directory=tmp_path,
+                  pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
+                  basissets={"H": "H.orb", "Au": "Au.orb"})
+    atoms = Atoms("HAuH", positions=[[4, 5, 5], [5, 5, 1], [6, 5, 5]],
+                  cell=[10, 10, 10], pbc=True, calculator=calc)
     np.testing.assert_allclose(atoms.get_forces(),
-                               [[-.5, -.01, 0], [0, 0, 0], [.5, .01, 0]])
-
-    unmatched = Abacus(profile, directory=tmp_path / "unmatched",
-                       pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
-                       basissets={"H": "H.orb", "Au": "Au.orb"})
-    atoms = Atoms("HAuH", positions=[[4.123, 5, 5], [5, 5, 1], [6, 5, 5]],
-                  cell=[10, 10, 10], pbc=True, calculator=unmatched)
-    with pytest.raises(RuntimeError, match="fail-closed"):
-        atoms.get_forces()
+                               [[-0.45, -0.014, 0], [0, 0, 0], [0.45, 0.014, 0]])
 
 
 def test_atst_native_md_frames_keep_physical_cell_and_raw_cartesian_positions(tmp_path):

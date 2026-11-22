@@ -52,6 +52,9 @@ from ase.dft.kpoints import BandPath
 from ase.io import read
 
 from abacuslite.io.generalio import (
+    _read_stru_species,
+    _write_kpt,
+    _write_stru_from_atoms,
     file_safe_backup,
     read_input,
     read_stru,
@@ -192,309 +195,6 @@ class AbacusProfile(BaseProfile):
         cmd_ = [*self._split_command, '--version']
         return AbacusProfile.parse_version(read_stdout(cmd_))
 
-def _validate_atomorder(atomorder, natoms, stru_path):
-    """Validate the species-to-ASE permutation before handing it to a parser."""
-    if atomorder is None:
-        return list(range(natoms))
-
-    try:
-        values = list(atomorder)
-    except (TypeError, ValueError) as exc:
-        raise RuntimeError(
-            f"Cannot parse scf atomorder (STRU: {stru_path}; expected "
-            f"{natoms} integer indices; fail-closed)"
-        ) from exc
-
-    # A permutation needs one non-boolean integer per atom, with every
-    # index present exactly once; sorting checks both range and uniqueness.
-    if (
-        len(values) != natoms
-        or not all(
-            isinstance(value, (int, np.integer))
-            and not isinstance(value, (bool, np.bool_))
-            for value in values
-        )
-        or sorted(values) != list(range(natoms))
-    ):
-        raise RuntimeError(
-            f"Invalid scf atomorder (STRU: {stru_path}; received {values!r}, "
-            f"expected {natoms} unique indices from 0 to {max(natoms - 1, 0)}; "
-            f"fail-closed)"
-        )
-    return [int(value) for value in values]
-
-
-def _invert_cell(cell, context):
-    """Return a cell inverse or raise a diagnostic validation error."""
-    try:
-        return np.linalg.solve(cell, np.eye(3, dtype=float))
-    except np.linalg.LinAlgError as exc:
-        raise ValueError(f"singular cell in {context}") from exc
-
-
-def _read_stru_reference(directory, stru_file, atomorder, log_path=None):
-    """Normalize STRU coordinates, cell, symbols, and mapping for SCF matching."""
-    from ase.units import Bohr
-    from .io.generalio import read_stru
-
-    stru_path = Path(directory) / (stru_file or 'STRU')
-    try:
-        stru = read_stru(stru_path)
-        species = stru['species']
-        lat = stru['lat']
-        coord_type = str(stru['coord_type']).lower()
-        raw_symbols = []
-        raw_coords = []
-        for species_entry in species:
-            symbol = species_entry['symbol']
-            atoms = species_entry['atom']
-            declared_natoms = species_entry['natom']
-            if declared_natoms != len(atoms):
-                raise ValueError(
-                    f"STRU species {symbol!r} declared natom={declared_natoms}, "
-                    f"but contains {len(atoms)} atom records"
-                )
-            for atom in atoms:
-                raw_symbols.append(str(symbol))
-                raw_coords.append(atom['coord'])
-
-        natoms = len(raw_symbols)
-        mapping = _validate_atomorder(atomorder, natoms, stru_path)
-        coordinates = np.asarray(raw_coords, dtype=float)
-        if coordinates.shape != (natoms, 3):
-            raise ValueError(
-                f"STRU positions shape {coordinates.shape}, expected ({natoms}, 3)"
-            )
-        if not np.isfinite(coordinates).all():
-            raise ValueError("non-finite STRU positions")
-
-        lattice_vectors = np.asarray(lat['vec'], dtype=float)
-        if lattice_vectors.shape != (3, 3):
-            raise ValueError(
-                f"STRU cell shape {lattice_vectors.shape}, expected (3, 3)"
-            )
-        lattice_constant = float(lat['const'])
-        cell = lattice_vectors * lattice_constant * Bohr
-        if not np.isfinite(cell).all():
-            raise ValueError("non-finite STRU cell")
-        _invert_cell(cell, f"STRU {stru_path}")
-
-        if coord_type.startswith('d'):
-            species_positions = coordinates @ cell
-        elif coord_type.startswith('c'):
-            species_positions = coordinates * lattice_constant * Bohr
-        else:
-            raise ValueError(f"unsupported STRU coordinate type {stru['coord_type']!r}")
-        if not np.isfinite(species_positions).all():
-            raise ValueError("non-finite normalized STRU positions")
-    except (
-        AssertionError,
-        KeyError,
-        OSError,
-        TypeError,
-        ValueError,
-        IndexError,
-        np.linalg.LinAlgError,
-    ) as exc:
-        suffix = f"; log: {log_path}" if log_path is not None else ""
-        raise RuntimeError(
-            f"Invalid scf STRU identity data (STRU: {stru_path}{suffix}; "
-            f"{exc}; fail-closed)"
-        ) from exc
-
-    return {
-        'positions': species_positions[mapping],
-        'cell': cell,
-        'symbols': [raw_symbols[index] for index in mapping],
-        'atomorder': mapping,
-    }
-
-
-def _validate_raw_scf_frame(frame, frame_index, expected):
-    """Validate one raw frame before atom reordering can hide extra atoms."""
-    context = f"frame {frame_index}"
-    scale = float(frame['alat_in_angstrom'])
-    if not np.isfinite(scale) or scale <= 0:
-        raise ValueError(f"{context} invalid lattice constant in Angstrom: {scale!r}")
-    expected_shape = expected['positions'].shape
-    expected_natoms = len(expected['symbols'])
-    coords = np.asarray(frame['coords'], dtype=float)
-    if coords.ndim >= 1 and coords.shape[0] != expected_natoms:
-        raise ValueError(
-            f"{context} atom count {coords.shape[0]}, expected {expected_natoms}"
-        )
-    if coords.shape != expected_shape:
-        raise ValueError(
-            f"{context} positions shape {coords.shape}, expected {expected_shape}"
-        )
-    if not np.isfinite(coords).all():
-        raise ValueError(f"{context} positions are non-finite")
-
-    elements = np.asarray(frame['elem'])
-    if elements.shape != (expected_natoms,):
-        raise ValueError(
-            f"{context} atom symbols shape {elements.shape}, "
-            f"expected ({expected_natoms},)"
-        )
-    cell = np.asarray(frame['cell'], dtype=float)
-    if cell.shape != (3, 3):
-        raise ValueError(f"{context} cell shape {cell.shape}, expected (3, 3)")
-    if not np.isfinite(cell).all():
-        raise ValueError(f"{context} cell is non-finite")
-    _invert_cell(cell, context)
-
-
-def _validate_raw_scf_trajectory(log_path, expected, *, legacyio=None):
-    """Check raw trajectory cardinality before parser atom reordering."""
-    use_legacy = __LEGACYIO__ if legacyio is None else legacyio
-    if use_legacy:
-        from .io.legacyio import read_traj_from_running_log
-    else:
-        from .io.latestio import read_traj_from_running_log
-
-    try:
-        trajectory = read_traj_from_running_log(log_path)
-        if not trajectory:
-            raise ValueError("no raw trajectory frames")
-        for frame_index, frame in enumerate(trajectory):
-            _validate_raw_scf_frame(frame, frame_index, expected)
-    except (AssertionError, KeyError, OSError, TypeError, ValueError, IndexError) as exc:
-        raise RuntimeError(
-            f"Invalid raw scf trajectory (log: {log_path}; {exc}; fail-closed)"
-        ) from exc
-    return trajectory
-
-
-def _normalize_scf_frame(frame, frame_index, expected, atol):
-    """Normalize one parser frame and return match diagnostics.
-
-    A finite, well-shaped frame with a different position or cell is a valid
-    candidate mismatch. Malformed data is represented as ``ValueError`` so the
-    caller can validate every frame before selecting any one of them.
-    """
-    context = f"frame {frame_index}"
-    try:
-        symbols = list(frame.get_chemical_symbols())
-    except (AttributeError, TypeError, ValueError) as exc:
-        raise ValueError(f"{context} symbols are unavailable") from exc
-    if len(symbols) != len(expected['symbols']):
-        raise ValueError(
-            f"{context} atom count {len(symbols)}, expected {len(expected['symbols'])}"
-        )
-    if symbols != expected['symbols']:
-        raise ValueError(
-            f"{context} symbols {symbols!r} do not match STRU symbols "
-            f"{expected['symbols']!r}"
-        )
-
-    try:
-        positions = np.asarray(frame.positions, dtype=float)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{context} positions cannot be converted to float") from exc
-    if positions.shape != expected['positions'].shape:
-        raise ValueError(
-            f"{context} positions shape {positions.shape}, expected "
-            f"{expected['positions'].shape}"
-        )
-    if not np.isfinite(positions).all():
-        raise ValueError(f"{context} positions are non-finite")
-
-    try:
-        cell = np.asarray(frame.cell, dtype=float)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{context} cell cannot be converted to float") from exc
-    if cell.shape != (3, 3):
-        raise ValueError(f"{context} cell shape {cell.shape}, expected (3, 3)")
-    if not np.isfinite(cell).all():
-        raise ValueError(f"{context} cell is non-finite")
-    cell_inverse = _invert_cell(cell, context)
-
-    # Public readers return standard ASE Cartesian positions in Angstrom.
-    frame_cart = positions
-    cell_diff = float(np.max(np.abs(cell - expected['cell'])))
-    periodic_residual = None
-    if np.allclose(cell, expected['cell'], atol=atol, rtol=0.0):
-        delta_frac = (frame_cart - expected['positions']) @ cell_inverse
-        periodic_cart = (delta_frac - np.rint(delta_frac)) @ cell
-        if not np.isfinite(periodic_cart).all():
-            raise ValueError(f"{context} periodic residual is non-finite")
-        periodic_residual = float(np.max(np.abs(periodic_cart)))
-    return {
-        'frame_cart': frame_cart,
-        'cell_diff': cell_diff,
-        'periodic_residual': periodic_residual,
-        'matches': periodic_residual is not None and periodic_residual <= atol,
-    }
-
-
-def _select_scf_frame_for_structure(
-    frames, log_path, directory, atomorder, atol=1e-4, stru_file='STRU', _reference=None
-):
-    """Select the latest frame matching STRU in ASE atom order.
-
-    Validate every candidate before returning, including those after a match.
-    Compare cell components and periodic Cartesian residuals with absolute
-    ``atol`` in Angstrom and ``rtol=0``. The 1e-4 default accommodates ordinary
-    log rounding; it is a structure identity bound, not a convergence setting.
-    """
-    try:
-        nframes = len(frames)
-    except TypeError as exc:
-        raise RuntimeError(
-            f"Invalid scf frame collection (log: {log_path}; cannot read "
-            f"frame count; fail-closed)"
-        ) from exc
-    if nframes == 0:
-        raise RuntimeError(
-            f"No scf frames in log {log_path} (0 frames; atol={atol}; "
-            f"fail-closed)"
-        )
-    if not np.isfinite(atol) or atol < 0:
-        raise RuntimeError(f"Invalid scf frame-matching atol: {atol!r} "
-                           f"(fail-closed)")
-
-    expected = _reference or _read_stru_reference(
-        directory, stru_file, atomorder, log_path=log_path
-    )
-    frame_label = 'frame' if nframes == 1 else 'frames'
-    selected = None
-    last = None
-    invalid = []
-    for frame_index, frame in enumerate(frames):
-        try:
-            last = _normalize_scf_frame(
-                frame, frame_index, expected, atol
-            )
-            if last['matches']:
-                selected = frame
-        except (AttributeError, TypeError, ValueError, IndexError) as exc:
-            invalid.append(f"frame {frame_index}: {exc}")
-
-    if invalid:
-        details = "; ".join(invalid)
-        raise RuntimeError(
-            f"Malformed scf frames in log {log_path} ({nframes} {frame_label}; "
-            f"{details}; atol={atol}; fail-closed)"
-        )
-    if selected is not None:
-        return selected
-
-    raw_diff = float(
-        np.max(np.abs(last['frame_cart'] - expected['positions']))
-    )
-    periodic = (
-        f"{last['periodic_residual']:.6g} Å"
-        if last['periodic_residual'] is not None
-        else "n/a (cell mismatch)"
-    )
-    raise RuntimeError(
-        f"No frame in scf log matches the current structure: {log_path} "
-        f"({nframes} {frame_label}; last-frame raw Cartesian max difference "
-        f"{raw_diff:.6g} Angstrom; periodic residual={periodic}; "
-        f"maximum cell difference={last['cell_diff']:.6g} Angstrom; "
-        f"atol={atol}; fail-closed)"
-    )
-
 
 class AbacusTemplate(CalculatorTemplate):
     
@@ -624,26 +324,23 @@ class AbacusTemplate(CalculatorTemplate):
 
         # copy the `parameters` because later we will modify it
         parameters = parameters.copy()
-        self.stru_file = parameters.get('stru_file', 'STRU') or 'STRU'
+        stru_file = parameters.get('stru_file', 'STRU') or 'STRU'
 
         # STRU
-        _ = file_safe_backup(directory / self.stru_file)
         # group atoms by first-occurrence species order. Keep the reverse map so
         # that we will recover the order in function read_results()
         ind = species_group_indices(atoms.get_chemical_symbols())
         self.atomorder = sorted(range(len(atoms)), key=lambda i: ind[i]) # revmap
         # then we write
-        _ = write_stru(atoms[ind], 
-                       outdir=directory,
-                       pp_file=parameters.get('pseudopotentials'),
-                       orb_file=parameters.get('basissets'),
-                       fname=self.stru_file)
+        _write_stru_from_atoms(atoms[ind], directory,
+                               parameters.get('pseudopotentials'),
+                               parameters.get('basissets'),
+                               stru_file, backup=True)
 
         # KPT, if needed
         if 'kpts' in parameters:
-            _ = file_safe_backup(directory / parameters.get('kpoint_file', 'KPT'))
-            _ = write_kpt(parameters['kpts'], 
-                          directory / parameters.get('kpoint_file', 'KPT'))
+            kpt_file = directory / (parameters.get('kpoint_file', 'KPT') or 'KPT')
+            _write_kpt(parameters['kpts'], kpt_file, backup=True)
         # should this function be responsible for checking the integrity
         # of information provided by the user? There may be the case that
         # user provides incomplete information, such that the ABACUS cannot
@@ -750,72 +447,35 @@ class AbacusTemplate(CalculatorTemplate):
         directory = Path(directory)
         outdir = directory / f'OUT.{self.suffix}'
         log = outdir / f'running_{self.calculation}.log'
-        stru_file = getattr(self, 'stru_file', 'STRU') or 'STRU'
-        reference = None
-        parser_atomorder = self.atomorder
-        if self.calculation == 'scf':
-            # Read and validate STRU/mapping before passing sort_atoms_with to
-            # the parser; otherwise a malformed mapping leaks a bare IndexError.
-            reference = _read_stru_reference(
-                directory, stru_file, self.atomorder, log_path=log
-            )
-            # Validate raw parser cardinality before sort_atoms_with can slice
-            # away an extra/missing atom and make a corrupt frame look valid.
-            _validate_raw_scf_trajectory(
-                log, reference, legacyio=self._legacyio
-            )
-            parser_atomorder = None if self.atomorder is None else reference['atomorder']
-
-        # Read all frames: SCF selects the frame matching the current STRU;
-        # relax and MD keep the final-frame behavior.
-        try:
-            frames = read_abacus_out(log, sort_atoms_with=parser_atomorder)
-        except (IndexError, AssertionError, KeyError, TypeError, ValueError) as exc:
-            if self.calculation != 'scf':
-                raise
-            raise RuntimeError(
-                f"scf running log parser failed: {log} (atomorder/frame "
-                f"structure error: {exc}; fail-closed)"
-            ) from exc
+        frames = read_abacus_out(log, sort_atoms_with=self.atomorder)
         if not frames:
             raise RuntimeError(f"no ABACUS running-log frames in {log}")
-        if self.calculation != 'scf':
-            atoms: Optional[Atoms] = frames[-1]  # relax/MD keep the final frame.
-        else:
-            atoms = _select_scf_frame_for_structure(
-                frames,
-                log,
-                directory,
-                reference['atomorder'],
-                stru_file=stru_file,
-                _reference=reference,
-            )
-        assert atoms is not None
+        atoms = frames[-1]
 
         # ASE's Properties schema accepts scalar magnetic moments only,
         # although SinglePointDFTCalculator supports vector moments. Project
         # other properties through ASE and retain vectors as result metadata,
         # without changing ASE's process-global output definitions.
-        singlepoint = atoms.calc
-        vector_moments = {
-            name: singlepoint.results[name]
+        spcalc = atoms.calc
+        noncollinear_moments = {
+            name: spcalc.results[name]
             for name, shape in (('magmom', (3,)), ('magmoms', (len(atoms), 3)))
-            if name in singlepoint.results
-            and np.shape(singlepoint.results[name]) == shape
+            if name in spcalc.results
+            and np.shape(spcalc.results[name]) == shape
         }
-        if vector_moments:
-            singlepoint = copy(singlepoint)
-            singlepoint.results = {
-                name: value for name, value in singlepoint.results.items()
-                if name not in vector_moments
+        if noncollinear_moments:
+            spcalc = copy(spcalc)
+            spcalc.results = {
+                name: value for name, value in spcalc.results.items()
+                if name not in noncollinear_moments
             }
-        results = dict(singlepoint.properties())
-        results.update(vector_moments)
-        if vector_moments:
+        results = dict(spcalc.properties())
+        results.update(noncollinear_moments)
+        if noncollinear_moments:
             results.setdefault('natoms', len(atoms))
         if 'energy_without_entropy' in atoms.info:
             results['energy_without_entropy'] = atoms.info['energy_without_entropy']
-        # Keep the existing result alias alongside ASE's standard property.
+        # Standalone abacuslite callers also use the efermi result alias.
         if 'fermi_level' in results:
             results['efermi'] = results['fermi_level']
         return results
@@ -908,7 +568,9 @@ class Abacus(GenericFileIOCalculator):
         inp_read = read_input(directory / 'INPUT')
         inp = inp_read | kwargs.pop('inp', {})
 
-        pporb_read = read_stru(directory / (inp.get('stru_file', 'STRU') or 'STRU'))['species']
+        # The old INPUT names the files to read; overrides apply to the next run.
+        stru_file = directory / (inp_read.get('stru_file', 'STRU') or 'STRU')
+        pporb_read = _read_stru_species(stru_file)
         pseudopotentials = kwargs.get(
             'pseudopotentials',
             {pporb['symbol']: pporb['pp_file'] for pporb in pporb_read}
@@ -929,7 +591,7 @@ class Abacus(GenericFileIOCalculator):
         if 'kpts' in kwargs:
             kpts_kwargs = {'kpts': kwargs.pop('kpts')}
         else:
-            kpt_file = directory / (inp.get('kpoint_file', 'KPT') or 'KPT')
+            kpt_file = directory / (inp_read.get('kpoint_file', 'KPT') or 'KPT')
             if kpt_file.is_file():
                 kpts_kwargs = {'kpts': read_kpt(kpt_file)}
             else:

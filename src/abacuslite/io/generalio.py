@@ -5,8 +5,8 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from io import TextIOWrapper
-from typing import Optional, Dict, List, Any, Mapping
+from io import StringIO
+from typing import Optional, Dict, List, Any, Mapping, TextIO
 
 import numpy as np
 from ase.atoms import Atoms
@@ -14,6 +14,20 @@ from ase.build import bulk
 from ase.constraints import FixAtoms, FixCartesian
 from ase.data import chemical_symbols, atomic_masses
 ATOM_MASS = dict(zip(chemical_symbols, atomic_masses.tolist()))
+
+
+def _running_log_geometry(record):
+    """Convert a running-log geometry record to Cartesian Angstrom."""
+    positions = np.asarray(record['coords'], dtype=float)
+    cell = np.asarray(record['cell'], dtype=float)
+    coordinate = record['coordinate']
+    if coordinate == 'Direct':
+        positions = positions @ cell
+    elif coordinate == 'Cartesian':
+        positions = positions * record['alat_in_angstrom']
+    else:
+        raise ValueError(f'Unknown coordinate system: {coordinate}')
+    return positions, cell
 
 
 def energy_components(ener: Mapping[str, float]) -> Dict[str, float]:
@@ -252,6 +266,10 @@ def write_stru(stru: Atoms,
     str
         The path to the written STRU file.
     '''
+    return _write_stru_from_atoms(stru, outdir, pp_file, orb_file, fname, backup=False)
+
+
+def _write_stru_from_atoms(stru, outdir, pp_file, orb_file, fname, *, backup):
     from ase.units import (
         Bohr as __BOHR__, 
         Angstrom as __ANGSTROM__,
@@ -318,10 +336,12 @@ def write_stru(stru: Atoms,
     if orb_file is not None:
         for s in stru_dict['species']:
             s['orb_file'] = orb_file[s['symbol']]
-    
+    path = Path(outdir) / fname
+    if backup:
+        file_safe_backup(path)
     _write_stru(outdir, stru_dict, fname)
 
-    return (Path(outdir) / fname).resolve().as_posix()
+    return path.resolve().as_posix()
 
 def write_input(data: Dict[str, Any], fn: str) -> str:
     '''
@@ -348,7 +368,7 @@ def write_input(data: Dict[str, Any], fn: str) -> str:
 
     return str(Path(fn).resolve())
 
-def _write_kline(data: Dict[str, Any], f: TextIOWrapper):
+def _write_kline(data: Dict[str, Any], f: TextIO):
     '''
     write the k-point file whose mode is "Line"
     '''
@@ -359,7 +379,7 @@ def _write_kline(data: Dict[str, Any], f: TextIOWrapper):
     for k, nk in zip(data['kpoints'], data['nkinterpl']):
         f.write(f"{k[0]} {k[1]} {k[2]} {nk}\n")
 
-def _write_ksampl_mp(data: Dict[str, Any], f: TextIOWrapper):
+def _write_ksampl_mp(data: Dict[str, Any], f: TextIO):
     '''
     write the k-point file whose mode is automatically sampling with Monkhorst-Pack
     '''
@@ -369,16 +389,21 @@ def _write_ksampl_mp(data: Dict[str, Any], f: TextIOWrapper):
     f.write(f"{data['nk'][0]} {data['nk'][1]} {data['nk'][2]} "
             f"{data['kshift'][0]} {data['kshift'][1]} {data['kshift'][2]}\n")
     
-def _write_kpoint(data: Dict[str, Any], f: TextIOWrapper):
+def _write_kpoint(data: Dict[str, Any], f: TextIO):
     '''
     write the k-point file whose mode is specifying kpoints one-by-one
     '''
+    kpoints = data['kpoints']
+    weights = data.get('weights')
+    if weights is None:
+        weights = data.get('nkinterpl', [1] * len(kpoints))
+    if len(kpoints) != data['nk'] or len(weights) != len(kpoints):
+        raise ValueError('Explicit KPT requires one weight per declared k point')
     f.write('K_POINTS\n')
     f.write(f"{data['nk']}\n")
     f.write(f"{data['coordinate'].capitalize()}\n")
-    nkinterpl = data.get('nkinterpl', [1 for _ in data['kpoints']])
-    for k, nk in zip(data['kpoints'], data.get('nkinterpl', nkinterpl)):
-        f.write(f"{k[0]} {k[1]} {k[2]} {nk}\n")
+    for (x, y, z), weight in zip(kpoints, weights):
+        f.write(f"{x} {y} {z} {weight}\n")
 
 def read_kpoint_from_running_log(fn: str) -> Dict[str, Any]:
     '''Read the k-point information from the ABACUS running log file.'''
@@ -401,6 +426,10 @@ def write_kpt(data: Dict[str, Any], fn: str) -> str:
     str
         the absolute path of the written KPT file
     '''
+    return _write_kpt(data, fn, backup=False)
+
+
+def _write_kpt(data, fn, *, backup):
     assert 'mode' in data, 'KPT data must contain "mode" key'
     mywriter = {
          # 'line': _write_kline,
@@ -410,12 +439,18 @@ def write_kpt(data: Dict[str, Any], fn: str) -> str:
     assert data['mode'] in mywriter, \
            f'Invalid KPT mode {data["mode"]}, must be one of ' \
            f'{list(mywriter.keys())}'
-    with open(fn, 'w') as f:
+    # Validate and format before touching the previous KPT.
+    with StringIO() as f:
         mywriter[data['mode']](data, f)
+        content = f.getvalue()
 
-    return str(Path(fn).resolve())
+    path = Path(fn)
+    if backup:
+        file_safe_backup(path)
+    path.write_text(content)
+    return str(path.resolve())
 
-def _parse_coord_line(line):
+def _parse_coord_line(line, mag_each):
     '''
     Parses a coordinate line (which may include extra parameters)
     in the ATOMIC_POSITIONS block.
@@ -467,28 +502,30 @@ def _parse_coord_line(line):
             expected = (3,)
         # A complete property may be followed by the legacy bare triplet.
         # For mag, use its vector width so scalar-plus-flags stays ambiguous.
-        if len(values) == max(expected) + 3 and all(
-                value in ('0', '1') for value in values[-3:]):
+        if len(values) == max(expected) + 3 and values[-3] in ('0', '1'):
             values = values[:-3]
             idx -= 3
         if len(values) not in expected:
             raise ValueError(f'{keyword} requires {expected} values, got {len(values)}')
         if keyword == 'm':
-            if any(value not in ('0', '1') for value in values):
+            flags = list(map(int, values))
+            if any(flag not in (0, 1) for flag in flags):
                 raise ValueError('Mobility flags must be 0 or 1')
-            options[keyword] = list(map(int, values))
+            options[keyword] = flags
         else:
             options[keyword] = list(map(float, values))
 
     for keyword in ('m', 'v'):
         if keyword in options:
             result[keyword] = options[keyword]
-    angles = [key in options for key in ('angle1', 'angle2')]
-    if any(angles):
-        if not all(angles) or len(options.get('mag', [])) != 1:
-            raise ValueError('Spherical moments require mag, angle1 and angle2')
-        result['mag'] = ('Spherical',
-                         options['mag'] + options['angle1'] + options['angle2'])
+    if 'angle1' in options or 'angle2' in options:
+        magnitude = options.get('mag', [mag_each])
+        if len(magnitude) != 1:
+            raise ValueError('Spherical moments require a scalar magnitude')
+        # ABACUS defaults either omitted angle to zero.
+        angle1, = options.get('angle1', [0.0])
+        angle2, = options.get('angle2', [0.0])
+        result['mag'] = ('Spherical', [magnitude[0], angle1, angle2])
     elif 'mag' in options:
         values = options['mag']
         result['mag'] = values[0] if len(values) == 1 else ('Cartesian', values)
@@ -500,10 +537,49 @@ def _atomic_positions_gen(lines):
 
     '''
     natom = int(lines[2])
-    yield {'symbol': lines[0], 'mag_each': float(lines[1]), 'natom': natom,
-           'atom': [_parse_coord_line(line) for line in lines[3:3+natom]]}
+    mag_each = float(lines[1])
+    yield {'symbol': lines[0], 'mag_each': mag_each, 'natom': natom,
+           'atom': [_parse_coord_line(line, mag_each) for line in lines[3:3+natom]]}
     if len(lines) > 3 + natom:
         yield from _atomic_positions_gen(lines[3+natom:])
+
+def _read_stru_blocks(fn):
+    block_title = ['ATOMIC_SPECIES',
+                   'NUMERICAL_ORBITAL',
+                   'LATTICE_CONSTANT',
+                   'LATTICE_PARAMETER',
+                   'LATTICE_VECTORS',
+                   'ATOMIC_POSITIONS']
+
+    def _trim(line):
+        return line.split('#')[0].split('//')[0].strip(' \t\n')
+
+    with open(fn, 'r') as f:
+        lines = [_trim(line).replace('\t', ' ')
+                 for line in f.readlines() if len(_trim(line)) > 0]
+
+    # break the content into blocks
+    delim = [i for i, line in enumerate(lines) if line in block_title] \
+            + [len(lines)]
+    return {lines[delim[i]] : lines[delim[i]+1:delim[i+1]]
+            for i in range(len(delim) - 1)}
+
+
+def _stru_species(blocks):
+    species = [dict(zip(['symbol', 'mass', 'pp_file', 'pp_type'], line.split()))
+               for line in blocks['ATOMIC_SPECIES']]
+    for s in species:
+        s['mass'] = float(s['mass'])
+    if 'NUMERICAL_ORBITAL' in blocks:
+        for i, s in enumerate(species):
+            s['orb_file'] = blocks['NUMERICAL_ORBITAL'][i]
+    return species
+
+
+def _read_stru_species(fn):
+    """Read species records without parsing the cell or per-atom options."""
+    return _stru_species(_read_stru_blocks(fn))
+
 
 def read_stru(fn: str) -> Dict[str, Any]:
     '''
@@ -523,26 +599,7 @@ def read_stru(fn: str) -> Dict[str, Any]:
             List of atomic species. Each dict contains 'symbol', 'mass',
             'pp_file', and optionally 'pp_type'.
     '''
-    block_title = ['ATOMIC_SPECIES',
-                   'NUMERICAL_ORBITAL',
-                   'LATTICE_CONSTANT',
-                   'LATTICE_PARAMETER',
-                   'LATTICE_VECTORS',
-                   'ATOMIC_POSITIONS']
-
-    def _trim(line):
-        return line.split('#')[0].split('//')[0].strip(' \t\n')
-
-    with open(fn, 'r') as f:
-        lines = [_trim(line).replace('\t', ' ')
-                 for line in f.readlines() if len(_trim(line)) > 0]
-
-    # break the content into blocks
-    delim = [i for i, line in enumerate(lines) if line in block_title] \
-            + [len(lines)]
-    blocks = {lines[delim[i]] : lines[delim[i]+1:delim[i+1]]
-              for i in range(len(delim) - 1)}
-
+    blocks = _read_stru_blocks(fn)
     stru = {}
     #============ LATTICE_CONSTANT/PARAMETER/VECTORS ============
     stru['lat'] = {'const': float(blocks['LATTICE_CONSTANT'][0])}
@@ -553,17 +610,7 @@ def read_stru(fn: str) -> Dict[str, Any]:
         stru['lat']['param'] = [float(x)
                                 for x in blocks['LATTICE_PARAMETER'][0].split()]
 
-    #============ ATOMIC_SPECIES ============
-    stru['species'] = [dict(zip(['symbol', 'mass', 'pp_file', 'pp_type'],
-                                line.split()))
-                       for line in blocks['ATOMIC_SPECIES']]
-    for s in stru['species']:
-        s['mass'] = float(s['mass'])
-
-    #============ NUMERICAL_ORBITAL ============
-    if 'NUMERICAL_ORBITAL' in blocks:
-        for i, s in enumerate(stru['species']):
-            s['orb_file'] = blocks['NUMERICAL_ORBITAL'][i]
+    stru['species'] = _stru_species(blocks)
 
     #============ ATOMIC_POSITIONS ============
     stru['coord_type'] = blocks['ATOMIC_POSITIONS'][0]
@@ -658,19 +705,27 @@ def _read_kpoint(raw: List[str]) -> Dict[str, Any]:
     assert raw[2].lower() in ['direct', 'cartesian'], \
              f'Invalid KPT file, expected "Direct" or "Cartesian" in the third line, ' \
              f'got {raw[2]}'
-    mymatch = [re.match(r'^(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*'
-                        r'(\d+).*', l)
-              for l in raw[3:]]
-    assert all(m for m in mymatch), \
-             'Invalid KPT file, expected the k-points to be in the format ' \
-             '"x y z n # comment"'
-
+    points = []
+    weights = []
+    for il, line in enumerate(raw[3:], start=1):
+        fields = re.split(r'#|//|!', line, maxsplit=1)[0].split()
+        try:
+            # ABACUS consumes the first four values and ignores any row label.
+            x, y, z, weight = map(float, fields[:4])
+        except ValueError as exc:
+            raise ValueError(
+                f'Invalid explicit KPT point {il}: expected x y z weight'
+            ) from exc
+        if not np.isfinite([x, y, z, weight]).all():
+            raise ValueError(f'Invalid explicit KPT point {il}: non-finite value')
+        points.append((x, y, z))
+        weights.append(weight)
     return {
         'mode': 'point',
         'coordinate': 'Cartesian' if raw[2].lower() == 'cartesian' else 'Direct',
         'nk': int(raw[1]),
-        'kpoints': [tuple(map(float, m.groups()[:3])) for m in mymatch],
-        'weights': [int(m.groups()[3]) for m in mymatch]
+        'kpoints': points,
+        'weights': weights,
     }
 
 def read_kpt(fn: str) -> Dict[str, Any]:

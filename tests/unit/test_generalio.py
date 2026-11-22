@@ -32,7 +32,7 @@ class TestAbacusCalculatorIOUtil(unittest.TestCase):
         # will automatically delete the file after the context manager
 
     def test_read_stru_accepts_signed_noncollinear_moment(self):
-        atom = _parse_coord_line('0 0 0 mag 1.0 -1.0 0.0')
+        atom = _parse_coord_line('0 0 0 mag 1.0 -1.0 0.0', mag_each=0)
         self.assertEqual(atom['mag'], ('Cartesian', [1.0, -1.0, 0.0]))
 
     def test_file_safe_backup_rotates_numbered_backups(self):
@@ -353,21 +353,66 @@ class TestAbacusCalculatorIOUtil(unittest.TestCase):
         self.assertEqual(stru['species'][2]['atom'][0]['mag'], ('Cartesian', [0.0, 0.0, 3.0]))
 
 
+def test_explicit_kpt_keeps_fractional_weights_on_round_trip(tmp_path):
+    path = tmp_path / "KPT"
+    path.write_text("K_POINTS\n2\nDirect\n+1e-2 0 0 0.25 # first\n.5 0 0 7.5E-1\n")
+    data = read_kpt(path)
+    assert data["kpoints"] == [(0.01, 0., 0.), (0.5, 0., 0.)]
+    assert data["weights"] == [0.25, 0.75]
+    write_kpt(data, path)
+    assert read_kpt(path) == data
+
+
+def test_explicit_kpt_rejects_missing_weight(tmp_path):
+    path = tmp_path / "KPT"
+    path.write_text("K_POINTS\n1\nDirect\n0.1 0.2 0.33\n")
+    with pytest.raises(ValueError):
+        read_kpt(path)
+
+
+@pytest.mark.parametrize('options', ['m +1 0 +1', 'v 0 0 0 1 -0 +1'])
+def test_stru_accepts_signed_mobility(tmp_path, options):
+    atoms = Atoms("Si", cell=[5., 5., 5.])
+    path = tmp_path / "STRU"
+    write_stru(atoms, outdir=tmp_path, pp_file={"Si": "Si.upf"})
+    path.write_text(path.read_text().replace("m 1 1 1 v 0.0 0.0 0.0", options))
+    assert read_stru(path)["species"][0]["atom"][0]["m"] == [1, 0, 1]
+
+
 @pytest.mark.parametrize('tail', ['m 1 0', 'v 1 2', 'mag 1 2',
-                                 'mag 1 angle1 90', 'mag 1 angle2 0',
+                                 'mag 1 angle1', 'angle2',
                                  'mag 1 angle1 90 angle2'])
 def test_coordinate_keywords_reject_incomplete_values(tail):
     with pytest.raises(ValueError):
-        _parse_coord_line('0 0 0 ' + tail)
+        _parse_coord_line('0 0 0 ' + tail, mag_each=0)
+
+
+@pytest.mark.parametrize('options,expected', [
+    ('mag 2 angle1 90', [2., 90., 0.]),
+    ('mag 2 angle1 90 angle2 0', [2., 90., 0.]),
+    ('mag 2 angle2 -90', [2., 0., -90.]),
+    ('angle1 90', [3., 90., 0.]),
+])
+def test_stru_uses_native_moment_defaults(tmp_path, options, expected):
+    path = tmp_path / 'STRU'
+    write_stru(Atoms('Fe', cell=[5, 5, 5]), tmp_path, {'Fe': 'Fe.upf'})
+    content = path.read_text().replace('\nFe\n0.0\n', '\nFe\n3.0\n')
+    content = content.rstrip() + ' ' + options + '\n'
+    path.write_text(content)
+    species, = read_stru(path)['species']
+    assert species['mag_each'] == 3.
+    atom, = species['atom']
+    assert atom['mag'] == ('Spherical', expected)
 
 
 
 def test_coordinate_keywords_are_grouped_by_name():
     atom = _parse_coord_line(
-        '0 0 0 velocity +1e-2 -2E+1 0 magmom +1e0 -1e-1 0 m 1 0 1')
+        '0 0 0 velocity +1e-2 -2E+1 0 magmom +1e0 -1e-1 0 m 1 0 1', mag_each=0)
     assert atom == {'coord': [0., 0., 0.], 'v': [.01, -20., 0.],
                     'mag': ('Cartesian', [1., -.1, 0.]), 'm': [1, 0, 1]}
-    spherical = _parse_coord_line('0 0 0 angle2 -90 mag 1 m 1 1 1 angle1 45')
+    spherical = _parse_coord_line('0 0 0 angle2 -90 mag 1 m 1 1 1 angle1 45',
+                                  mag_each=0)
     assert spherical['mag'] == ('Spherical', [1., 45., -90.])
 
 
@@ -375,7 +420,7 @@ def test_coordinate_keywords_are_grouped_by_name():
 @pytest.mark.parametrize('tail', ['unknown 1', 'mag 1 magmom 2', 'm 1 2 0'])
 def test_coordinate_keywords_reject_unknown_duplicate_and_invalid_flags(tail):
     with pytest.raises(ValueError, match='Unknown|Duplicate|Mobility'):
-        _parse_coord_line('0 0 0 ' + tail)
+        _parse_coord_line('0 0 0 ' + tail, mag_each=0)
 
 
 
@@ -385,7 +430,7 @@ def test_coordinate_keywords_reject_unknown_duplicate_and_invalid_flags(tail):
     ('mag 1 angle1 45 angle2 90 1 0 1', ('Spherical', [1., 45., 90.])),
 ])
 def test_bare_mobility_follows_complete_atom_property(tail, expected_moment):
-    atom = _parse_coord_line('0 0 0 ' + tail)
+    atom = _parse_coord_line('0 0 0 ' + tail, mag_each=0)
     assert atom['m'] == [1, 0, 1]
     if expected_moment is not None:
         assert atom['mag'] == expected_moment

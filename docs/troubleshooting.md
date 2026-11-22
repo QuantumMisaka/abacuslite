@@ -56,10 +56,10 @@ calculation. Keep the input and `OUT.ABACUS` directory together.
 
 ## Native MD output is incomplete
 
-Native MD normally reads geometry from `MD_dump` and electronic data from the
-running log. Keep both files in the same `OUT.ABACUS` directory. An incomplete
-`MD_dump`, or a log-only trajectory without a complete set of frames, is
-rejected rather than partially parsed.
+Keep `MD_dump` and `running_md.log` together. An incomplete geometry dump,
+or an incomplete legacy log-only trajectory, is rejected rather than
+partially parsed. In develop output, missing spectra are different: an
+ionic step without an eigenvalue file can still supply its energy and forces.
 
 ## `eig_occ.txt` is not removed
 

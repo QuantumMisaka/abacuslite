@@ -47,7 +47,7 @@ or running another calculator must not change the first calculator's results.
 Inspect the engine through `profile.version()`; do not inspect a template,
 module-global switch, server object or child-process handle.
 
-### Results and frame selection
+### Result collection
 
 After a successful file-backed evaluation, `calc.results` exposes available
 quantities with the following semantics:
@@ -70,20 +70,10 @@ vector moments. `Abacus.export_properties()` therefore exports only values
 accepted by the installed ASE schema; backend metadata and vector moments
 remain available in `calc.results`.
 
-SCF collection matches the written STRU, including periodic equivalence, rather
-than selecting an unrelated last trial frame. It uses an absolute `1e-4`
-Angstrom tolerance for cell components and periodic position residuals, with
-no relative tolerance. With a lattice constant near 1 Angstrom, printing
-vectors in `[10, 100)` to six significant digits can lose up to `5e-5`
-Angstrom per component. A saved LTS run exceeds the old `1e-5` bound but
-matches at `1e-4`. This is a structure-identity tolerance, not a convergence
-threshold or a universal bound: larger cells, separately rounded lattice
-constants and skewed-cell coordinate transformations can accumulate more
-error. Malformed or unmatched structure handoffs raise
-`RuntimeError`. Native relaxation/MD collection selects the final frame.
-The reader does not consume `abacus.json`; the running log alone identifies
-the SCF frame.
-File-backed results restore the caller's atom ordering after species grouping.
+SCF, native relaxation and native MD collection select the final parsed
+result. The calculator reports an error if the reader returns no results.
+File-backed collection uses ABACUS output files and restores the caller's
+atom ordering with the mapping created when writing the inputs.
 
 Missing force/stress data is not replaced with fabricated zero arrays. ASE
 property access can raise `PropertyNotImplementedError` when unavailable.
@@ -127,14 +117,16 @@ returns a list. The default returns all available frames.
 atoms, forces and magnetic moments. Callers must supply a valid permutation.
 `results_required` is retained but currently has no effect.
 
-Parsing is read-only and repeatable, including `eig_occ.txt`; no file is
-consumed. Latest-format output requires its companion band file. Native MD
-uses `MD_dump` when present for native-MD geometry; the legacy reader can also
+Parsing is read-only and repeatable; no file is consumed. The develop reader
+matches spectra from `eig_occ.txt` or `eig_occg{N}.txt` by ionic step. Missing
+spectra leave eigenvalues and occupations unavailable without blocking other
+results. Native MD uses `MD_dump` for geometry; the legacy reader can also
 read a complete log-only MD trajectory. Returned ASE `Atoms.positions` and
 `Atoms.cell` are always Cartesian Angstrom values: Direct positions are
 multiplied by the cell, and format-specific Cartesian/alat scales are applied
 once at the reader boundary. Raw trajectory dictionaries retain their original
-coordinate conventions. SCF matching consumes the normalized ASE geometry.
+coordinate conventions. Callers can use the readers to inspect multiple
+records independently of calculator result collection.
 
 Both output readers represent the logged simulation box with `pbc=True` in all
 three directions, including molecules in vacuum and slabs. This is a public
