@@ -5,6 +5,7 @@ format selection, parsing and the ASE calculator handoff remain real.
 """
 
 from pathlib import Path
+import re
 import shutil
 
 import numpy as np
@@ -37,7 +38,8 @@ class ReplayProfile(AbacusProfile):
         destination = Path(directory) / "OUT.ABACUS"
         destination.mkdir(exist_ok=True)
         for path in self.output.iterdir():
-            if path.name in {"running_scf.log", "running_md.log", "eig_occ.txt", "MD_dump"}:
+            if (path.name in {"running_scf.log", "running_md.log", "eig_occ.txt", "MD_dump"}
+                    or re.fullmatch(r"eig_occg\d+\.txt", path.name)):
                 shutil.copy2(path, destination / path.name)
 
 
@@ -60,6 +62,65 @@ def test_independent_calculators_select_formats_through_public_calls(tmp_path, o
         assert atoms[name].get_potential_energy(force_consistent=True) == pytest.approx(expected[name])
         assert atoms[name].get_forces().shape == (2, 3)
     assert atoms["legacy"].calc.results["energy_without_entropy"] == pytest.approx(-1940.3851061129)
+
+
+@pytest.mark.parametrize("layout,available", [
+    ("overwrite", [False, True]),
+    ("append", [True, True]),
+    ("numbered", [True, True]),
+    ("missing_final", [True, False]),
+    ("missing_all", [False, False]),
+])
+def test_develop_md_spectra_follow_ionic_steps(tmp_path, layout, available):
+    source = FIXTURES / "multiframe_md_latest"
+    output = tmp_path / "recorded"
+    output.mkdir()
+    shutil.copy2(source / "MD_dump", output)
+    log = output / "running_md.log"
+    # Keep the recorded trajectory but replace its producer announcements
+    # with those for the layout under test.
+    text = re.sub(r"(?im)^ *Write eigenvalues and occupations to file:.*\n",
+                  "", (source / log.name).read_text())
+    spectrum = (source / "eig_occ.txt").read_text()
+    split_at = spectrum.index("2     # ionic step")
+    first, last = spectrum[:split_at], spectrum[split_at:]
+    last = last.replace("2     # ionic step", "# Ionic_Step 2", 1)
+    last, count = re.subn(r"(?m)^(\s*1\s+\S+\s+)\S+", r"\g<1>-2.5E-1", last, count=1)
+    assert count == 1
+    if layout in {"overwrite", "append"}:
+        (output / "eig_occ.txt").write_text(last if layout == "overwrite" else first + last)
+        text += "\n Write Eigenvalues and occupations to file: OUT.ABACUS/eig_occ.txt\n"
+    else:
+        # The stale fixed file must not be used, even if announced files are gone.
+        (output / "eig_occ.txt").write_text("stale spectrum\n")
+        for step, frame, is_available in zip((1, 2), (first, last), available):
+            name = f"eig_occg{step}.txt"
+            text += f"\n Write Eigenvalues and occupations to file: OUT.ABACUS/{name}\n"
+            if is_available:
+                (output / name).write_text(frame)
+    log.write_text(text)
+
+    with log.open() as stream:
+        frames = latestio.read_abacus_out(stream)
+        assert not stream.closed
+    assert [frame.calc.get_eigenvalues() is not None for frame in frames] == available
+    assert [frame.get_potential_energy() for frame in frames] == pytest.approx(
+        [-1940.6273962477, -1940.6311063727])
+
+    atoms = Atoms("AsGa", cell=[6, 6, 6], pbc=True)
+    atoms.calc = Abacus(
+        profile=ReplayProfile("v3.11.0-beta10", output), directory=tmp_path / "run",
+        pseudopotentials={"As": "As.upf", "Ga": "Ga.upf"},
+        inp={"calculation": "md", "basis_type": "pw", "gamma_only": True},
+    )
+    assert atoms.get_potential_energy() == pytest.approx(-1940.6311063727)
+    assert atoms.calc.results["fermi_level"] == pytest.approx(9.0922469042)
+    assert atoms.get_forces().shape == (2, 3)
+    exported = atoms.calc.export_properties()
+    assert ("eigenvalues" in exported) is available[-1]
+    assert ("occupations" in exported) is available[-1]
+    if available[-1]:
+        assert exported["occupations"][0, 0, 0] == pytest.approx(-0.25)
 
 
 def test_scf_restores_interleaved_atom_order(tmp_path, single_point_scf_output):

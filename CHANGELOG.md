@@ -20,6 +20,8 @@
 
 - Collect the final parsed result for SCF, native relaxation and native MD.
   Restore the caller's atom order without reopening STRU.
+- Support develop's fixed-name and per-step eigenvalue files. Match spectra
+  by ionic step and preserve energies and forces when a spectrum is absent.
 - Read the original STRU species and KPT for `restart()` before applying
   output filename overrides. Omitted spin angles default to zero, and a
   missing per-atom magnitude uses the species initial moment.

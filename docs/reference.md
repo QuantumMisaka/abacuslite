@@ -44,7 +44,8 @@ is used to locate companion files. Streams without a filesystem name are not
 supported. Caller streams remain open and are read from their current position;
 seek to the start explicitly before rereading.
 
-Latest-format eigenvalues and occupations come from `eig_occ.txt`. Native MD
+Latest-format eigenvalues and occupations come from `eig_occ.txt` or
+`eig_occg{N}.txt` and are matched by ionic step. Native MD
 uses `MD_dump` when present. Its positions are Cartesian Angstrom values and
 its lattice vectors are in alat units. Legacy native MD accepts complete
 `running_md.log` trajectories and prefers `MD_dump` when available. Parsed

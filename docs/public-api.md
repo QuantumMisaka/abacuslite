@@ -117,9 +117,10 @@ returns a list. The default returns all available frames.
 atoms, forces and magnetic moments. Callers must supply a valid permutation.
 `results_required` is retained but currently has no effect.
 
-Parsing is read-only and repeatable, including `eig_occ.txt`; no file is
-consumed. Latest-format output requires its companion band file. Native MD
-uses `MD_dump` when present for native-MD geometry; the legacy reader can also
+Parsing is read-only and repeatable; no file is consumed. The develop reader
+matches spectra from `eig_occ.txt` or `eig_occg{N}.txt` by ionic step. Missing
+spectra leave eigenvalues and occupations unavailable without blocking other
+results. Native MD uses `MD_dump` for geometry; the legacy reader can also
 read a complete log-only MD trajectory. Returned ASE `Atoms.positions` and
 `Atoms.cell` are always Cartesian Angstrom values: Direct positions are
 multiplied by the cell, and format-specific Cartesian/alat scales are applied

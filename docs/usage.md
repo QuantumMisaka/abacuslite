@@ -138,12 +138,12 @@ frames = legacyio.read_abacus_out(Path("OUT.ABACUS/running_md.log"))
 energy = frames[-1].get_potential_energy()
 ```
 
-Use `latestio.read_abacus_out` with a `Path` for newer-format outputs. Keep
-companion files together: newer output uses `eig_occ.txt`. Native MD
-requires matching geometry, energy and electronic frames. Use `md_dumpfreq=1`
-and retain `MD_dump`; the readers do not align sparse dumps. Complete
-historical legacy MD logs remain readable without a dump. Reading preserves
-source files, including `eig_occ.txt`.
+Use `latestio.read_abacus_out` for newer-format outputs. If you need
+eigenvalues and occupations, keep the `eig_occ.txt` or `eig_occg{N}.txt`
+files with the log. Missing spectra do not prevent reading energies and
+forces. For native MD, use `md_dumpfreq=1` and retain `MD_dump`; the readers
+do not align sparse geometry dumps. Complete historical legacy MD logs
+remain readable without a dump.
 The [migration guide](migration.md) explains compatibility changes, and the
 [module reference](reference.md) describes the reader modules.
 

@@ -124,7 +124,7 @@ class TestLatestIO(unittest.TestCase):
     def test_read_band_from_eig_occ_accepts_negative_mp_occupations(self):
         """MP smearing can produce small negative occupations in latest eig_occ."""
         lines = [
-            '# ionic step',
+            '1     # ionic step',
             ' Electronic state energy (eV) and occupations',
             ' Spin number 2',
             ' spin=1 k-point=1/1 Cartesian=0.0000000 0.0000000 0.0000000 (250081 plane wave)',
@@ -200,11 +200,11 @@ class TestLatestIO(unittest.TestCase):
         for s, ref in zip(stresses, reference):
             self.assertTrue(np.allclose(s, -0.1 * GPa * ref))
 
-    def test_read_abacus_out_string_reports_missing_companion_file(self):
-        fn = self.testfiles / 'pw-symm0-nspin4-gamma-md'
-        # String paths are accepted; this fixture lacks its companion band file.
-        with self.assertRaisesRegex(FileNotFoundError, "eig_occ.txt"):
-            read_abacus_out(str(fn))
+    def test_read_abacus_out_string_without_spectrum(self):
+        fn = self.testfiles / 'lcao-symm1-nspin1-multik-scf'
+        atoms = read_abacus_out(str(fn), index=-1)
+        self.assertAlmostEqual(atoms.get_potential_energy(), -1935.8941500616)
+        self.assertIsNone(atoms.calc.get_eigenvalues())
 
     def test_read_pw_symm0_nspin4_gamma_md(self):
         # make files ready

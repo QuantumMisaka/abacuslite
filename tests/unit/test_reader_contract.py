@@ -31,6 +31,7 @@ def _mock_reader_data():
     }
     elecstate = [
         {
+            "step": 1,
             "k": np.zeros((1, 1, 3)),
             "e": np.zeros((1, 1, 1)),
             "occ": np.ones((1, 1, 1)),
