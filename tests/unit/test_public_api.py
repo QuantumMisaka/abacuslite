@@ -78,7 +78,7 @@ def test_scf_restores_interleaved_atom_order(tmp_path, single_point_scf_output):
     assert "energy_without_entropy" not in atoms.calc.results
 
 
-def test_scf_rejects_multiple_parsed_results(tmp_path):
+def test_scf_collects_final_parsed_result(tmp_path):
     source = FIXTURES / "multiframe_scf_trial_last"
     log = source / "running_scf.log"
     count = len(legacyio.read_abacus_out(log))
@@ -90,10 +90,8 @@ def test_scf_rejects_multiple_parsed_results(tmp_path):
         directory=tmp_path, pseudopotentials={"H": "H.upf", "Au": "Au.upf"},
         inp={"basis_type": "pw", "gamma_only": True},
     )
-    with pytest.raises(RuntimeError) as error:
-        atoms.get_potential_energy()
-    assert str(tmp_path / "OUT.ABACUS" / log.name) in str(error.value)
-    assert not atoms.calc.results
+    np.testing.assert_allclose(atoms.get_forces(),
+                               [[-0.45, -0.014, 0], [0.45, 0.014, 0], [0, 0, 0]])
 
 
 def test_scf_collects_results_without_rereading_stru(tmp_path, single_point_scf_output):
@@ -175,6 +173,8 @@ def test_noncollinear_results_need_no_global_ase_patch(tmp_path, name, version, 
     exported = atoms.calc.export_properties()
     assert exported["energy"] == pytest.approx(energy)
     assert "fermi_level" in exported
+    assert atoms.calc.results["efermi"] == exported["fermi_level"]
+    assert "efermi" not in exported
     assert "magmoms" not in exported
     assert "energy_without_entropy" not in exported
     assert atoms.get_properties(["energy"])["energy"] == pytest.approx(energy)
@@ -183,6 +183,14 @@ def test_noncollinear_results_need_no_global_ase_patch(tmp_path, name, version, 
     collinear = legacyio.read_abacus_out(
         FIXTURES / "multiframe_scf_trial_last" / "running_scf.log", index=-1)
     assert np.asarray(collinear.calc.properties()["magmoms"]).shape == (3,)
+
+
+def test_top_level_writer_imports():
+    from abacuslite import write_kpt as public_write_kpt
+    from abacuslite import write_stru as public_write_stru
+
+    assert public_write_stru is write_stru
+    assert public_write_kpt is write_kpt
 
 
 def test_input_io_without_an_engine_preserves_declared_values(tmp_path):

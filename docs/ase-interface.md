@@ -39,7 +39,7 @@ ASE property request
 | I/O layout | One large `ase/io/abacus.py` | `generalio`, `legacyio`, `latestio`, `ksampling` |
 | Output formats | One reader path tied to the fork's ABACUS version | develop `latestio` and 3.10.x LTS `legacyio`; selected per calculator |
 | Version probe | Raw `abacus --version` output; not used to choose a reader | Parsed at construction; selects the reader; construction needs a working engine |
-| SCF frames | Last frame from the log | Exactly one parsed result, restored to ASE atom order |
+| SCF frames | Last frame from the log | Final parsed result, restored to ASE atom order |
 | Pseudopotentials / orbitals | Copies provided files into the run directory; `ABACUS_PP_PATH` / `ABACUS_ORBITAL_PATH` defaults | Profile directories (or `ABACUS_PP_PATH` / `ABACUS_ORB_PATH` fallback) plus explicit `pseudopotentials` / `basissets`; no implicit copy |
 | Fork-only extras | `dipole`/`tddft` and `spap_analysis` | Not part of the package; use ABACUS or ASE directly |
 | Validation | Tied to the ASE fork's own tests | Package, installed-consumer and two-engine CI |

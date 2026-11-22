@@ -18,10 +18,14 @@
   documents out of published distributions. Test both the installed wheel and
   a wheel rebuilt from the sdist with assets from the same source revision.
 
-- Collect exactly one parsed SCF result and restore the caller's atom order.
-  Result collection reads ABACUS output directly without reopening STRU.
+- Collect the final parsed result for SCF, native relaxation and native MD.
+  Restore the caller's atom order without reopening STRU.
+- Read the original STRU species and KPT for `restart()` before applying
+  output filename overrides. Omitted spin angles default to zero, and a
+  missing per-atom magnitude uses the species initial moment.
 - Preserve fractional weights on explicit KPT read/write round trips. Accept
-  signed integers in explicit STRU mobility flags.
+  optional trailing KPT labels and signed integers in explicit STRU mobility
+  flags. Validate STRU and KPT data before replacing the corresponding file.
 - Writing new input leaves existing `abacus.json` files available for
   downstream workflows that use them as completion markers.
 - Accept signed Cartesian noncollinear moments in STRU input and keep vector

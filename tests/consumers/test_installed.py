@@ -97,7 +97,7 @@ def test_atst_profile_and_ase_calculator_preserve_scf_forces_and_fermi(
     assert calc.results["fermi_level"] == pytest.approx(-2.04)
 
 
-def test_atst_scf_handoff_rejects_multiple_results(tmp_path, monkeypatch):
+def test_atst_scf_handoff_uses_final_parsed_result(tmp_path, monkeypatch):
     from ase import Atoms
     from atst_tools.calculators.abacuslite_backend import Abacus, ATSTAbacusProfile
 
@@ -117,9 +117,8 @@ def test_atst_scf_handoff_rejects_multiple_results(tmp_path, monkeypatch):
                   basissets={"H": "H.orb", "Au": "Au.orb"})
     atoms = Atoms("HAuH", positions=[[4, 5, 5], [5, 5, 1], [6, 5, 5]],
                   cell=[10, 10, 10], pbc=True, calculator=calc)
-    with pytest.raises(RuntimeError):
-        atoms.get_forces()
-    assert not calc.results
+    np.testing.assert_allclose(atoms.get_forces(),
+                               [[-0.45, -0.014, 0], [0, 0, 0], [0.45, 0.014, 0]])
 
 
 def test_atst_native_md_frames_keep_physical_cell_and_raw_cartesian_positions(tmp_path):

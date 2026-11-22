@@ -16,10 +16,11 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
 def test_point_kpt_preserves_fractional_coordinates_and_weights(tmp_path):
     path = tmp_path / "KPT"
-    path.write_text("K_POINTS\n2\nDirect\n0.25 -0.125 0.5 2\n0.0 0.5 -0.25 3\n")
+    path.write_text("K_POINTS\n2\nDirect\n0.25 -0.125 0.5 0.25 Gamma\n"
+                    "0.0 5e-1 -0.25 0.75 X # label\n")
     data = read_kpt(path)
     np.testing.assert_allclose(data["kpoints"], [[0.25, -0.125, 0.5], [0.0, 0.5, -0.25]])
-    assert data["weights"] == [2, 3]
+    assert data["weights"] == [0.25, 0.75]
 
 
 @pytest.mark.parametrize("order", [("legacy", "latest"), ("latest", "legacy")])
@@ -113,6 +114,53 @@ def test_restart_reads_input_selected_stru_and_kpt(monkeypatch, tmp_path):
     assert captured["pseudopotentials"] == {"H": "H.upf"}
     assert captured["kpts"]["nk"] == (2, 2, 2)
     assert captured["inp"]["stru_file"] == "CURRENT.STRU"
+
+
+def test_restart_reads_existing_species_and_kpt_before_filename_overrides(tmp_path):
+    class Profile(core.AbacusProfile):
+        def version(self):
+            return "v3.10.1"
+
+    atoms = Atoms("Fe", cell=[5., 5., 5.])
+    old_stru = tmp_path / "OLD.STRU"
+    write_stru(atoms, tmp_path, {"Fe": "Fe.upf"}, {"Fe": "Fe.orb"}, fname=old_stru.name)
+    old_stru.write_text(old_stru.read_text().rstrip() + " mag 2 angle1 90 sc 1 1 1\n")
+    old_kpt = tmp_path / "OLD.KPT"
+    old_kpt.write_text("K_POINTS\n1\nDirect\n0 0 0 0.25 Gamma\n")
+    write_input({"stru_file": old_stru.name, "kpoint_file": old_kpt.name}, tmp_path / "INPUT")
+    originals = old_stru.read_bytes(), old_kpt.read_bytes()
+
+    calc = core.Abacus.restart(profile=Profile("unused-abacus"), directory=tmp_path,
+                               inp={"stru_file": "NEXT.STRU", "kpoint_file": "NEXT.KPT"})
+    calc.write_input(atoms, properties=["energy"])
+    assert "Fe.upf" in (tmp_path / "NEXT.STRU").read_text()
+    assert "Fe.orb" in (tmp_path / "NEXT.STRU").read_text()
+    assert read_kpt(tmp_path / "NEXT.KPT")["weights"] == [0.25]
+    assert (old_stru.read_bytes(), old_kpt.read_bytes()) == originals
+
+
+@pytest.mark.parametrize("name", ["STRU", "KPT"])
+def test_invalid_input_does_not_replace_its_existing_file(tmp_path, name):
+    class Profile(core.AbacusProfile):
+        def version(self):
+            return "v3.10.1"
+
+    atoms = Atoms("Si2", positions=[[0, 0, 0], [1, 1, 1]], cell=[5., 5., 5.])
+    kpts = {"mode": "point", "nk": 1, "coordinate": "Direct",
+            "kpoints": [(0.0, 0.0, 0.0)], "weights": [1.0]}
+    calc = core.Abacus(profile=Profile("unused-abacus"), directory=tmp_path,
+                       pseudopotentials={"Si": "Si.upf"}, kpts=kpts)
+    calc.write_input(atoms, properties=["energy"])
+    active = tmp_path / name
+    before = active.read_bytes()
+    if name == "STRU":
+        atoms.set_masses([28., 29.])
+    else:
+        calc.parameters["kpts"] = {**kpts, "weights": []}
+    with pytest.raises(ValueError):
+        calc.write_input(atoms, properties=["energy"])
+    assert active.read_bytes() == before
+    assert not list(tmp_path.glob(f"{name}.bak.*"))
 
 
 def test_restart_with_explicit_kpts_does_not_require_kpt_file(monkeypatch, tmp_path):

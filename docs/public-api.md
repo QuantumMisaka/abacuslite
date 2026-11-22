@@ -70,11 +70,10 @@ vector moments. `Abacus.export_properties()` therefore exports only values
 accepted by the installed ASE schema; backend metadata and vector moments
 remain available in `calc.results`.
 
-Single-point SCF collection requires exactly one parsed result. The calculator
-raises `RuntimeError` if the reader returns zero or multiple results. Native
-relaxation and MD collection select the final result. File-backed collection
-uses ABACUS output files and restores the caller's atom ordering with the
-mapping created when writing the inputs.
+SCF, native relaxation and native MD collection select the final parsed
+result. The calculator reports an error if the reader returns no results.
+File-backed collection uses ABACUS output files and restores the caller's
+atom ordering with the mapping created when writing the inputs.
 
 Missing force/stress data is not replaced with fabricated zero arrays. ASE
 property access can raise `PropertyNotImplementedError` when unavailable.

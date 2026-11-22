@@ -52,6 +52,9 @@ from ase.dft.kpoints import BandPath
 from ase.io import read
 
 from abacuslite.io.generalio import (
+    _read_stru_species,
+    _write_kpt,
+    _write_stru_from_atoms,
     file_safe_backup,
     read_input,
     read_stru,
@@ -321,26 +324,23 @@ class AbacusTemplate(CalculatorTemplate):
 
         # copy the `parameters` because later we will modify it
         parameters = parameters.copy()
-        self.stru_file = parameters.get('stru_file', 'STRU') or 'STRU'
+        stru_file = parameters.get('stru_file', 'STRU') or 'STRU'
 
         # STRU
-        _ = file_safe_backup(directory / self.stru_file)
         # group atoms by first-occurrence species order. Keep the reverse map so
         # that we will recover the order in function read_results()
         ind = species_group_indices(atoms.get_chemical_symbols())
         self.atomorder = sorted(range(len(atoms)), key=lambda i: ind[i]) # revmap
         # then we write
-        _ = write_stru(atoms[ind], 
-                       outdir=directory,
-                       pp_file=parameters.get('pseudopotentials'),
-                       orb_file=parameters.get('basissets'),
-                       fname=self.stru_file)
+        _write_stru_from_atoms(atoms[ind], directory,
+                               parameters.get('pseudopotentials'),
+                               parameters.get('basissets'),
+                               stru_file, backup=True)
 
         # KPT, if needed
         if 'kpts' in parameters:
-            _ = file_safe_backup(directory / parameters.get('kpoint_file', 'KPT'))
-            _ = write_kpt(parameters['kpts'], 
-                          directory / parameters.get('kpoint_file', 'KPT'))
+            kpt_file = directory / (parameters.get('kpoint_file', 'KPT') or 'KPT')
+            _write_kpt(parameters['kpts'], kpt_file, backup=True)
         # should this function be responsible for checking the integrity
         # of information provided by the user? There may be the case that
         # user provides incomplete information, such that the ABACUS cannot
@@ -448,10 +448,6 @@ class AbacusTemplate(CalculatorTemplate):
         outdir = directory / f'OUT.{self.suffix}'
         log = outdir / f'running_{self.calculation}.log'
         frames = read_abacus_out(log, sort_atoms_with=self.atomorder)
-        if self.calculation == 'scf' and len(frames) != 1:
-            raise RuntimeError(
-                f"Invalid SCF results in {log}. Expected exactly one, found {len(frames)}"
-            )
         if not frames:
             raise RuntimeError(f"no ABACUS running-log frames in {log}")
         atoms = frames[-1]
@@ -460,26 +456,26 @@ class AbacusTemplate(CalculatorTemplate):
         # although SinglePointDFTCalculator supports vector moments. Project
         # other properties through ASE and retain vectors as result metadata,
         # without changing ASE's process-global output definitions.
-        singlepoint = atoms.calc
-        vector_moments = {
-            name: singlepoint.results[name]
+        spcalc = atoms.calc
+        noncollinear_moments = {
+            name: spcalc.results[name]
             for name, shape in (('magmom', (3,)), ('magmoms', (len(atoms), 3)))
-            if name in singlepoint.results
-            and np.shape(singlepoint.results[name]) == shape
+            if name in spcalc.results
+            and np.shape(spcalc.results[name]) == shape
         }
-        if vector_moments:
-            singlepoint = copy(singlepoint)
-            singlepoint.results = {
-                name: value for name, value in singlepoint.results.items()
-                if name not in vector_moments
+        if noncollinear_moments:
+            spcalc = copy(spcalc)
+            spcalc.results = {
+                name: value for name, value in spcalc.results.items()
+                if name not in noncollinear_moments
             }
-        results = dict(singlepoint.properties())
-        results.update(vector_moments)
-        if vector_moments:
+        results = dict(spcalc.properties())
+        results.update(noncollinear_moments)
+        if noncollinear_moments:
             results.setdefault('natoms', len(atoms))
         if 'energy_without_entropy' in atoms.info:
             results['energy_without_entropy'] = atoms.info['energy_without_entropy']
-        # Keep the existing result alias alongside ASE's standard property.
+        # Standalone abacuslite callers also use the efermi result alias.
         if 'fermi_level' in results:
             results['efermi'] = results['fermi_level']
         return results
@@ -572,7 +568,9 @@ class Abacus(GenericFileIOCalculator):
         inp_read = read_input(directory / 'INPUT')
         inp = inp_read | kwargs.pop('inp', {})
 
-        pporb_read = read_stru(directory / (inp.get('stru_file', 'STRU') or 'STRU'))['species']
+        # The old INPUT names the files to read; overrides apply to the next run.
+        stru_file = directory / (inp_read.get('stru_file', 'STRU') or 'STRU')
+        pporb_read = _read_stru_species(stru_file)
         pseudopotentials = kwargs.get(
             'pseudopotentials',
             {pporb['symbol']: pporb['pp_file'] for pporb in pporb_read}
@@ -593,7 +591,7 @@ class Abacus(GenericFileIOCalculator):
         if 'kpts' in kwargs:
             kpts_kwargs = {'kpts': kwargs.pop('kpts')}
         else:
-            kpt_file = directory / (inp.get('kpoint_file', 'KPT') or 'KPT')
+            kpt_file = directory / (inp_read.get('kpoint_file', 'KPT') or 'KPT')
             if kpt_file.is_file():
                 kpts_kwargs = {'kpts': read_kpt(kpt_file)}
             else:
